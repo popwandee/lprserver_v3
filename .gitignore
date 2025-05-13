@@ -190,3 +190,6 @@ dist/
 .cache/
 coverage/
 >>>>>>> 6fc8e4a (Initial drop (#3))
+community_projects
+doc
+*.docx
