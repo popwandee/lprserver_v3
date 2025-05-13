@@ -80,13 +80,17 @@ def detect_and_save_changes(interval=10, threshold=0.5):
             prev_frame = gray_frame
 
             # Wait for the specified interval
-            time.sleep(interval)
+            for _ in range(int(interval * 10)):  # Check every 0.1 seconds
+                if cv2.waitKey(100) & 0xFF == ord('q'):  # Press 'q' to quit
+                    print("Detection stopped by user (q pressed).")
+                    return
 
     except KeyboardInterrupt:
-        print("Detection stopped by user.")
+        print("Detection stopped by user (Ctrl+C).")
     finally:
         picam.stop()
         picam.close()
+        cv2.destroyAll_windows()
 
 if __name__ == "__main__":
     while True:
