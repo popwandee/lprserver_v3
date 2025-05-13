@@ -1,5 +1,8 @@
 status.log
-nohup.put
+nohup.out
+*.h264
 hailo.code-workspace
 uptime.log
 *.log
+*.docx
+*.jpg
