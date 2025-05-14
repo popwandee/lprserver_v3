@@ -3,7 +3,7 @@ import os
 
 # Configure logging
 logging.basicConfig(
-    filename="system_test.log",
+    filename="system_check.log",
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
