@@ -9,6 +9,8 @@ import time
 from datetime import datetime
 
 def main():
+    
+    log_status("\n \n #################################################################\n")
     log_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     log_status(f"{log_time}: Starting Raspberry Pi 5 system test...")
 
@@ -43,6 +45,8 @@ def main():
 
     log_time = datetime.now().strftime("%H:%M:%S")
     log_status(f"{log_time}: Raspberry Pi 5 system test completed.")
+    
+    log_status("\n#################################################################\n\n")
     
 if __name__ == "__main__":
     main()
