@@ -3,7 +3,7 @@ import subprocess
 from datetime import datetime
 
 # Log file path
-log_file_path = "system_status.log"
+log_file_path = "status.log"
 
 def get_system_start_time():
     """ดึงเวลาที่ระบบเริ่มต้นทำงาน (System Start Time) 
