@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 # สร้าง Socket.IO client
 sio = socketio.Client(reconnection=True, reconnection_attempts=5, reconnection_delay=2)
-SAVE_DIR = "/home/camuser/lpr_images"
+SAVE_DIR = "/home/camuser/hailo/lpr_images"
 
 def capture_image():
     """
@@ -58,7 +58,7 @@ def send_image_to_server(image_b64):
         'image': image_b64
     }
     try:
-        sio.emit('image_data', payload)
+        sio.emit('debug_event', payload)
         logging.info(f"[{timestamp}] ส่งข้อมูลภาพสำเร็จ")
     except Exception as e:
         logging.info(f"[{timestamp}] ส่งข้อมูลล้มเหลว: {e}")
@@ -90,17 +90,13 @@ def main():
         - แสดงผลลัพธ์ในคอนโซล
     """
     try:
-        sio.connect("http://lprserver.tail605477.ts.net:1337", namespaces=['/socket.io/'])
-        print("เชื่อมต่อกับ LPRServer สำเร็จ")
-        sio.on('connect', lambda: print("[✓] Connected to server"))
-        sio.on('disconnect', lambda: print("[x] Disconnected from server"))
-        sio.on('lpr_response', lambda data: print("Response:", data))
+        sio.connect("http://lprserver.tail605477.ts.net:1337")
+        if sio.get_sid() is None:
+            print("⚠️ ไม่สามารถรับ session ID จากเซิร์ฟเวอร์ อาจมีปัญหาการเชื่อมต่อ")
+            return
+        else:
+            print(f"✅ เชื่อมต่อกับเซิร์ฟเวอร์สำเร็จ SID: {sio.get_sid()}")
         
-        time.sleep(2)  # wait for response
-
-        
-        # Keep main thread alive to listen for events
-        sio.wait()
     except Exception as e:
         logging.info(f"ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์: {e}")
         return
