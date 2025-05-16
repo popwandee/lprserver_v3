@@ -7,7 +7,7 @@ from PIL import Image
 from picamera2 import Picamera2
 import numpy as np
 import cv2
-
+import utils_variable
 sio = socketio.Client()
 SERVER_URL = "http://lprserver.tail605477.ts.net:1337/"
 
@@ -44,15 +44,20 @@ def capture_image_binary():
 
     print(f"📏 ขนาดภาพ JPEG บีบอัด: {len(img_binary) / 1024:.2f} KB")
     return img_binary, filename
-
+    
 
 def generate_mock_data():
-    return {
-        "license_plate": f"TEST{random.randint(1000, 9999)}",
+    # สุ่มค่าหมวดตัวอักษรและจังหวัด
+    lpr_str = random.choice(utils_variable.lpr_categories)
+    province = random.choice(utils_variable.provinces)
+    mock_data ={
+        "license_plate": f"{lpr_str} {random.randint(1000, 9999)} {province}",
         "location_lat": round(random.uniform(18.7, 18.9), 6),
         "location_lon": round(random.uniform(98.9, 99.1), 6),
         "info": "Mock image from Raspberry Pi"
     }
+    print(f"ข้อมูลที่จะเตรียมส่ง: {mock_data} ")
+    return mock_data
 
 
 @sio.on('lpr_response')
