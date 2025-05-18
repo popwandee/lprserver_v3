@@ -146,18 +146,21 @@ if __name__ == "__main__":
 
     # Setup Picamera2
     picam2 = Picamera2()
-    video_config = picam2.create_video_configuration(main={"size": (640, 480)})
+    video_config = picam2.create_video_configuration(main={"size": (640, 640)})
     picam2.configure(video_config)
     picam2.start()
 
     # GStreamer pipeline
-    pipeline_str = """
-    appsrc name=source is-live=true block=true format=GST_FORMAT_TIME 
-    caps=video/x-raw,format=RGB,width=640,height=480,framerate=30/1 
-    ! videoconvert 
-    ! video/x-raw,format=RGB 
-    ! autovideosink
-    """
+    pipeline_str =(
+"appsrc name=source is-live=true block=true format=3 "
+"caps=video/x-raw,format=BGR,width=640,height=640,framerate=30/1 !"
+"videoconvert ! videoscale ! queue name=q1 !"
+"hailonet name=detector hef-path=/home/camuser/hailo/resources/yolov8m.hef batch-size=1 "
+"nms-score-threshold=0.4 nms-iou-threshold=0.5 output-format-type=HAILO_FORMAT_TYPE_FLOAT32 ! identity name=identity_detection !"
+"hailofilter so-path=/home/camuser/hailo/venv_hailo/lib/python3.11/site-packages/resources/libyolo_hailortpp_postprocess.so "
+"function-name=filter_letterbox ! "
+"identity name=identity_callback ! fakesink sync=false"
+)
 
     pipeline = Gst.parse_launch(pipeline_str)
     appsrc = pipeline.get_by_name("source")
