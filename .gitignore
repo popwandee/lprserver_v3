@@ -129,7 +129,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-
+venv_hailo/
 # Spyder project settings
 .spyderproject
 .spyproject
@@ -189,7 +189,7 @@ dist/
 *.egg-info/
 .cache/
 coverage/
->>>>>>> 6fc8e4a (Initial drop (#3))
 community_projects
 doc
 *.docx
+*.jpg
