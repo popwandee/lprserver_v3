@@ -1,3 +1,8 @@
 numpy<2.0.0
 setproctitle
 opencv-python
+notebook
+ipykernel
+degirum
+degirum_tools
+degirum_cli
