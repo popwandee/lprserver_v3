@@ -129,7 +129,6 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-venv_hailo/
 # Spyder project settings
 .spyderproject
 .spyproject
@@ -158,7 +157,7 @@ cython_debug/
 .DS_Store
 
 # hailo-rpi5-examples specific
-venv_hailo_rpi5_examples/*
+venv_hailo/*
 resources/*.mp4
 resources/*.hef
 resources/*.so
