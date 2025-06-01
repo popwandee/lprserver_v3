@@ -1,0 +1,18 @@
+$ hailortcli parse-hef resources/yolov8m.hef
+Architecture HEF was compiled for: HAILO8
+Network group name: yolov8m, Multi Context - Number of contexts: 3
+    Network name: yolov8m/yolov8m
+        VStream infos:
+            Input  yolov8m/input_layer1 UINT8, NHWC(640x640x3)
+            Output yolov8m/yolov8_nms_postprocess FLOAT32, HAILO NMS BY CLASS(number of classes: 80, maximum bounding boxes per class: 100, maximum frame size: 160320)
+            Operation:
+                Op YOLOV8
+                Name: YOLOV8-Post-Process
+                Score threshold: 0.200
+                IoU threshold: 0.70
+                Classes: 80
+                Cross classes: false
+                NMS results order: BY_CLASS
+                Max bboxes per class: 100
+                Image height: 640
+                Image width: 640
