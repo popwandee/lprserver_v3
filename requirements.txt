@@ -6,3 +6,6 @@ ipykernel
 degirum
 degirum_tools
 degirum_cli
+picamera2
+pillow
+matplotlib
