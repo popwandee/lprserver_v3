@@ -1,11 +1,12 @@
 numpy<2.0.0
 setproctitle
 opencv-python
+easyocr
 notebook
 ipykernel
 degirum
 degirum_tools
 degirum_cli
 picamera2
-pillow
+pillow<11
 matplotlib

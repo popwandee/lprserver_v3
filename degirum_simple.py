@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import degirum as dg
 from pprint import pprint
-
+import json
 
 def read_image_as_rgb(image_path):
     # Load the image in BGR format (default in OpenCV)
@@ -105,8 +105,117 @@ def resize_with_letterbox(image_path, target_shape, padding_value=(0,0,0)):
     # return the letterboxed image with batch dimension; scaling ratio, and padding (top, left)
     return letterboxed_image, scale_factor, offset_y, offset_x
 
+def post_process_tiny_yolov4(outputs, image_shape):
+    """แปลง output จากโมเดล Hailo-8 YOLOv4 ให้เป็น bounding boxes"""
+    boxes = []
+    confidences = []
+    
+    for scale in ['conv19', 'conv21']:  # ใช้ทั้ง 13x13 และ 26x26
+        centers = outputs[f'{scale}_centers']
+        scales = outputs[f'{scale}_scales']
+        obj_probs = outputs[f'{scale}_obj']
+        class_probs = outputs[f'{scale}_probs']
+        
+        for i in range(centers.shape[0]):  # ไล่ตาม grid cell
+            for j in range(centers.shape[1]):
+                for anchor in range(centers.shape[2] // 2):  # ใช้ anchor boxes
+                    conf = obj_probs[i, j, anchor]
+                    if conf > 0.5:  # ตั้ง threshold
+                        center_x, center_y = centers[i, j, anchor].astype(float)
+                        width, height = scales[i, j, anchor]
+                        x1 = int((center_x - width / 2) * image_shape[1])
+                        y1 = int((center_y - height / 2) * image_shape[0])
+                        x2 = int((center_x + width / 2) * image_shape[1])
+                        y2 = int((center_y + height / 2) * image_shape[0])
+                        
+                        boxes.append([x1, y1, x2, y2])
+                        confidences.append(conf)
+    
+                        print(f"Centers shape: {centers.shape}")  # ตรวจสอบว่ามีค่าถูกต้องหรือไม่
+                        print(f"Sample value: {centers[i, j, anchor]}")  # ตรวจสอบค่าที่กำลังดึงมาใช้งาน
+    return boxes, confidences
+
+def draw_boxes(image, boxes):
+    """วาด bounding box ลงบนภาพ"""
+    for box in boxes:
+        x1, y1, x2, y2 = box
+        cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+    
+    return image
+
+def save_image(image, filename="lpr_images/output.jpg"):
+    """บันทึกภาพที่มี bounding box"""
+    cv2.imwrite(filename, image)
+
+
+# Process the inference results
+def process_inference_results(inference_result, input_shape, num_classes, label_dictionary, confidence_threshold=0.5):
+    # unpack the input shape (batch is unused but include for flexibility)
+    batch_size, input_height, input_width, channels = input_shape
+
+    # Initialize an empty list to store detection results
+    new_inference_results = []
+    # Reshape and flatten the raw output tensor for parsing
+    output_array = inference_result.reshape(-1)
+
+    # Initialize and index pointer to traverse the output array
+    index = 0
+
+    # Loop through each class ID to process its detections
+    for class_id in range(num_classes):
+        # Read the number of detections for this class from the output array
+        num_detections = int(output_array[index])
+        index += 1 # Move to the next entry in the array
+        # Skip processing if there are no detections for this class
+        if num_detections == 0:
+            continue
+        # Iterate through each detection for this class
+        for _ in range(num_detections):
+            # Ensure there is enough data to process the next detection
+            '''ใน YOLO output ที่คุณกำลังใช้บน Hailo-8 โมเดลจะส่งออกค่าที่เกี่ยวข้องกับ bounding box detection 
+            ในแต่ละ anchor ตามโครงสร้างที่คล้ายกับนี้:
+            center_x (ตำแหน่งศูนย์กลางแกน X)
+            center_y (ตำแหน่งศูนย์กลางแกน Y)
+            width (ความกว้างของ bounding box)
+            height (ความสูงของ bounding box)
+            confidence score (ค่าความน่าจะเป็นว่าวัตถุถูกตรวจจับ)
+            เนื่องจาก bounding box หนึ่งต้องใช้ 5 ค่า ในการประมวลผล การใช้เงื่อนไข index + 5 > len(output_array) 
+            จึงเป็นการ ตรวจสอบให้แน่ใจว่ามีข้อมูลเพียงพอ ก่อนที่จะดึงค่าออกมาเพื่อป้องกัน IndexError
+            '''
+            if index + 5 > len(output_array) :
+                # Break to prevent accessing out-of-bound indices
+                break
+            # Extract confidence score and bounding box values
+            score = float(output_array[index + 4])
+            y_min, x_min, y_max, x_max = map(float, output_array[index: index + 4])
+            index += 5 # Move index to the next detection entry
+
+            # Skip detection if the confidence score is below the threshold
+            if score < confidence_threshold:
+                continue
+
+            # Convert bounding box coordinates to absulute pixel values
+            x_min = x_min * input_width
+            y_min = y_min * input_height
+            x_max = x_max * input_width
+            y_max = y_max * input_height
+
+            # Create a detection result with bbox, score, and class label
+            result = {
+                "bbox": [x_min, y_min, x_max, y_max], # Bounding box in pixel coordinates
+                "score": score, # Confidence score of the detection
+                "category_id": class_id, # Class ID of the detected object
+                "label": label_dictionary.get(str(class_id), f"class_{class_id}"), # Class label or fallback
+            }
+            new_inference_results.append(result) # Store the formatted detection
+        # Stop parsing if remaining output is padded with zeros (no more detections)
+        if index >= len(output_array) or all(v ==0 for v in output_array[index:]):
+            break
+    # Return the final list of detection results
+    return new_inference_results
+
 # prepare the input image
-image_path = 'assets/Car.jpg'
+image_path = 'assets/Cat.jpg'
 print_image_size(image_path)
 original_image_array = read_image_as_rgb(image_path)
 
@@ -117,7 +226,8 @@ resized_image_array, scale_factor, offset_y, offset_x = resize_with_letterbox(im
 #display_images([resized_image_array[0]], title="Resized Image with Letterboxing and Original Image")
 
 model = dg.load_model(
-    model_name = 'tiny_yolov4_license_plates--416x416_quant_hailort_hailo8_2',
+    #model_name = 'tiny_yolov4_license_plates--416x416_quant_hailort_hailo8_2',
+    model_name = 'yolov8n_relu6_coco--640x640_quant_hailort_hailo8_1',
     inference_host_address='@local',
     zoo_url ='resources'
 )
@@ -131,26 +241,10 @@ print(f"Resized image shape: {resized_image_array.shape}")
 inference_result = model(resized_image_array)
 
 # Print the inference result
-pprint(inference_result.results)
-
-## ต่อไปการประมวลผลผลลัพธ์จากโมเดล
-# Process the inference results
-def process_inference_results(inference_result, input_shape, num_classes, label_dictionary, confidence_threshold=0.5):
-    # unpack the input shape
-    batch_size, input_height, input_width, channels = input_shape
-    new_inference_results = []
-    output_array = inference_result.reshape(-1)
-    index = 0
-    for class_id in range(num_classes):
-        num_detections = int(output_array[index])
-        index += 1
-
-        if num_detections == 0:
-            continue
-
-        for _ in range(num_detections):
-
-            if index + 5 > len(output_array) :
-                break
-
-            
+print(f"Inference Results Structure: {inference_result.results}")
+print(f"Keys Available in First Result: {inference_result.results[0].keys()}")
+print(json.dumps(inference_result.results, indent=2))
+with open('output.json',"r") as json_file:
+    label_dictionary = json.load(json_file)
+detection_results = process_inference_results(inference_result.results, model.input_shape[0], 80, label_dictionary)
+pprint(detection_results)
