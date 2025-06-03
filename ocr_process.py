@@ -3,7 +3,7 @@ import easyocr
 import cv2
 
 class OCRProcessor:
-    def __init__(self, lang_list=['en']):
+    def __init__(self, lang_list=['en','th']):
         self.reader = easyocr.Reader(lang_list, gpu=False)
         self.last_text = None
 

@@ -29,7 +29,7 @@ def print_image_size(image_path):
         # Get the image size (height, width, channels)
         height, width, channels = image.shape
         print(f"Image size: {height}x{width} (Height x Width)")
-
+ 
 def display_images(images, title="Images", figsize=(15, 5)):
     num_images = len(images)
     fig, axes = plt.subplots(1, num_images, figsize=figsize)

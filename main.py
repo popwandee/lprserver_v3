@@ -5,20 +5,32 @@ from ocr_process import OCRProcessor
 from send_socket import send_data
 from edge_status import check_and_send_status
 import degirum as dg
-# Set your inference host address, model zoo, and token in these variables.
-your_host_address = dg.CLOUD # Can be dg.CLOUD, host:port, or dg.LOCAL
-your_model_zoo = "resources"
-your_token = ""
+# Set inference host address, model zoo, and token in these variables.
+ hw_location = "@local"
+lp_det_model_zoo_url = "resources"
+lp_det_model_name = "yolov8n_relu6_lp--640x640_quant_hailort_hailo8_1"
+lp_ocr_model_zoo_url = "resources"
+lp_ocr_model_name = "yolov8n_relu6_lp_ocr--256x128_quant_hailort_hailo8_1"
 
-# Connect to DeGirum Application Server and an AI Hub model zoo
-inference_manager = dg.connect(
-    inference_host_address = your_host_address, 
-    zoo_url = your_model_zoo, 
-    token = your_token
+# Load license plate detection and license plate OCR models
+lp_det_model=dg.load_model(
+    model_name=lp_det_model_name,
+    inference_host_address=hw_location,
+    zoo_url=lp_det_model_zoo_url,
+    token='',
+    overlay_color=[(255,255,0),(0,255,0)]
 )
-supported_types = inference_manager.supported_device_types()
-print(supported_types)
-exit(0)
+lp_ocr_model=dg.load_model(
+    model_name=lp_ocr_model_name,
+    inference_host_address=hw_location,
+    zoo_url=lp_ocr_model_zoo_url,
+    token='',
+    output_use_regular_nms=False,
+    output_confidence_threshold=0.1
+)
+#supported_types = inference_manager.supported_device_types()
+#print(supported_types)
+
 def main():
     cam = CameraStream()
     ocr = OCRProcessor(lang_list=['en', 'th'])  # ถ้าอยากรองรับภาษาไทยด้วย
@@ -26,6 +38,7 @@ def main():
     while True:
         frame = cam.get_frame()
         if frame is not None:
+            
             print(f"frame: {len(frame)} {type(frame)}")
             result_frame, text = ocr.process_frame(frame)
             print(f"result: {result_frame} and text: {text}")
