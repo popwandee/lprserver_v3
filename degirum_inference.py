@@ -16,7 +16,6 @@ class VehicleLicensePlateDetector:
         self.hw_location = hw_location
         self.model_zoo_url = model_zoo_url
         
-        # Load models
         self.vehicle_model = dg.load_model(
             model_name="yolov8n_relu6_car--640x640_quant_hailort_hailo8_1",
             inference_host_address=self.hw_location,
@@ -37,10 +36,9 @@ class VehicleLicensePlateDetector:
             output_use_regular_nms=False,
             output_confidence_threshold=0.1
         )
-        # Initialize SQLite database
+
         self.init_database()
 
-        # SocketIO Setup
         self.socketio = SocketIO(cors_allowed_origins="*")
         self.should_run = True  # Control flag for loop
 
@@ -64,80 +62,48 @@ class VehicleLicensePlateDetector:
         """)
         conn.commit()
         conn.close()
+
+    @staticmethod
     def print_image_size(image_path):
-        # Load the image
+
         image = cv2.imread(image_path)
 
-        # Check if the image was loaded successfully
         if image is None:
             print(f"Error: Unable to load image from path: {image_path}")
         else:
-            # Get the image size (height, width, channels)
             height, width, channels = image.shape
             print(f"Image size: {height}x{width} (Height x Width)")
 
-    def resize_with_letterbox(image, target_shape, padding_value=(0,0,0)):
-        """
-        Resize an image to a target shape while maintaining the aspect ratio.
-        The image is resized with letterboxing, meaning it will be padded with a specified color if necessary.
-        
-        :param image_path (str): Path to the input image.
-        :param target_shape (tuple): Tuple (batch_size, target_height, target_width, channels) for the target size.
-        :param padding_value (tuple): RGB Color values for padding in RGB format (default is black padding).
+    def resize_with_letterbox(self, image, target_size=(640, 640), padding_value=(0, 0, 0)):
 
-        :return: Resized image with letterboxing applied.
-        letterboxed_image (numpy.ndarray): The resized image with letterboxing applied.
-        scale (float): The scale factor ratio used for resizing the origial image.
-        pad_top (int): The top padding applied to the image.
-        pad_left (int): The left padding applied to the image.
-        """
-        # Load the image from the given path
-        #image = cv2.imread(image_path)
-        
-        # Check if the image was loaded successfully
-        if image is None:
-            raise ValueError(f"Error: Unable to load image from path: {image}")
-        else:
-            print(f"Type of image is:{type(image)}")
-        # Convert the image from BGR to RGB
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        if image is None or not isinstance(image, np.ndarray):
+            print("Captured image is invalid!")
+            return None, None, None, None
+        # Convert BGR to RGB (if needed)
+        if len(image.shape) == 3 and image.shape[-1] == 3:
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        # Get the original image dimensions (height, width, channels)
         original_height, original_width, channels = image.shape
         
-        # Extract target shape dimensions (height, width) from target_shape
-        target_height, target_width = target_shape[1], target_shape[2]
+        target_height, target_width = target_size
         
-        # Calculate the aspect ratios (Scale factors for width and height)
         original_aspect_ratio = original_width / original_height
         target_aspect_ratio = target_width / target_height
 
-        # Choose the smaller scale factor to fit the image within the target dimensions
-        # This ensures that the image fits within the target dimensions without distortion
-        # and maintains the aspect ratio
         scale_factor = min(target_width / original_width, target_height / original_height)
-        
-        # Calculate the new dimensions of the image after scaling
+
         new_width = int(original_width * scale_factor)
         new_height = int(original_height * scale_factor)
-        
-        # Resize the image to the new dimensions
+
         resized_image = cv2.resize(image, (new_width, new_height), interpolation=cv2.INTER_LINEAR)
-        
-        # Create a new image with the target shape and fill it with the padding value
+
         letterboxed_image = np.full((target_height, target_width, channels), padding_value, dtype=np.uint8)
-        
-        # Calculate padding offsets
+
         offset_y = (target_height - new_height) // 2 # Padding on the top 
         offset_x = (target_width - new_width) // 2 # Padding on the left 
-        
-        # Place the resized image in the letterbox background
+
         letterboxed_image[offset_y:offset_y + new_height, offset_x:offset_x + new_width] = resized_image
-        
-        # pencv backend (default), ใช้ input (H, W, C) เท่านั้น don't add batch dimension
-        #final_image = np.expand_dims(letterboxed_image, axis=0)  # Add batch dimension
-        
-        # return the letterboxed image with batch dimension; scaling ratio, and padding (top, left)
+
         return letterboxed_image, scale_factor, offset_y, offset_x
 
     def capture_image(self):
@@ -208,16 +174,18 @@ class VehicleLicensePlateDetector:
     def process_image(self):
         """Runs vehicle detection, license plate detection, and OCR on an image"""
         image = self.capture_image()
+        if image is None or not isinstance(image, np.ndarray):
+            print("Image capture failed or invalid image type!")
+            return
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-        resized_image_array, scale_factor, offset_y, offset_x = self.resize_with_letterbox(image, self.vehicle_model.input_shape[0])  # image array,
-        pprint(f"scale factor: {scale_factor}")
-        pprint(f"resized image{len(resized_image_array)}")
-    
+        resized_image_array, scale_factor, offset_y, offset_x = self.resize_with_letterbox(
+            image, (self.vehicle_model.input_shape[0][1],self.vehicle_model.input_shape[0][2])
+            )  
+
         detected_vehicles = self.vehicle_model(image)
         detected_license_plates = self.lp_detection_model(image)
 
-        # Save detected images
         vehicle_image_path = self.save_image(detected_vehicles.image_overlay, "vehicle_detected")
         license_plate_image_path = self.save_image(detected_license_plates.image_overlay, "license_plate_detected")
 
@@ -225,13 +193,11 @@ class VehicleLicensePlateDetector:
             cropped_license_plates = self.crop_license_plates(detected_license_plates.image, detected_license_plates.results)
             
             for index, cropped_plate in enumerate(cropped_license_plates):
-                 # Save cropped image
                 cropped_path = self.save_image(cropped_plate, f"cropped_plate_{index}")
 
-                # Perform OCR
                 ocr_results = self.lp_ocr_model.predict(cropped_plate)
                 ocr_label = self.rearrange_detections(ocr_results.results)
-                # Save to database
+
                 self.save_to_database(ocr_label, cropped_path)
 
                 detected_license_plates.results[index]["label"] = ocr_label

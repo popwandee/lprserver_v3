@@ -6,6 +6,7 @@ import sqlite3
 from datetime import datetime
 from picamera2 import Picamera2
 from flask_socketio import SocketIO
+from pprint import pprint
 
 class VehicleLicensePlateDetector:
     """Handles vehicle detection, license plate detection, and OCR processing, and image saving"""
@@ -15,7 +16,6 @@ class VehicleLicensePlateDetector:
         self.hw_location = hw_location
         self.model_zoo_url = model_zoo_url
         
-        # Load models
         self.vehicle_model = dg.load_model(
             model_name="yolov8n_relu6_car--640x640_quant_hailort_hailo8_1",
             inference_host_address=self.hw_location,
@@ -36,10 +36,9 @@ class VehicleLicensePlateDetector:
             output_use_regular_nms=False,
             output_confidence_threshold=0.1
         )
-        # Initialize SQLite database
+
         self.init_database()
 
-        # SocketIO Setup
         self.socketio = SocketIO(cors_allowed_origins="*")
         self.should_run = True  # Control flag for loop
 
@@ -63,6 +62,49 @@ class VehicleLicensePlateDetector:
         """)
         conn.commit()
         conn.close()
+
+    @staticmethod
+    def print_image_size(image_path):
+
+        image = cv2.imread(image_path)
+
+        if image is None:
+            print(f"Error: Unable to load image from path: {image_path}")
+        else:
+            height, width, channels = image.shape
+            print(f"Image size: {height}x{width} (Height x Width)")
+
+    def resize_with_letterbox(self, image, target_size=(640, 640), padding_value=(0, 0, 0)):
+
+        if image is None or not isinstance(image, np.ndarray):
+            print("Captured image is invalid!")
+            return None, None, None, None
+        # Convert BGR to RGB (if needed)
+        if len(image.shape) == 3 and image.shape[-1] == 3:
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+        original_height, original_width, channels = image.shape
+        
+        target_height, target_width = target_size
+        
+        original_aspect_ratio = original_width / original_height
+        target_aspect_ratio = target_width / target_height
+
+        scale_factor = min(target_width / original_width, target_height / original_height)
+
+        new_width = int(original_width * scale_factor)
+        new_height = int(original_height * scale_factor)
+
+        resized_image = cv2.resize(image, (new_width, new_height), interpolation=cv2.INTER_LINEAR)
+
+        letterboxed_image = np.full((target_height, target_width, channels), padding_value, dtype=np.uint8)
+
+        offset_y = (target_height - new_height) // 2 # Padding on the top 
+        offset_x = (target_width - new_width) // 2 # Padding on the left 
+
+        letterboxed_image[offset_y:offset_y + new_height, offset_x:offset_x + new_width] = resized_image
+
+        return letterboxed_image, scale_factor, offset_y, offset_x
 
     def capture_image(self):
         """Capture image using Picamera2"""
@@ -132,12 +174,18 @@ class VehicleLicensePlateDetector:
     def process_image(self):
         """Runs vehicle detection, license plate detection, and OCR on an image"""
         image = self.capture_image()
+        if image is None or not isinstance(image, np.ndarray):
+            print("Image capture failed or invalid image type!")
+            return
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        resized_image_array, scale_factor, offset_y, offset_x = self.resize_with_letterbox(
+            image, (self.vehicle_model.input_shape[0][1],self.vehicle_model.input_shape[0][2])
+            )  
 
         detected_vehicles = self.vehicle_model(image)
         detected_license_plates = self.lp_detection_model(image)
 
-        # Save detected images
         vehicle_image_path = self.save_image(detected_vehicles.image_overlay, "vehicle_detected")
         license_plate_image_path = self.save_image(detected_license_plates.image_overlay, "license_plate_detected")
 
@@ -145,13 +193,11 @@ class VehicleLicensePlateDetector:
             cropped_license_plates = self.crop_license_plates(detected_license_plates.image, detected_license_plates.results)
             
             for index, cropped_plate in enumerate(cropped_license_plates):
-                 # Save cropped image
                 cropped_path = self.save_image(cropped_plate, f"cropped_plate_{index}")
 
-                # Perform OCR
                 ocr_results = self.lp_ocr_model.predict(cropped_plate)
                 ocr_label = self.rearrange_detections(ocr_results.results)
-                # Save to database
+
                 self.save_to_database(ocr_label, cropped_path)
 
                 detected_license_plates.results[index]["label"] = ocr_label
