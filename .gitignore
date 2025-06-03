@@ -170,7 +170,7 @@ hailo_apps_infra/__pycache__/
 
 # Resources
 resources/*.so
-resources/*.hef
+#resources/*.hef
 resources/*.mp4
 
 # Logs and temp files
@@ -192,3 +192,8 @@ community_projects
 doc
 *.docx
 *.jpg
+*.png
+nohup.out
+output.json
+# database
+lpr_data.db
