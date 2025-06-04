@@ -21,7 +21,7 @@ TEST_RUN_TIME = 10
 
 def test_rpi_camera_connection():
     """Test if RPI camera is connected by running rpicam-hello."""
-    log_dir = "logs"
+    log_dir = "log"
     os.makedirs(log_dir, exist_ok=True)
     log_file_path = os.path.join(log_dir, "rpi_camera_test.log")
 

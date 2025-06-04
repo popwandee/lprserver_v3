@@ -6,11 +6,10 @@ import sqlite3
 from datetime import datetime
 from picamera2 import Picamera2
 from libcamera import controls
-from flask_socketio import SocketIO
-import socket
-from pprint import pprint
+from src.ocr_process import OCRProcessor
 from difflib import SequenceMatcher
 import requests
+import socket
 
 # ตรวจสอบตำแหน่งที่ตั้ง
 # ใช้ API ip-api.com เพื่อดึงข้อมูลตำแหน่งที่ตั้ง เป็นตำแหน่งคร่าวๆ ไม่แม่นยำ
@@ -50,7 +49,7 @@ def preprocess_for_ocr(image):
 class VehicleLicensePlateDetector:
     """Handles vehicle detection, license plate detection, and OCR processing, and image saving"""
 
-    def __init__(self, db_path="lpr_data.db", hw_location="@local", model_zoo_url="resources",ocr_similarity_threshold=0.85, image_similarity_threshold=0.90):
+    def __init__(self, db_path="db/lpr_data.db", hw_location="@local", model_zoo_url="resources",ocr_similarity_threshold=0.85, image_similarity_threshold=0.90, ocr_processor=None):
         self.db_path = db_path 
         self.hw_location = hw_location
         self.model_zoo_url = model_zoo_url
@@ -60,6 +59,8 @@ class VehicleLicensePlateDetector:
         self.prev_plate_image = None
         self.hostname = socket.gethostname() # ใช้สำหรับการระบุว่ามาจากกล้องตัวไหน
         self.location = location = get_location()
+        # Initialize OCR Processor
+        self.ocr = ocr_processor if ocr_processor else OCRProcessor(lang_list=['en', 'th'])
 
         self.vehicle_model = dg.load_model(
             model_name="yolov8n_relu6_car--640x640_quant_hailort_hailo8_1",
@@ -84,10 +85,9 @@ class VehicleLicensePlateDetector:
 
         self.init_database()
 
-        self.socketio = SocketIO(cors_allowed_origins="*")
         self.should_run = True  # Control flag for loop
 
-        @self.socketio.on("stop_detection")
+        #@self.socketio.on("stop_detection")
         def handle_stop_detection():
             """Stop the detection process via SocketIO"""
             self.should_run = False
@@ -255,10 +255,18 @@ class VehicleLicensePlateDetector:
                 # Preprocess for OCR improvement
                 preprocessed_plate = preprocess_for_ocr(cropped_plate)
                 
-                ocr_results = self.lp_ocr_model.predict(cropped_plate)
+                # YOYOv8 LP OCR model read international (must improve for Thai)
+                ocr_results = self.lp_ocr_model.predict(preprocessed_plate)
                 ocr_label = self.rearrange_detections(ocr_results.results)
-
                 print(f"Detected OCR: {ocr_label}")
+
+                # easyOCR Read Thai license plate (temporary)
+                result_easyOCR, text = self.ocr.process_frame(cropped_plate)
+                if result_easyOCR is not None:
+                    print(f"result_easyOCR before preprocessed: {text}")
+                result_easyOCR, text = self.ocr.process_frame(preprocessed_plate)
+                if result_easyOCR is not None:
+                    print(f"result_easyOCR after preprocessed: {text}")
                 # Similarity checks
                 text_similar = similar(ocr_label, self.prev_ocr_label) if self.prev_ocr_label else 0
                 img_similar = self.compare_images(preprocessed_plate, self.prev_plate_image) if self.prev_plate_image is not None else 0
@@ -320,9 +328,9 @@ class VehicleLicensePlateDetector:
             print("Detection system shutting down.")
         
 def main():
-    detector = VehicleLicensePlateDetector()
+    ocr = OCRProcessor(lang_list=['en', 'th'])
+    detector = VehicleLicensePlateDetector(ocr_processor=ocr)
     detector.run()
     
-
 if __name__ == "__main__":
     main()
