@@ -12,6 +12,7 @@ Edge AI LPR เป็นโครงการสำหรับตรวจจ�
 ```bash
 git clone https://github.com/popwandee/aicamera.git
 cd aicamera
+source setup_env.sh
 ```
 ### **2️⃣ Install Dependencies**
 ```bash

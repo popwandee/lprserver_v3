@@ -94,6 +94,13 @@ class VehicleLicensePlateDetector:
             print("Received stop command, shutting down...")
 
     def init_database(self):
+        """สร้างไดเรกทอรี `db/` และไฟล์ฐานข้อมูลหากยังไม่มี"""
+    
+        # ตรวจสอบและสร้างไดเรกทอรี db/ หากยังไม่มี
+        db_dir = os.path.dirname(self.db_path)
+        if not os.path.exists(db_dir):
+            os.makedirs(db_dir)
+
         """ Create the SQLite database if it doesn't exist"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
