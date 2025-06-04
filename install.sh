@@ -7,6 +7,8 @@ source setup_env.sh
 
 # Install additional system dependencies (if needed)
 echo "Installing additional system dependencies..."
+sudo apt update
+sudo apt install libcap-dev
 sudo apt install -y rapidjson-dev
 
 # Initialize variables
