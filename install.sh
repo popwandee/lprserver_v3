@@ -54,8 +54,4 @@ if [[ "$INSTALL_TEST_REQUIREMENTS" == true ]]; then
     pip install -r tests/test_resources/requirements.txt
 fi
 
-# Download resources needed for the pipelines
-echo "Downloading resources needed for the pipelines..."
-./download_resources.sh $DOWNLOAD_RESOURCES_FLAG
-
 echo "Installation completed successfully."
