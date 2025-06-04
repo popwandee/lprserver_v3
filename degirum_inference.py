@@ -5,9 +5,27 @@ import cv2
 import sqlite3
 from datetime import datetime
 from picamera2 import Picamera2
+from libcamera import controls
 from flask_socketio import SocketIO
+import socket
 from pprint import pprint
 from difflib import SequenceMatcher
+import requests
+
+# ตรวจสอบตำแหน่งที่ตั้ง
+# ใช้ API ip-api.com เพื่อดึงข้อมูลตำแหน่งที่ตั้ง เป็นตำแหน่งคร่าวๆ ไม่แม่นยำ
+def get_location():
+    try:
+        response = requests.get("http://ip-api.com/json/")
+        location = response.json()
+        print(f"🌍 ตำแหน่งที่ตั้ง: {location['lat']}, {location['lon']}"
+            f" ({location['city']}, {location['regionName']}, {location['country']})")
+        
+        location = f"{location['lat']}, {location['lon']}"
+    except requests.RequestException as e:
+        print(f"❌ ไม่สามารถดึงข้อมูลตำแหน่งที่ตั้ง: {e}")
+        location = f"0,0"
+    return location
 
 def similar(a, b):
     """Return a similarity ratio between two strings."""
@@ -40,6 +58,8 @@ class VehicleLicensePlateDetector:
         self.image_similarity_threshold = image_similarity_threshold
         self.prev_ocr_label = None
         self.prev_plate_image = None
+        self.hostname = socket.gethostname() # ใช้สำหรับการระบุว่ามาจากกล้องตัวไหน
+        self.location = location = get_location()
 
         self.vehicle_model = dg.load_model(
             model_name="yolov8n_relu6_car--640x640_quant_hailort_hailo8_1",
@@ -84,7 +104,10 @@ class VehicleLicensePlateDetector:
                 vehicle_image_path TEXT NOT NULL,
                 license_plate_image_path TEXT NOT NULL,
                 cropped_image_path TEXT NOT NULL,
-                timestamp TEXT NOT NULL
+                timestamp TEXT NOT NULL,
+                location TEXT NOT NULL,
+                hostname TEXT NOT NULL,
+                sent_to_server INTEGER DEFAULT 0
             )
         """)
         conn.commit()
@@ -140,8 +163,16 @@ class VehicleLicensePlateDetector:
         try:
             picam2.start()
             frame = picam2.capture_array()
-            # If Picamera2 supports, try adjusting focus here:
-            # picam2.set_controls({"AfMode": 1, "LensPosition": 10})  # Example; check your camera's capabilities!
+            # Picamera2 try adjusting focus here:
+            # Set the AfMode (Autofocus Mode) to be continuous 
+            # the nearest focus point is 10 centimeters.
+            picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous}) 
+            #picam2.start_and_capture_files("aurofocus.jpg", num_files=1, delay=0.5) # test to take  picture
+            # Fixing the focus ,set the value to 0.0 for an infinite focus.
+            # LensPosition value to 0.5 give approximately a 50 cm focal distance.
+            #picam2.set_controls({"AfMode": controls.AfModeEnum.Manual, "LensPosition": 0.0})
+            # to get a series of sharp images. set the autofocus to high speed
+           # picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous, "AfSpeed": controls.AfSpeedEnum.Fast})
             frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         except Exception as e:
             print(f"Error capturing video frame: {e}")
@@ -242,7 +273,8 @@ class VehicleLicensePlateDetector:
                 license_plate_image_path = self.save_image(detected_license_plates.image_overlay,timestamp, "license_plate_detected")
 
                 cropped_path = self.save_image(cropped_plate,timestamp, f"cropped_plate_{index}")
-                self.save_to_database(ocr_label, detected_vehicles, detected_license_plates, cropped_path,timestamp)
+
+                self.save_to_database(ocr_label, vehicle_image_path, license_plate_image_path, cropped_path,timestamp, self.location, self.hostname)
                 print(f"Saved unique plate: {ocr_label} at {cropped_path}")
                 self.save_image(preprocessed_plate,timestamp, f"preprocessed_plate{index}")
                 self.prev_ocr_label = ocr_label
@@ -265,16 +297,16 @@ class VehicleLicensePlateDetector:
 
         return "".join(extracted_text)
     
-    def save_to_database(self, license_plate, detected_vehicles, detected_license_plates, cropped_path,timestamp):
+    def save_to_database(self, license_plate, detected_vehicles, detected_license_plates, cropped_path,timestamp,location,hostname):
         """Stores license plate and image path in SQLite"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO lpr_data (license_plate, vehicle_image_path,license_plate_image_path,cropped_image_path, timestamp) VALUES (?, ?, ?,?,?)", 
-                       (license_plate, detected_vehicles, detected_license_plates, cropped_path, timestamp))
+        cursor.execute("INSERT INTO lpr_data (license_plate, vehicle_image_path,license_plate_image_path,cropped_image_path, timestamp,location,hostname,sent_to_server) VALUES (?, ?, ?,?,?,?,?,?)", 
+                       (license_plate, detected_vehicles, detected_license_plates, cropped_path, timestamp, location, hostname, 0))
 
         conn.commit()
         conn.close()
-        print(f"✅ Saved to database: Plate {license_plate}, Image {image_path}")
+        print(f"✅ Saved to database: Plate {license_plate}, Image {detected_vehicles}")
     
     def run(self):
         """Continuous execution until user cancels"""
