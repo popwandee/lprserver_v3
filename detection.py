@@ -1,4 +1,5 @@
 import os
+from dotenv import load_dotenv
 import degirum as dg
 import numpy as np
 import cv2
@@ -10,7 +11,24 @@ from src.ocr_process import OCRProcessor
 from difflib import SequenceMatcher
 import requests
 import socket
+import logging
 
+env_path = os.path.join(os.path.dirname(__file__), 'src', '.env.production')
+load_dotenv(env_path)
+
+# Configure logging
+LOG_FILE = os.getenv("DETECTION_LOG_FILE")
+if not os.path.exists(LOG_FILE):
+    logging.critical(f"Log file '{LOG_FILE}' does not exist or cannot be created.")
+
+logging.basicConfig(filename=LOG_FILE,
+                    format='%(asctime)s - %(levelname)s - %(message)s',
+                    level=logging.DEBUG)
+
+logger = logging.getLogger()
+
+# ใช้ตัวแปรจาก .env.production
+SERVER_URL = os.getenv("SERVER_URL")
 # ตรวจสอบตำแหน่งที่ตั้ง
 # ใช้ API ip-api.com เพื่อดึงข้อมูลตำแหน่งที่ตั้ง เป็นตำแหน่งคร่าวๆ ไม่แม่นยำ
 def get_location():
@@ -49,10 +67,10 @@ def preprocess_for_ocr(image):
 class VehicleLicensePlateDetector:
     """Handles vehicle detection, license plate detection, and OCR processing, and image saving"""
 
-    def __init__(self, db_path="db/lpr_data.db", hw_location="@local", model_zoo_url="resources",ocr_similarity_threshold=0.85, image_similarity_threshold=0.90, ocr_processor=None):
-        self.db_path = db_path 
-        self.hw_location = hw_location
-        self.model_zoo_url = model_zoo_url
+    def __init__(self, db_path="db/lpr_data.db",ocr_similarity_threshold=0.85, image_similarity_threshold=0.90, ocr_processor=None):
+        self.db_path = os.getenv("DB_PATH")
+        self.hw_location = os.getenv("HEF_MODEL_PATH")
+        self.model_zoo_url = os.getenv("MODEL_ZOO_URL")
         self.ocr_similarity_threshold = ocr_similarity_threshold
         self.image_similarity_threshold = image_similarity_threshold
         self.prev_ocr_label = None

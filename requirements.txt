@@ -12,3 +12,4 @@ pillow<11
 matplotlib
 Flask-SocketIO
 websockets
+python-dotenv
