@@ -23,13 +23,25 @@ load_dotenv(env_path)
 LOG_FILE = os.getenv("WEBSOCKET_LOG_FILE")
 if not os.path.exists(LOG_FILE):
     logging.critical(f"Log file '{LOG_FILE}' does not exist or cannot be created.")
-    os.makedirs(LOG_FILE, exist_ok=True)
-
-logging.basicConfig(filename=LOG_FILE,
-                    format='%(asctime)s - %(levelname)s - %(message)s',
-                    level=logging.DEBUG)
-
+    # Define log directory and log file , create log file
+    LOG_DIR = "log"
+    LOG_FILE = os.path.join(LOG_DIR, "send_socket.log")
+    os.makedirs(LOG_DIR, exist_ok=True)
+# Create a logger 
 logger = logging.getLogger()
+logger.setLevel(logging.INFO)  # Capture DEBUG for Detailed debugging information, INFO for General event, WARNING for possible issues, ERROR for serious issue, CRITICAL for severe problem
+# File handler (logs to a file)
+file_handler = logging.FileHandler(LOG_FILE)
+file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+file_handler.setLevel(logging.DEBUG)  # Ensure all levels are logged
+# Console handler (logs to the terminal)
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(logging.Formatter('%(levelname)s - %(message)s'))  # Simpler format
+console_handler.setLevel(logging.INFO)  # Show INFO and above in terminal
+
+# Add both handlers to the logger
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
 
 # ใช้ตัวแปรจาก .env.production
 SERVER_URL = os.getenv("SERVER_URL")
