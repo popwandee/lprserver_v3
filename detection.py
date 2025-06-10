@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+import logging
 import degirum as dg
 import numpy as np
 import cv2
@@ -11,7 +12,7 @@ from src.ocr_process import OCRProcessor
 from difflib import SequenceMatcher
 import requests
 import socket
-import logging
+
 
 env_path = os.path.join(os.path.dirname(__file__), 'src', '.env.production')
 load_dotenv(env_path)
@@ -20,12 +21,30 @@ load_dotenv(env_path)
 LOG_FILE = os.getenv("DETECTION_LOG_FILE")
 if not os.path.exists(LOG_FILE):
     logging.critical(f"Log file '{LOG_FILE}' does not exist or cannot be created.")
-
-logging.basicConfig(filename=LOG_FILE,
-                    format='%(asctime)s - %(levelname)s - %(message)s',
-                    level=logging.DEBUG)
-
+    # Define log directory and log file , create log file
+    LOG_DIR = "log"
+    LOG_FILE = os.path.join(LOG_DIR, "detection.log")
+    os.makedirs(LOG_DIR, exist_ok=True)
+# Create a logger 
 logger = logging.getLogger()
+logger.setLevel(logging.INFO)  # Capture DEBUG for Detailed debugging information, INFO for General event, WARNING for possible issues, ERROR for serious issue, CRITICAL for severe problem
+# File handler (logs to a file)
+file_handler = logging.FileHandler(LOG_FILE)
+file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+file_handler.setLevel(logging.DEBUG)  # Ensure all levels are logged
+# Console handler (logs to the terminal)
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(logging.Formatter('%(levelname)s - %(message)s'))  # Simpler format
+console_handler.setLevel(logging.INFO)  # Show INFO and above in terminal
+
+# Add both handlers to the logger
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
+
+#logger.debug("🛠 Debugging mode active.")  # Only in file
+#logger.info("🚀 System initialized.")  # In both file & terminal
+#logger.warning("⚠️ Low memory warning!")  # In both file & terminal
+#logger.error("❌ Critical failure detected.")  # In both file & terminal
 
 # ใช้ตัวแปรจาก .env.production
 SERVER_URL = os.getenv("SERVER_URL")
@@ -35,12 +54,12 @@ def get_location():
     try:
         response = requests.get("http://ip-api.com/json/")
         location = response.json()
-        print(f"🌍 ตำแหน่งที่ตั้ง: {location['lat']}, {location['lon']}"
+        logging.debug(f"🌍 ตำแหน่งที่ตั้งจาก ip-api.com: {location['lat']}, {location['lon']}"
             f" ({location['city']}, {location['regionName']}, {location['country']})")
         
         location = f"{location['lat']}, {location['lon']}"
     except requests.RequestException as e:
-        print(f"❌ ไม่สามารถดึงข้อมูลตำแหน่งที่ตั้ง: {e}")
+        logging.debug(f"❌ ไม่สามารถดึงข้อมูลตำแหน่งที่ตั้ง: {e} ใช้พิกัด 0 , 0 แทน")
         location = f"0,0"
     return location
 
@@ -81,20 +100,20 @@ class VehicleLicensePlateDetector:
         self.ocr = ocr_processor if ocr_processor else OCRProcessor(lang_list=['en', 'th'])
 
         self.vehicle_model = dg.load_model(
-            model_name="yolov8n_relu6_car--640x640_quant_hailort_hailo8_1",
+            model_name=os.getenv("VEHICLE_DETECTION_MODEL"),
             inference_host_address=self.hw_location,
             zoo_url=self.model_zoo_url
         )
 
         self.lp_detection_model = dg.load_model(
-            model_name="yolov8n_relu6_lp--640x640_quant_hailort_hailo8_1",
+            model_name=os.getenv("LICENSE_PLACE_DETECTION_MODEL"),
             inference_host_address=self.hw_location,
             zoo_url=self.model_zoo_url,
             overlay_color=[(255, 255, 0), (0, 255, 0)]
         )
 
         self.lp_ocr_model = dg.load_model(
-            model_name="yolov8n_relu6_lp_ocr--256x128_quant_hailort_hailo8_1",
+            model_name=os.getenv("LICENSE_PLACE_OCR_MODEL"),
             inference_host_address=self.hw_location,
             zoo_url=self.model_zoo_url,
             output_use_regular_nms=False,
@@ -109,7 +128,7 @@ class VehicleLicensePlateDetector:
         def handle_stop_detection():
             """Stop the detection process via SocketIO"""
             self.should_run = False
-            print("Received stop command, shutting down...")
+            logging.info("Received stop command, shutting down...")
 
     def init_database(self):
         """สร้างไดเรกทอรี `db/` และไฟล์ฐานข้อมูลหากยังไม่มี"""
@@ -144,15 +163,15 @@ class VehicleLicensePlateDetector:
         image = cv2.imread(image_path)
 
         if image is None:
-            print(f"Error: Unable to load image from path: {image_path}")
+            logging.info(f"Error: Unable to load image from path: {image_path}")
         else:
             height, width, channels = image.shape
-            print(f"Image size: {height}x{width} (Height x Width)")
+            logging.info(f"Image size: {height}x{width} (Height x Width)")
 
     def resize_with_letterbox(self, image, target_size=(640, 640), padding_value=(0, 0, 0)):
 
         if image is None or not isinstance(image, np.ndarray):
-            print("Captured image is invalid!")
+            logging.warning("Captured image is invalid!")
             return None, None, None, None
         # Convert BGR to RGB (if needed)
         if len(image.shape) == 3 and image.shape[-1] == 3:
@@ -200,7 +219,7 @@ class VehicleLicensePlateDetector:
            # picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous, "AfSpeed": controls.AfSpeedEnum.Fast})
             frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         except Exception as e:
-            print(f"Error capturing video frame: {e}")
+            logging.warning(f"Error capturing video frame: {e}")
             frame_bgr = None
         finally:
             picam2.close()
@@ -260,10 +279,10 @@ class VehicleLicensePlateDetector:
         """Runs vehicle detection, license plate detection, and OCR on an image, with similarity check."""
         image = self.capture_video_frame()
         if image is None or not isinstance(image, np.ndarray):
-            print("Image capture failed or invalid image type!")
+            logging.info("Image capture failed or invalid image type!")
             return
         else:
-            print("Capture image :OK\n")
+            logging.info("Capture image before process image :OK\n")
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
         resized_image_array = self.resize_with_letterbox(
@@ -277,29 +296,44 @@ class VehicleLicensePlateDetector:
             cropped_license_plates = self.crop_license_plates(detected_license_plates.image, detected_license_plates.results)
             
             for index, cropped_plate in enumerate(cropped_license_plates):
+                # ประมวลผลด้วย OCR Model และ easyOCR ทั้งแบบภาพต้นฉบับและภาพหลังปรับปรุง เพื่อเปรียบเทียบผลข้อความที่อ่านได้
+                # RAW Cropped license plate 
+                ocr_results = self.lp_ocr_model.predict(cropped_plate)
+                ocr_label = self.rearrange_detections(ocr_results.results)
+                logging.info(f"From RAW image frame, Detected OCR : {ocr_label}  by {os.getenv('LICENSE_PLACE_OCR_MODEL')}")
+
                 # Preprocess for OCR improvement
-                preprocessed_plate = preprocess_for_ocr(cropped_plate)
+                processed_plate = preprocess_for_ocr(cropped_plate)
                 
                 # YOYOv8 LP OCR model read international (must improve for Thai)
-                ocr_results = self.lp_ocr_model.predict(preprocessed_plate)
+                ocr_results = self.lp_ocr_model.predict(processed_plate)
                 ocr_label = self.rearrange_detections(ocr_results.results)
-                print(f"Detected OCR: {ocr_label}")
+                logging.info(f"From processed image frame, Detected OCR : {ocr_label} by {os.getenv('LICENSE_PLACE_OCR_MODEL')}")
 
                 # easyOCR Read Thai license plate (temporary)
-                result_easyOCR, text = self.ocr.process_frame(cropped_plate)
+                result_easyOCR, easyOCR_text_raw_frame = self.ocr.process_frame(cropped_plate)
                 if result_easyOCR is not None:
-                    print(f"result_easyOCR before preprocessed: {text}")
-                result_easyOCR, text = self.ocr.process_frame(preprocessed_plate)
+                    logging.info(f"From RAW image frame, Detected OCR : {easyOCR_text_raw_frame} by easyOCR")
+                result_easyOCR, easyOCR_text_processed_frame = self.ocr.process_frame(processed_plate)
                 if result_easyOCR is not None:
-                    print(f"result_easyOCR after preprocessed: {text}")
-                # Similarity checks
-                text_similar = similar(ocr_label, self.prev_ocr_label) if self.prev_ocr_label else 0
-                img_similar = self.compare_images(preprocessed_plate, self.prev_plate_image) if self.prev_plate_image is not None else 0
+                    logging.info(f"From processed image frame, Detected OCR : {easyOCR_text_processed_frame} by easyOCR")
 
-                print(f"OCR similarity: {text_similar:.2f}, Image similarity: {img_similar:.2f}")
+                # Similarity checks
+                if os.getenv("OCR_MODEL") == "LICENSE_PLACE_OCR_MODEL":
+                    text_similar = similar(ocr_label, self.prev_ocr_label) if self.prev_ocr_label else 0
+                    lp_text = ocr_label
+                elif os.getenv("OCR_MODEL") == "easyOCR_processed": #  use easyOCR with processed image frame
+                    text_similar = similar(easyOCR_text_processed_frame, self.prev_ocr_label) if self.prev_ocr_label else 0
+                    lp_text = easyOCR_text_processed_frame
+                else: # if OCR_MODEL is not set, use easyOCR instead
+                    text_similar = similar(easyOCR_text_raw_frame, self.prev_ocr_label) if self.prev_ocr_label else 0
+                    lp_text = easyOCR_text_raw_frame
+
+                img_similar = self.compare_images(cropped_plate, self.prev_plate_image) if self.prev_plate_image is not None else 0
+                logging.info(f"OCR similarity: {text_similar:.2f}, Image similarity: {img_similar:.2f}")
 
                 if text_similar > self.ocr_similarity_threshold or img_similar > self.image_similarity_threshold:
-                    print("Similar plate detected, skipping save and database update.")
+                    logging.info("Similar plate detected, skipping save and database update.")
                     continue  # Skip saving and DB if too similar to previous
 
                 vehicle_image_path = self.save_image(detected_vehicles.image_overlay,timestamp, "vehicle_detected")
@@ -307,14 +341,14 @@ class VehicleLicensePlateDetector:
 
                 cropped_path = self.save_image(cropped_plate,timestamp, f"cropped_plate_{index}")
 
-                self.save_to_database(ocr_label, vehicle_image_path, license_plate_image_path, cropped_path,timestamp, self.location, self.hostname)
-                print(f"Saved unique plate: {ocr_label} at {cropped_path}")
-                self.save_image(preprocessed_plate,timestamp, f"preprocessed_plate{index}")
-                self.prev_ocr_label = ocr_label
-                self.prev_plate_image = preprocessed_plate
+                self.save_to_database(lp_text, vehicle_image_path, license_plate_image_path, cropped_path,timestamp, self.location, self.hostname)
+                logging.info(f"Saved unique plate: {lp_text} at {cropped_path}")
+                self.save_image(processed_plate,timestamp, f"processed_plate{index}")
+                self.prev_ocr_label = lp_text
+                self.prev_plate_image = cropped_plate
 
-                return ocr_label, detected_vehicles, detected_license_plates, cropped_path
-        print("No license plate detected, continue....")
+                return lp_text, detected_vehicles, detected_license_plates, cropped_path
+        logging.info("No license plate detected, continue....")
         return None, None
 
     def rearrange_detections(self, ocr_results):
@@ -326,7 +360,7 @@ class VehicleLicensePlateDetector:
             if isinstance(res, dict) and "label" in res:
                 extracted_text.append(res["label"])  # Extract text from label
             else:
-                print(f"Warning: Unexpected OCR output format: {res}")
+                logging.warning(f"Warning: Unexpected OCR output format: {res}")
 
         return "".join(extracted_text)
     
@@ -339,18 +373,18 @@ class VehicleLicensePlateDetector:
 
         conn.commit()
         conn.close()
-        print(f"✅ Saved to database: Plate {license_plate}, Image {detected_vehicles}")
+        logging.info(f"✅ Saved to database: Plate {license_plate}, Image {detected_vehicles}")
     
     def run(self):
         """Continuous execution until user cancels"""
-        print("Starting detection loop. Press Ctrl+C or send stop event via SocketIO to exit.")
+        logging.info("Starting detection loop. Press Ctrl+C or send stop event via SocketIO to exit.")
         try:
             while self.should_run:
                 self.process_image()
         except KeyboardInterrupt:
-            print("Process manually stopped via keyboard.")
+            logging.info("Process manually stopped via keyboard.")
         finally:
-            print("Detection system shutting down.")
+            logging.info("Detection system shutting down.")
         
 def main():
     ocr = OCRProcessor(lang_list=['en', 'th'])
