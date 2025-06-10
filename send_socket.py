@@ -3,6 +3,7 @@ import socketio
 import requests
 from datetime import datetime
 import socket
+import signal
 import io
 import os
 from dotenv import load_dotenv
@@ -15,6 +16,7 @@ import logging
 from PIL import Image
 import numpy as np
 import base64
+from logging.handlers import TimedRotatingFileHandler
 
 env_path = os.path.join(os.path.dirname(__file__), 'src', '.env.production')
 load_dotenv(env_path)
@@ -31,7 +33,9 @@ if not os.path.exists(LOG_FILE):
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)  # Capture DEBUG for Detailed debugging information, INFO for General event, WARNING for possible issues, ERROR for serious issue, CRITICAL for severe problem
 # File handler (logs to a file)
-file_handler = logging.FileHandler(LOG_FILE)
+# Setup rotating log handler (max 5MB per file, keep last 3 files)
+#file_handler = RotatingFileHandler(LOG_FILE, maxBytes=5*1024*1024, backupCount=3)
+file_handler = TimedRotatingFileHandler(LOG_FILE, when="midnight", backupCount=7) #Keep logs from the last 7 days.
 file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 file_handler.setLevel(logging.DEBUG)  # Ensure all levels are logged
 # Console handler (logs to the terminal)
@@ -87,20 +91,22 @@ def compress_image_bytes(image_array, max_size=(640, 640), quality=50):
 
 async def send_data(payload):
     """Sends data over WebSocket and returns response."""
-    print(f"SERVER_URL is :{SERVER_URL}")
-    logging.debug("Attempting WebSocket connection to SERVER_URL...")
-
+    logging.debug(f"Attempting WebSocket connection to SERVER_URL...{SERVER_URL}")
     try:
         async with websockets.connect(SERVER_URL) as websocket:
             await websocket.send(json.dumps(payload))
             response = await websocket.recv()
-            print(f"Server response: {response}")
-            return response
+            if response:  # Ensure response is not empty
+                logging.debug(f"Server response: {response}")
+                return response
+            else:
+                logging.warning("⚠️ Received an empty response from the server.")
+                return None
     except Exception as e:
         logger.critical(f"WebSocket connection failed: {e}")
         return None
 
-async def check_new_license_plates():
+async def check_new_license_plates(stop_event):
     logging.debug("Starting WebSocket connection...")
     logging.debug("Initializing database connection...")
 
@@ -111,7 +117,7 @@ async def check_new_license_plates():
     with sqlite3.connect(db_path) as conn:
         cursor = conn.cursor()
 
-        while True:
+        while not stop_event.is_set():
             cursor.execute(
                 """SELECT id,license_plate, vehicle_image_path, license_plate_image_path, cropped_image_path, timestamp, location, hostname 
                 FROM lpr_data WHERE sent_to_server = 0 
@@ -156,24 +162,38 @@ async def check_new_license_plates():
                 logging.debug(f"Payload being sent: {json.dumps(payload, indent=2)}")
 
                 sent_result = await send_data(payload)
-                sent_result_dict = json.loads(sent_result)
-                logging.info(f"result of send data to server {sent_result_dict['status']}")
-                if sent_result_dict['status'] == 'success' :
-                    cursor.execute("UPDATE lpr_data SET sent_to_server = 1 WHERE id = ?", (id,))
-                    conn.commit()
-                    logger.info(f"✅ Plate {plate} sent successfully at {timestamp}.")
-                elif sent_result_dict['status'] == 'error':
-                    logging.error(f"Failed to send plate {plate} at {timestamp}\n{sent_result_dict['message']}")
+                # Ensure valid response before parsing JSON
+                if sent_result:
+                    try:
+                        sent_result_dict = json.loads(sent_result)
+                        logging.info(f"result of send data to server {sent_result_dict['status']}")
+                        if sent_result_dict['status'] == 'success' :
+                            cursor.execute("UPDATE lpr_data SET sent_to_server = 1 WHERE id = ?", (id,))
+                            conn.commit()
+                            logger.info(f"✅ Plate {plate} sent successfully at {timestamp}.")
+                        elif sent_result_dict['status'] == 'error':
+                            logging.error(f"Failed to send plate {plate} at {timestamp}\n{sent_result_dict['message']}")
+                        else:
+                            logging.info(f"Failed to send plate {plate} at {timestamp}\n⚠️ Failed to send {plate}, logged for retry.")
+                    except json.JSONDecodeError as e:
+                        logging.error(f"❌ Failed to parse JSON response: {e}")      
                 else:
-                    logging.info(f"Failed to send plate {plate} at {timestamp}\n⚠️ Failed to send {plate}, logged for retry.")
+                    logging.error("❌ WebSocket response was None. Possible connection issue.")
             else:
                 logging.info("No result from the database.")
             await asyncio.sleep(5)
 
 async def main():
-    logging.info("def main() execution starting check new license plate.")
-    await check_new_license_plates()
+    stop_event = asyncio.Event()
+    # Register SIGTERM handler for systemd stop command
+    loop = asyncio.get_event_loop()
+    loop.add_signal_handler(signal.SIGTERM, stop_event.set)
+
+    logging.info("Service started... Running license plate monitoring.")
+    await check_new_license_plates(stop_event)
+
+    logging.info("Service shutting down gracefully...")
+
 if __name__ == "__main__":
     logging.info("Script execution started.")
     asyncio.run(main())
-
