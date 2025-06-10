@@ -317,12 +317,13 @@ class VehicleLicensePlateDetector:
                 result_easyOCR, easyOCR_text_processed_frame = self.ocr.process_frame(processed_plate)
                 if result_easyOCR is not None:
                     logging.info(f"From processed image frame, Detected OCR : {easyOCR_text_processed_frame} by easyOCR")
-
+                ocr_model = os.getenv("OCR_MODEL")
+                logging.info(f"OCR_MEDEL is :{ocr_model}")
                 # Similarity checks
-                if os.getenv("OCR_MODEL") == "LICENSE_PLACE_OCR_MODEL":
+                if ocr_model == "LICENSE_PLACE_OCR_MODEL":
                     text_similar = similar(ocr_label, self.prev_ocr_label) if self.prev_ocr_label else 0
                     lp_text = ocr_label
-                elif os.getenv("OCR_MODEL") == "easyOCR_processed": #  use easyOCR with processed image frame
+                elif ocr_model == "easyOCR_processed": #  use easyOCR with processed image frame
                     text_similar = similar(easyOCR_text_processed_frame, self.prev_ocr_label) if self.prev_ocr_label else 0
                     lp_text = easyOCR_text_processed_frame
                 else: # if OCR_MODEL is not set, use easyOCR instead
@@ -330,7 +331,7 @@ class VehicleLicensePlateDetector:
                     lp_text = easyOCR_text_raw_frame
 
                 img_similar = self.compare_images(cropped_plate, self.prev_plate_image) if self.prev_plate_image is not None else 0
-                logging.info(f"OCR similarity: {text_similar:.2f}, Image similarity: {img_similar:.2f}")
+                logging.info(f"OCR {lp_text} and previous similarity: {text_similar:.2f}, Image similarity: {img_similar:.2f}")
 
                 if text_similar > self.ocr_similarity_threshold or img_similar > self.image_similarity_threshold:
                     logging.info("Similar plate detected, skipping save and database update.")
