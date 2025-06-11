@@ -13,6 +13,7 @@ from difflib import SequenceMatcher
 import requests
 import socket
 
+from logging.handlers import TimedRotatingFileHandler
 
 env_path = os.path.join(os.path.dirname(__file__), 'src', '.env.production')
 load_dotenv(env_path)
@@ -29,7 +30,7 @@ if not os.path.exists(LOG_FILE):
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)  # Capture DEBUG for Detailed debugging information, INFO for General event, WARNING for possible issues, ERROR for serious issue, CRITICAL for severe problem
 # File handler (logs to a file)
-file_handler = logging.FileHandler(LOG_FILE)
+file_handler = TimedRotatingFileHandler(LOG_FILE, when="midnight", backupCount=7) #Keep logs from the last 7 days.
 file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 file_handler.setLevel(logging.DEBUG)  # Ensure all levels are logged
 # Console handler (logs to the terminal)
