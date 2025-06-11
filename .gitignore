@@ -177,6 +177,7 @@ resources/*.mp4
 
 # Logs and temp files
 *.log
+*.log.*
 *.tmp
 
 # Packages and dependencies
