@@ -89,7 +89,7 @@ class VehicleLicensePlateDetector:
     """Handles vehicle detection, license plate detection, and OCR processing, and image saving"""
 
     def __init__(self, db_path="db/lpr_data.db",ocr_similarity_threshold=0.85, image_similarity_threshold=0.90, ocr_processor=None):
-        self.db_path = os.getenv("DB_PATH")
+        self.db_path = os.getenv("DB_PATH", db_path) # ใช้ db_path จาก parameter หากไม่มีใน env
         self.hw_location = os.getenv("HEF_MODEL_PATH")
         self.model_zoo_url = os.getenv("MODEL_ZOO_URL")
         self.ocr_similarity_threshold = ocr_similarity_threshold
@@ -97,97 +97,112 @@ class VehicleLicensePlateDetector:
         self.prev_ocr_label = None
         self.prev_plate_image = None
         self.hostname = socket.gethostname() # ใช้สำหรับการระบุว่ามาจากกล้องตัวไหน
-        self.location = location = get_location()
+        self.location = get_location()
+        self.should_run = True
         # Initialize OCR Processor
         self.ocr = ocr_processor if ocr_processor else OCRProcessor(lang_list=['en', 'th'])
+        # Initialize models
+        try:
+            self.vehicle_model = dg.load_model(
+                model_name=os.getenv("VEHICLE_DETECTION_MODEL"),
+                inference_host_address=self.hw_location,
+                zoo_url=self.model_zoo_url
+            )
 
-        self.vehicle_model = dg.load_model(
-            model_name=os.getenv("VEHICLE_DETECTION_MODEL"),
-            inference_host_address=self.hw_location,
-            zoo_url=self.model_zoo_url
-        )
+            self.lp_detection_model = dg.load_model(
+                model_name=os.getenv("LICENSE_PLACE_DETECTION_MODEL"),
+                inference_host_address=self.hw_location,
+                zoo_url=self.model_zoo_url,
+                overlay_color=[(255, 255, 0), (0, 255, 0)]
+            )
 
-        self.lp_detection_model = dg.load_model(
-            model_name=os.getenv("LICENSE_PLACE_DETECTION_MODEL"),
-            inference_host_address=self.hw_location,
-            zoo_url=self.model_zoo_url,
-            overlay_color=[(255, 255, 0), (0, 255, 0)]
-        )
-
-        self.lp_ocr_model = dg.load_model(
-            model_name=os.getenv("LICENSE_PLACE_OCR_MODEL"),
-            inference_host_address=self.hw_location,
-            zoo_url=self.model_zoo_url,
-            output_use_regular_nms=False,
-            output_confidence_threshold=0.1
-        )
+            self.lp_ocr_model = dg.load_model(
+                model_name=os.getenv("LICENSE_PLACE_OCR_MODEL"),
+                inference_host_address=self.hw_location,
+                zoo_url=self.model_zoo_url,
+                output_use_regular_nms=False,
+                output_confidence_threshold=0.1
+            )
+            logging.info("All models loaded successfully.")
+        except Exception as e:
+            logging.error(f"Failed to load models: {e}")
+            raise
 
         self.init_database()
 
-        self.should_run = True  # Control flag for loop
+        # Initialize Picamera2 here to keep it open
+        self.picam2 = Picamera2()
+        try:
+            # กำหนดค่าการตั้งค่ากล้องที่เหมาะสม (เช่นความละเอียด, FPS)
+            # ควรเลือกความละเอียดที่เหมาะสมกับโมเดล AI เพื่อประสิทธิภาพที่ดี
+            camera_config = self.picam2.create_preview_configuration(main={"size": (640, 480)}, lores={"size": (320, 240)}, display="main")
+            self.picam2.configure(camera_config)
+            self.picam2.start()
+            self.picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous}) # ตั้งค่า Auto Focus
+            logging.info("Picamera2 initialized and started.")
+        except Exception as e:
+            logging.error(f"Failed to initialize Picamera2: {e}")
+            self.picam2 = None # ตั้งค่าเป็น None เพื่อป้องกันการใช้งานที่ไม่ถูกต้อง
+            raise
 
-        #@self.socketio.on("stop_detection")
-        def handle_stop_detection():
-            """Stop the detection process via SocketIO"""
-            self.should_run = False
-            logging.info("Received stop command, shutting down...")
 
     def init_database(self):
         """สร้างไดเรกทอรี `db/` และไฟล์ฐานข้อมูลหากยังไม่มี"""
-    
-        # ตรวจสอบและสร้างไดเรกทอรี db/ หากยังไม่มี
         db_dir = os.path.dirname(self.db_path)
         if not os.path.exists(db_dir):
             os.makedirs(db_dir)
-
-        """ Create the SQLite database if it doesn't exist"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS lpr_data (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                license_plate TEXT NOT NULL,
-                vehicle_image_path TEXT NOT NULL,
-                license_plate_image_path TEXT NOT NULL,
-                cropped_image_path TEXT NOT NULL,
-                timestamp TEXT NOT NULL,
-                location TEXT NOT NULL,
-                hostname TEXT NOT NULL,
-                sent_to_server INTEGER DEFAULT 0
-            )
-        """)
-        conn.commit()
-        conn.close()
+        conn = None
+        try:
+            """ Create the SQLite database if it doesn't exist"""
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS lpr_data (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    license_plate TEXT NOT NULL,
+                    vehicle_image_path TEXT NOT NULL,
+                    license_plate_image_path TEXT NOT NULL,
+                    cropped_image_path TEXT NOT NULL,
+                    timestamp TEXT NOT NULL,
+                    location TEXT NOT NULL,
+                    hostname TEXT NOT NULL,
+                    sent_to_server INTEGER DEFAULT 0
+                )
+            """)
+            conn.commit()
+            logging.info("Database initialized successfully.")
+        except sqlite3.Error as e:
+            logging.error(f"Database initialization error: {e}")
+        finally:
+            if conn:
+                conn.close()
 
     @staticmethod
     def print_image_size(image_path):
-
+        """Prints the size (height, width, channels) of an image."""
         image = cv2.imread(image_path)
-
         if image is None:
             logging.info(f"Error: Unable to load image from path: {image_path}")
         else:
             height, width, channels = image.shape
-            logging.info(f"Image size: {height}x{width} (Height x Width)")
+            logging.info(f"Image size: {height}x{width} (Height x Width) with {channels} channels.")
 
     def resize_with_letterbox(self, image, target_size=(640, 640), padding_value=(0, 0, 0)):
-
+        """Resizes an image while maintaining aspect ratio and padding with letterbox."""
         if image is None or not isinstance(image, np.ndarray):
-            logging.warning("Captured image is invalid!")
+            logging.warning("resize_with_letterbox received Captured image is invalid input!")
             return None, None, None, None
-        # Convert BGR to RGB (if needed)
+        # Convert BGR to RGB (if needed) if it's BGR, as many models expect RGB
         if len(image.shape) == 3 and image.shape[-1] == 3:
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         original_height, original_width, channels = image.shape
-        
         target_height, target_width = target_size
         
-        original_aspect_ratio = original_width / original_height
-        target_aspect_ratio = target_width / target_height
+        #original_aspect_ratio = original_width / original_height
+        #target_aspect_ratio = target_width / target_height
 
         scale_factor = min(target_width / original_width, target_height / original_height)
-
         new_width = int(original_width * scale_factor)
         new_height = int(original_height * scale_factor)
 
@@ -205,34 +220,31 @@ class VehicleLicensePlateDetector:
 
     def capture_video_frame(self):
         """Capture frames continuously and process them in real-time"""
-        picam2 = Picamera2()
+        if self.picam2 is None:
+            logging.error("Picamera2 is not initialized.")
+            return None
         try:
-            picam2.start()
-            frame = picam2.capture_array()
-            # Picamera2 try adjusting focus here:
-            # Set the AfMode (Autofocus Mode) to be continuous 
-            # the nearest focus point is 10 centimeters.
-            picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous}) 
-            #picam2.start_and_capture_files("aurofocus.jpg", num_files=1, delay=0.5) # test to take  picture
-            # Fixing the focus ,set the value to 0.0 for an infinite focus.
-            # LensPosition value to 0.5 give approximately a 50 cm focal distance.
-            #picam2.set_controls({"AfMode": controls.AfModeEnum.Manual, "LensPosition": 0.0})
-            # to get a series of sharp images. set the autofocus to high speed
-           # picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous, "AfSpeed": controls.AfSpeedEnum.Fast})
+            frame = self.picam2.capture_array()
             frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+            return frame_bgr
         except Exception as e:
             logging.warning(f"Error capturing video frame: {e}")
-            frame_bgr = None
-        finally:
-            picam2.close()
-        return frame_bgr
+            return None
 
     def save_image(self, image,timestamp, image_type, output_dir="lpr_images"):
         """Save an image with a timestamp-based filename"""
+        if image is None or not isinstance(image, np.ndarray):
+            logging.warning(f"Cannot save invalid image for type: {image_type}")
+            return None
         os.makedirs(output_dir, exist_ok=True)
         filename = f"{output_dir}/{timestamp}_{image_type}.jpg"
-        cv2.imwrite(filename, image)
-        return filename
+        try:
+            cv2.imwrite(filename, image)
+            logging.info(f"Image saved: {filename}")
+            return filename
+        except Exception as e:
+            logging.error(f"Error saving image {filename}: {e}")
+            return None
 
     def crop_license_plates(self, image, results):
         """Extract license plate regions from detected bounding boxes"""
@@ -246,7 +258,7 @@ class VehicleLicensePlateDetector:
             x_min, y_min, x_max, y_max = map(int, bbox)
 
             if x_min >= x_max or y_min >= y_max:
-                print("Warning: Invalid bounding box, skipping...")
+                logging.warning(f"Warning: Invalid bounding box coordinates: {bbox}")
                 continue
 
             x_min = max(0, x_min)
@@ -267,127 +279,161 @@ class VehicleLicensePlateDetector:
             return 0
         # Resize to the same shape
         h, w = 128, 128
-        img1 = cv2.resize(img1, (w, h))
-        img2 = cv2.resize(img2, (w, h))
-        # Use histogram comparison
-        hist1 = cv2.calcHist([img1], [0], None, [256], [0,256])
-        hist2 = cv2.calcHist([img2], [0], None, [256], [0,256])
-        hist1 = cv2.normalize(hist1, hist1).flatten()
-        hist2 = cv2.normalize(hist2, hist2).flatten()
-        score = cv2.compareHist(hist1, hist2, cv2.HISTCMP_CORREL)
-        return score if 0 <= score <= 1 else max(0, min(1, score))
+        try:
+            img1 = cv2.resize(img1, (w, h))
+            img2 = cv2.resize(img2, (w, h))
+            # Use histogram comparison
+            hist1 = cv2.calcHist([img1], [0], None, [256], [0,256])
+            hist2 = cv2.calcHist([img2], [0], None, [256], [0,256])
+            hist1 = cv2.normalize(hist1, hist1).flatten()
+            hist2 = cv2.normalize(hist2, hist2).flatten()
+            score = cv2.compareHist(hist1, hist2, cv2.HISTCMP_CORREL)
+            return score if 0 <= score <= 1 else max(0, min(1, score))
+        except Exception as e:
+            logging.error(f"Error comparing images: {e}")
+            return 0
 
     def process_image(self):
         """Runs vehicle detection, license plate detection, and OCR on an image, with similarity check."""
         image = self.capture_video_frame()
         if image is None or not isinstance(image, np.ndarray):
             logging.info("Image capture failed or invalid image type!")
-            return
+            return None, None, None, None
         else:
             logging.info("Capture image before process image :OK\n")
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-
+        # Resize image for vehicle detection model
+        # Ensure the target_size matches the expected input shape of your vehicle_model
         resized_image_array = self.resize_with_letterbox(
             image, (self.vehicle_model.input_shape[0][1],self.vehicle_model.input_shape[0][2])
             )  
-      
+        if resized_image_array is None:
+            logging.warning("Resized image is None. Skipping further processing.")
+            return None, None, None, None
+        
         detected_vehicles = self.vehicle_model(resized_image_array)
         detected_license_plates = self.lp_detection_model(resized_image_array)
+        lp_text = None
+        cropped_path = None
 
-        if detected_license_plates.results:
-            cropped_license_plates = self.crop_license_plates(detected_license_plates.image, detected_license_plates.results)
+        if detected_license_plates and detected_license_plates.results:
+            cropped_license_plates = self.crop_license_plates(image, detected_license_plates.results) # เดิมใช้ detected_license_plates.image แต่ลองใช้ image เดิมเพื่อครอป
             
             for index, cropped_plate in enumerate(cropped_license_plates):
+                if cropped_plate is None or cropped_plate.size == 0:
+                    logging.warning(f"Skipping empty or invalid cropped plate at index {index}")
+                    continue
                 # ประมวลผลด้วย OCR Model และ easyOCR ทั้งแบบภาพต้นฉบับและภาพหลังปรับปรุง เพื่อเปรียบเทียบผลข้อความที่อ่านได้
                 # RAW Cropped license plate 
-                ocr_results = self.lp_ocr_model.predict(cropped_plate)
-                ocr_label = self.rearrange_detections(ocr_results.results)
-                logging.info(f"From RAW image frame, Detected OCR : {ocr_label}  by {os.getenv('LICENSE_PLACE_OCR_MODEL')}")
+                ocr_results_lp_model  = self.lp_ocr_model.predict(cropped_plate)
+                ocr_label_lp_model  = self.rearrange_detections(ocr_results_lp_model.results)
+                logging.info(f"From RAW image frame, Detected OCR : {ocr_label_lp_model}  by {os.getenv('LICENSE_PLACE_OCR_MODEL')}")
 
-                # Preprocess for OCR improvement
+                # Preprocess for OCR and then run OCR again (สำหรับการเพิ่มประสิทธิภาพในการอ่าน)
                 processed_plate = preprocess_for_ocr(cropped_plate)
-                
-                # YOYOv8 LP OCR model read international (must improve for Thai)
-                ocr_results = self.lp_ocr_model.predict(processed_plate)
-                ocr_label = self.rearrange_detections(ocr_results.results)
-                logging.info(f"From processed image frame, Detected OCR : {ocr_label} by {os.getenv('LICENSE_PLACE_OCR_MODEL')}")
+                if processed_plate is None:
+                    logging.warning("Preprocessing for OCR resulted in None. Skipping OCR for this plate.")
+                    continue
+                ocr_results_lp_model_processed = self.lp_ocr_model.predict(processed_plate)
+                ocr_label_lp_model_processed = self.rearrange_detections(ocr_results_lp_model_processed.results)
+                logging.info(f"From processed image frame, Detected OCR : {ocr_label_lp_model_processed} by {os.getenv('LICENSE_PLACE_OCR_MODEL')}")
 
-                # easyOCR Read Thai license plate (temporary)
-                result_easyOCR, easyOCR_text_raw_frame = self.ocr.process_frame(cropped_plate)
-                if result_easyOCR is not None:
-                    logging.info(f"From RAW image frame, Detected OCR : {easyOCR_text_raw_frame} by easyOCR")
-                result_easyOCR, easyOCR_text_processed_frame = self.ocr.process_frame(processed_plate)
-                if result_easyOCR is not None:
-                    logging.info(f"From processed image frame, Detected OCR : {easyOCR_text_processed_frame} by easyOCR")
-                ocr_model = os.getenv("OCR_MODEL")
-                logging.info(f"OCR_MEDEL is :{ocr_model}")
+                # Process with EasyOCR for Read Thai license plate (temporary)
+                result_easyOCR_raw, raw_frame_text = self.ocr.process_frame(cropped_plate)
+                if result_easyOCR_raw is not None:
+                    logging.info(f"Detected OCR (Raw Frame) : {raw_frame_text} by easyOCR")
+             
+                result_easyOCR_processed, processed_frame_text = self.ocr.process_frame(processed_plate)
+                if result_easyOCR_processed is not None:
+                    logging.info(f"Detected OCR (Processed Frame) : {processed_frame_text} by easyOCR")
+                ocr_model_setting = os.getenv("OCR_MODEL")
+                logging.info(f"OCR_MODEL setting is: {ocr_model_setting}")
                 # Similarity checks
-                if ocr_model == "LICENSE_PLACE_OCR_MODEL":
-                    text_similar = similar(ocr_label, self.prev_ocr_label) if self.prev_ocr_label else 0
-                    lp_text = ocr_label
-                elif ocr_model == "easyOCR_processed": #  use easyOCR with processed image frame
-                    text_similar = similar(easyOCR_text_processed_frame, self.prev_ocr_label) if self.prev_ocr_label else 0
-                    lp_text = easyOCR_text_processed_frame
-                else: # if OCR_MODEL is not set, use easyOCR instead
-                    text_similar = similar(easyOCR_text_raw_frame, self.prev_ocr_label) if self.prev_ocr_label else 0
-                    lp_text = easyOCR_text_raw_frame
-
+                current_lp_text = ""
+                if ocr_model_setting  == "LICENSE_PLACE_OCR_MODEL":
+                    current_lp_text  = ocr_label_lp_model
+                elif ocr_model_setting  == "easyOCR_processed": #  use easyOCR with processed image frame
+                    current_lp_text = processed_frame_text
+                else: # Default or easyOCR_raw
+                    current_lp_text = raw_frame_text
+                # Calculate similarities
+                text_similar = similar(current_lp_text, self.prev_ocr_label) if self.prev_ocr_label else 0
                 img_similar = self.compare_images(cropped_plate, self.prev_plate_image) if self.prev_plate_image is not None else 0
-                logging.info(f"OCR {lp_text} and previous similarity: {text_similar:.2f}, Image similarity: {img_similar:.2f}")
 
+                logging.info(f"Current LP: '{current_lp_text}', Previous LP: '{self.prev_ocr_label}' (Text Similarity: {text_similar:.2f})")
+                logging.info(f"Image Similarity: {img_similar:.2f}")
+                # Check for similarity thresholds
                 if text_similar > self.ocr_similarity_threshold or img_similar > self.image_similarity_threshold:
                     logging.info("Similar plate detected, skipping save and database update.")
                     continue  # Skip saving and DB if too similar to previous
 
-                vehicle_image_path = self.save_image(detected_vehicles.image_overlay,timestamp, "vehicle_detected")
-                license_plate_image_path = self.save_image(detected_license_plates.image_overlay,timestamp, "license_plate_detected")
-
+                # If it's a new unique detection, proceed to save
+                lp_text = current_lp_text # Assign the detected LP text
+                
+                # Save images
+                vehicle_image_path = self.save_image(image,timestamp, "vehicle_full_frame")
+                license_plate_image_path = self.save_image(detected_license_plates.image_overlay,timestamp, "license_plate_detected") # อาจจะตัดบรรทัดนี้ออก
                 cropped_path = self.save_image(cropped_plate,timestamp, f"cropped_plate_{index}")
 
+                # Save to database
                 self.save_to_database(lp_text, vehicle_image_path, license_plate_image_path, cropped_path,timestamp, self.location, self.hostname)
                 logging.info(f"Saved unique plate: {lp_text} at {cropped_path}")
                 self.save_image(processed_plate,timestamp, f"processed_plate{index}")
+
+                # Update previous states
                 self.prev_ocr_label = lp_text
                 self.prev_plate_image = cropped_plate
-
-                return lp_text, detected_vehicles, detected_license_plates, cropped_path
-        logging.info("No license plate detected, continue....")
-        return None, None
+                # Only process the first unique plate found in a frame to avoid redundant saves if multiple plates are detected
+                # You might want to adjust this logic if you need to process all plates in a frame.
+                break 
+        return lp_text, detected_vehicles, detected_license_plates, cropped_path
 
     def rearrange_detections(self, ocr_results):
-        """Rearranges OCR results into a readable format"""
+        """Rearranges OCR detection results into a single string for a readable format"""
         if not ocr_results:
             return "Unknown"
         extracted_text = []
-        for res in ocr_results:
+        # Sort results based on x-coordinate to get correct order for horizontal text
+        sorted_results = sorted(ocr_results, key=lambda x: x.get("bbox", [0])[0] if isinstance(x, dict) and "bbox" in x else 0)
+        for res in sorted_results:
             if isinstance(res, dict) and "label" in res:
                 extracted_text.append(res["label"])  # Extract text from label
-            else:
-                logging.warning(f"Warning: Unexpected OCR output format: {res}")
-
         return "".join(extracted_text)
     
     def save_to_database(self, license_plate, detected_vehicles, detected_license_plates, cropped_path,timestamp,location,hostname):
         """Stores license plate and image path in SQLite"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        cursor.execute("INSERT INTO lpr_data (license_plate, vehicle_image_path,license_plate_image_path,cropped_image_path, timestamp,location,hostname,sent_to_server) VALUES (?, ?, ?,?,?,?,?,?)", 
+        conn = None
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO lpr_data (license_plate, vehicle_image_path,license_plate_image_path,cropped_image_path, timestamp,location,hostname,sent_to_server) VALUES (?, ?, ?,?,?,?,?,?)", 
                        (license_plate, detected_vehicles, detected_license_plates, cropped_path, timestamp, location, hostname, 0))
 
-        conn.commit()
-        conn.close()
-        logging.info(f"✅ Saved to database: Plate {license_plate}, Image {detected_vehicles}")
-    
+            conn.commit()
+            logging.info(f"✅ Saved to database: Plate {license_plate}, Image {detected_vehicles}")
+        except sqlite3.Error as e:
+            logging.error(f"Error saving to database: {e}")
+        finally:
+            if conn:
+                conn.close()
+
     def run(self):
-        """Continuous execution until user cancels"""
-        logging.info("Starting detection loop. Press Ctrl+C or send stop event via SocketIO to exit.")
+        """Main loop for continuous video processing.
+        Continuous execution until user cancels"""
+        logging.info("Starting detection loop. Press Ctrl+C to exit.")
         try:
             while self.should_run:
                 self.process_image()
         except KeyboardInterrupt:
             logging.info("Process manually stopped via keyboard.")
+        except Exception as e:
+            logging.critical(f"An unhandled error occurred in the main loop: {e}")
         finally:
             logging.info("Detection system shutting down.")
+            if self.picam2:
+                self.picam2.stop()
+                self.picam2.close()
+                logging.info("Picamera2 stopped and closed.")
         
 def main():
     ocr = OCRProcessor(lang_list=['en', 'th'])
