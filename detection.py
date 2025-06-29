@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 import logging
+from logging.handlers import TimedRotatingFileHandler
 import degirum as dg
 import numpy as np
 import cv2
