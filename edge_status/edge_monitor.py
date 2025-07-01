@@ -6,6 +6,7 @@ import json
 import db_manager
 import websocket
 import threading
+import subprocess
 
 # --- เซ็นเซอร์และความสามารถเฉพาะของ Pi ---
 # สำหรับ CPU Temperature (ทดสอบกับ Raspberry Pi OS)
@@ -66,7 +67,34 @@ def check_power_status():
 # --- ฟังก์ชันหลักในการตรวจสอบสถานะ ---
 def get_pi_status():
     timestamp = datetime.datetime.now().isoformat()
+    voltage = subprocess.check_output(["vcgencmd", "measure_volts"], text=True).strip()
+    temperature_raw = subprocess.check_output(["vcgencmd", "measure_temp"], text=True).strip()
+    cpu_status_raw = subprocess.check_output(["vcgencmd", "get_throttled"], text=True).strip()
 
+    # Extract temperature value (e.g., "temp=45.0'C" -> 45.0)
+    temperature = float(temperature_raw.split('=')[1].replace("'C", ""))
+
+    # Extract the CPU status code from the output
+    if "=" in cpu_status_raw:
+        cpu_status_raw = cpu_status_raw.split("=")[1].strip()
+    else:
+        cpu_status_raw = "Unknown"
+
+    # Map CPU status codes to human-readable messages
+    cpu_status_map = {
+        "0x0": "OK",
+        "0x1": "Throttled",
+        "0x2": "Under-voltage",
+        "0x4": "Over-temperature",
+        "0x8": "Under-voltage and Throttled",
+        "0x10": "Under-voltage and Over-temperature",
+        "0x20": "Throttled and Over-temperature",
+        "0x40": "Under-voltage, Throttled, and Over-temperature",
+        "0x80": "Under-voltage, Throttled, Over-temperature, and Under-voltage",
+    }
+
+    # Get human-readable CPU status or default to "Unknown"
+    cpu_status = cpu_status_map.get(cpu_status_raw, "Unknown")
     # CPU
     cpu_usage = psutil.cpu_percent(interval=1)
     cpu_temp = get_cpu_temperature()
@@ -117,6 +145,58 @@ def get_pi_status():
     }
     return status_data
 
+def get_system_start_time():
+    """ดึงเวลาที่ระบบเริ่มต้นทำงาน (System Start Time) 
+    Get the system start time using 'uptime -s'.
+
+    ใช้คำสั่ง 'uptime -s' เพื่อดึงเวลาที่ระบบเริ่มต้นทำงาน และแปลงเป็น timestamp
+
+    Returns:
+        tuple: 
+            - start_datetime (datetime): เวลาที่ระบบเริ่มต้นในรูปแบบ datetime
+            - start_time (float): เวลาที่ระบบเริ่มต้นในรูปแบบ timestamp
+    """
+    start_datetime_str = subprocess.check_output(["uptime", "-s"], text=True).strip()
+    start_datetime = datetime.strptime(start_datetime_str, "%Y-%m-%d %H:%M:%S")
+    return start_datetime, time.mktime(start_datetime.timetuple())
+def calculate_elapsed_time(start_time):
+    """คำนวณเวลาที่ผ่านไปตั้งแต่ระบบเริ่มต้นทำงาน 
+    Calculate elapsed time since the system started.
+    Args:
+        start_time (float): เวลาที่ระบบเริ่มต้นในรูปแบบ timestamp
+
+    Returns:
+        tuple:
+            - elapsed_days (int): จำนวนวันที่ผ่านไป
+            - elapsed_hours (int): จำนวนชั่วโมงที่ผ่านไป
+            - elapsed_minutes (int): จำนวนนาทีที่ผ่านไป
+            - elapsed_seconds (int): จำนวนวินาทีที่ผ่านไป
+    """
+    elapsed_time = int(time.time() - start_time)
+    elapsed_days = elapsed_time // (24 * 3600)
+    elapsed_time %= (24 * 3600)
+    elapsed_hours = elapsed_time // 3600
+    elapsed_time %= 3600
+    elapsed_minutes = elapsed_time // 60
+    elapsed_seconds = elapsed_time % 60
+    return elapsed_days, elapsed_hours, elapsed_minutes, elapsed_seconds
+def get_current_datetime():
+    """ดึงเวลาปัจจุบันในรูปแบบ string 
+    Get the current date and time.
+    Returns:
+        str: เวลาปัจจุบันในรูปแบบ 'YYYY-MM-DD HH:MM:SS'
+    """
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+def get_uptime():
+    """ดึงข้อมูล uptime ของระบบ 
+    Execute the 'uptime -p' command to get the system uptime.
+    ใช้คำสั่ง 'uptime -p' เพื่อดึงข้อมูล uptime
+
+    Returns:
+        str: ข้อมูล uptime ในรูปแบบ human-readable
+    """
+    return subprocess.check_output(["uptime", "-p"], text=True).strip()
 # --- WebSocket Client ---
 WEBSOCKET_SERVER_URL = "ws://localhost:8765" # เปลี่ยนเป็น URL ของ WebSocket Server ของคุณ
 
@@ -176,8 +256,20 @@ def main():
     # เริ่ม thread สำหรับตรวจสอบและส่งข้อมูลที่ยังไม่ส่ง
     websocket_sender_thread = threading.Thread(target=check_and_send_unsent_data, daemon=True)
     websocket_sender_thread.start()
-
+    start_datetime, start_time = get_system_start_time()
     while True:
+        # Calculate elapsed time
+        elapsed_time = calculate_elapsed_time(start_time)
+        current_datetime = get_current_datetime()
+
+        # Get uptime
+        uptime_output = get_uptime()
+
+        # Get uptimeime()
+
+        # Get system status
+        #voltage, temperature, cpu_status_raw, cpu_status, temperature_warning 
+
         print(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Collecting Pi status...")
         status_data = get_pi_status()
         print(json.dumps(status_data, indent=2))
