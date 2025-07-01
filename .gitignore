@@ -200,3 +200,4 @@ nohup.out
 output.json
 # database
 *.db
+*.csv
