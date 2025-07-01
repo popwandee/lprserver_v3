@@ -42,7 +42,7 @@ def capture_image_and_metadata():
         picam2.set_controls({"AeEnable": True, "AwbEnable": True, "FrameRate": 30.0})
         # Wait a bit longer for stabilization if needed, adjust as per your environment
 
-        time.sleep(2) # Give it 2 seconds to settle
+        time.sleep(5) # Give it 5 seconds to settle
         timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
         OUTPUT_FILENAME = f"img/{timestamp_str}.jpg"
 
