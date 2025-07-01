@@ -13,3 +13,4 @@ matplotlib
 Flask-SocketIO
 websockets
 python-dotenv
+pandas

@@ -199,4 +199,4 @@ doc
 nohup.out
 output.json
 # database
-lpr_data.db
+*.db

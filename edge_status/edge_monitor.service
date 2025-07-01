@@ -1,0 +1,25 @@
+[Unit]
+Description=Raspberry Pi Monitor Service
+# ให้บริการเริ่มทำงานหลังจาก network พร้อมใช้งาน
+After=network.target 
+
+# กรณีต้องการใช้โหลดเซอร์วิสอื่นๆ ด้วย:
+# After=systemd-modules-load.service
+
+[Service]
+User=camuser 
+Group=users 
+WorkingDirectory=/home/camuser/aicamera/edge_status/ 
+ExecStart=/home/camuser/aicamera/venv_hailo/bin/python /home/camuser/aicamera/edge_status/edge_monitor.py 
+# รีสตาร์ทบริการอัตโนมัติหากหยุดทำงาน
+Restart=always 
+# รอ 30 วินาทีก่อนรีสตาร์ท
+RestartSec=30 
+# ส่ง output ปกติไปยัง journalctl
+StandardOutput=journal 
+# ส่ง error output ไปยัง journalctl
+StandardError=journal 
+
+[Install]
+# บริการจะเริ่มทำงานในโหมด multi-user 
+WantedBy=multi-user.target 
