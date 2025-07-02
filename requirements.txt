@@ -10,6 +10,7 @@ degirum_cli
 picamera2
 pillow<11
 matplotlib
+Flask
 Flask-SocketIO
 websockets
 python-dotenv
