@@ -1,259 +1,65 @@
+
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Raspberry Pi Camera Stream with Controls</title>
+    <title>RPi Camera Dashboard</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin-top: 20px; background-color: #f0f0f0; }
-        h1 { color: #333; }
-        #camera-feed { border: 2px solid #555; max-width: 800px; width: 100%; height: auto; display: block; margin: 20px auto; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
-        .controls-group {
-            background-color: #fff;
-            margin: 20px auto;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            max-width: 800px;
-            text-align: left;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 15px;
-        }
-        .control-item { margin-bottom: 15px; }
-        .control-item label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
-        .control-item input[type="range"],
-        .control-item input[type="number"],
-        .control-item select {
-            width: calc(100% - 10px);
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box; /* Include padding in width */
-        }
-        .control-item input[type="range"] { vertical-align: middle; }
-        .control-item span { margin-left: 10px; vertical-align: middle; font-size: 0.9em; color: #666;}
-
-        .button-row {
-            margin-top: 20px;
-            text-align: center;
-        }
-        .button-row button {
-            margin: 5px;
-            padding: 12px 25px;
-            font-size: 16px;
-            cursor: pointer;
-            border: none;
-            border-radius: 5px;
-            transition: background-color 0.3s ease;
-            background-color: #007bff;
-            color: white;
-        }
-        .button-row button:hover {
-            background-color: #0056b3;
-        }
-        .button-row button#stopCamBtn { background-color: #dc3545; }
-        .button-row button#stopCamBtn:hover { background-color: #c82333; }
-        .button-row button#checkStatusBtn { background-color: #ffc107; color: #333; }
-        .button-row button#checkStatusBtn:hover { background-color: #e0a800; }
-        .button-row button#applySettingsBtn { background-color: #28a745; }
-        .button-row button#applySettingsBtn:hover { background-color: #218838; }
-
-
-        .status-message { margin-top: 20px; font-weight: bold; }
-        .status-message.available { color: green; }
-        .status-message.in_use { color: red; }
+        body { background: #111; color: white; font-family: sans-serif; text-align: center; }
+        .params { margin-top: 10px; }
+        label { margin-right: 10px; }
+        input { width: 100px; }
+        .live { border: 2px solid white; margin-top: 20px; }
     </style>
 </head>
 <body>
-    <h1>Raspberry Pi Camera Stream</h1>
-    <img id="camera-feed" src="{{ url_for('video_feed') }}" alt="Camera Feed">
+    <h1>📷 Raspberry Pi Camera Monitor</h1>
+    <img class="live" src="{{ url_for('video_feed') }}" width="640" height="480">
+    <div class="params">
+        <p><b>Brightness:</b> <span id="lux"></span> |
+           <b>Exposure:</b> <span id="exposure"></span> |
+           <b>Gain:</b> <span id="gain"></span> |
+           <b>Focus:</b> <span id="focus"></span> |
+           <b>FPS:</b> <span id="fps"></span> |
+		   <b>Sharpness:</b> <span id="sharpness"></span> |
+           <b>Bandwidth:</b> <span id="bandwidth"></span> kbps</p>
 
-    <div class="button-row">
-        <button id="startCamBtn" onclick="startCamera()">Start Camera</button>
-        <button id="stopCamBtn" onclick="stopCamera()">Stop Camera</button>
-        <button id="checkStatusBtn" onclick="checkCameraStatus()">Check Status</button>
-        <button id="applySettingsBtn" onclick="applySettings()">Apply Settings</button>
-    </div>
-    <p class="status-message" id="cameraStatus"></p>
-
-    <div class="controls-group">
-        <h2>Camera Settings</h2>
-
-        <div class="control-item">
-            <label for="brightness">Brightness:</label>
-            <input type="range" id="brightness" name="brightness" min="-1.0" max="1.0" step="0.1" value="{{ current_settings.brightness }}">
-            <span id="brightnessValue">{{ current_settings.brightness }}</span>
-        </div>
-
-        <div class="control-item">
-            <label for="contrast">Contrast:</label>
-            <input type="range" id="contrast" name="contrast" min="0.0" max="4.0" step="0.1" value="{{ current_settings.contrast }}">
-            <span id="contrastValue">{{ current_settings.contrast }}</span>
-        </div>
-
-        <div class="control-item">
-            <label for="sharpness">Sharpness:</label>
-            <input type="range" id="sharpness" name="sharpness" min="0.0" max="4.0" step="0.1" value="{{ current_settings.sharpness }}">
-            <span id="sharpnessValue">{{ current_settings.sharpness }}</span>
-        </div>
-
-        <div class="control-item">
-            <label for="exposure_mode">Exposure Mode:</label>
-            <select id="exposure_mode" name="exposure_mode" onchange="toggleManualExposure()">
-                <option value="auto" {% if current_settings.exposure_mode == 'auto' %}selected{% endif %}>Auto</option>
-                <option value="manual" {% if current_settings.exposure_mode == 'manual' %}selected{% endif %}>Manual</option>
-            </select>
-        </div>
-
-        <div class="control-item" id="shutterSpeedDiv" style="display: {% if current_settings.exposure_mode == 'manual' %}block{% else %}none{% endif %};">
-            <label for="shutter_speed">Shutter Speed (µs):</label>
-            <input type="number" id="shutter_speed" name="shutter_speed" min="100" max="1000000" step="100" value="{{ current_settings.shutter_speed }}">
-            <span>(1ms = 1000µs)</span>
-        </div>
-
-        <div class="control-item">
-            <label for="focus_mode">Focus Mode:</label>
-            <select id="focus_mode" name="focus_mode" onchange="toggleManualFocus()">
-                <option value="auto" {% if current_settings.focus_mode == 'auto' %}selected{% endif %}>Auto</option>
-                <option value="manual" {% if current_settings.focus_mode == 'manual' %}selected{% endif %}>Manual</option>
-            </select>
-        </div>
-
-        <div class="control-item" id="lensPositionDiv" style="display: {% if current_settings.focus_mode == 'manual' %}block{% else %}none{% endif %};">
-            <label for="lens_position">Lens Position (Diopters):</label>
-            <input type="range" id="lens_position" name="lens_position" min="0.0" max="10.0" step="0.01" value="{{ current_settings.lens_position }}">
-            <span id="lensPositionValue">{{ current_settings.lens_position }}</span>
-        </div>
-        
-        <div class="control-item">
-            <label for="awb_mode">White Balance (AWB):</label>
-            <select id="awb_mode" name="awb_mode">
-                <option value="auto" {% if current_settings.awb_mode == 'auto' %}selected{% endif %}>Auto</option>
-                <option value="incandescent" {% if current_settings.awb_mode == 'incandescent' %}selected{% endif %}>Incandescent</option>
-                <option value="fluorescent" {% if current_settings.awb_mode == 'fluorescent' %}selected{% endif %}>Fluorescent</option>
-                <option value="tungsten" {% if current_settings.awb_mode == 'tungsten' %}selected{% endif %}>Tungsten</option>
-                <option value="daylight" {% if current_settings.awb_mode == 'daylight' %}selected{% endif %}>Daylight</option>
-                <option value="cloudy" {% if current_settings.awb_mode == 'cloudy' %}selected{% endif %}>Cloudy</option>
-            </select>
-        </div>
-
-        <div class="control-item">
-            <label for="framerate">Framerate (fps):</label>
-            <input type="number" id="framerate" name="framerate" min="1" max="60" step="1" value="{{ current_settings.framerate }}">
-        </div>
-
+        <label>Exposure (us): <input id="input_exposure" type="number" value="10000"></label>
+        <label>Gain: <input id="input_gain" type="number" step="0.1" value="1.0"></label>
+        <button onclick="setParams()">Apply</button>
+        <button onclick="capture()">📸 Capture</button>
     </div>
 
     <script>
-        // Update range value display
-        document.querySelectorAll('input[type="range"]').forEach(input => {
-            input.addEventListener('input', (event) => {
-                const valueSpan = document.getElementById(event.target.id + 'Value');
-                if (valueSpan) {
-                    valueSpan.textContent = event.target.value;
-                }
-            });
-        });
-
-        function toggleManualExposure() {
-            const exposureMode = document.getElementById('exposure_mode').value;
-            const shutterSpeedDiv = document.getElementById('shutterSpeedDiv');
-            shutterSpeedDiv.style.display = (exposureMode === 'manual') ? 'block' : 'none';
-        }
-
-        function toggleManualFocus() {
-            const focusMode = document.getElementById('focus_mode').value;
-            const lensPositionDiv = document.getElementById('lensPositionDiv');
-            lensPositionDiv.style.display = (focusMode === 'manual') ? 'block' : 'none';
-        }
-
-        // Call toggles on page load to set initial state based on Jinja values
-        window.onload = function() {
-            checkCameraStatus();
-            toggleManualExposure();
-            toggleManualFocus();
-        };
-
-        function updateCameraFeed() {
-            var img = document.getElementById('camera-feed');
-            img.src = "{{ url_for('video_feed') }}?" + new Date().getTime(); // Add timestamp to force reload
-        }
-
-        function checkCameraStatus() {
-            fetch('/camera_status')
-                .then(response => response.json())
+        function updateParams() {
+            fetch('/camera_params')
+                .then(res => res.json())
                 .then(data => {
-                    const statusDiv = document.getElementById('cameraStatus');
-                    statusDiv.textContent = `Camera Status: ${data.status.replace('_', ' ').toUpperCase()}`;
-                    statusDiv.className = `status-message ${data.status}`;
-                })
-                .catch(error => {
-                    console.error('Error checking camera status:', error);
-                    document.getElementById('cameraStatus').textContent = 'Error checking camera status.';
-                    document.getElementById('cameraStatus').className = 'status-message';
+                    document.getElementById('lux').textContent = data.brightness;
+                    document.getElementById('exposure').textContent = data.exposure;
+                    document.getElementById('gain').textContent = data.analog_gain;
+                    document.getElementById('fps').textContent = data.fps;
+                    document.getElementById('focus').textContent = data.focus;
+                    document.getElementById('sharpness').textContent = data.sharpness_score;
+                    document.getElementById('bandwidth').textContent = data.bandwidth_kbps;
                 });
         }
-
-        function startCamera() {
-            fetch('/start_camera')
-                .then(response => response.json())
-                .then(data => {
-                    alert(data.message);
-                    if (data.message.includes("successfully")) {
-                        updateCameraFeed(); // Reload the image to show the new stream
-                    }
-                    checkCameraStatus();
-                })
-                .catch(error => {
-                    console.error('Error starting camera:', error);
-                    alert('Error starting camera.');
-                });
-        }
-
-        function stopCamera() {
-            fetch('/stop_camera')
-                .then(response => response.json())
-                .then(data => {
-                    alert(data.message);
-                    document.getElementById('camera-feed').src = ""; // Clear the image src to stop requests
-                    checkCameraStatus();
-                })
-                .catch(error => {
-                    console.error('Error stopping camera:', error);
-                    alert('Error stopping camera.');
-                });
-        }
-
-        function applySettings() {
-            const settings = {
-                brightness: parseFloat(document.getElementById('brightness').value),
-                contrast: parseFloat(document.getElementById('contrast').value),
-                sharpness: parseFloat(document.getElementById('sharpness').value),
-                exposure_mode: document.getElementById('exposure_mode').value,
-                shutter_speed: parseInt(document.getElementById('shutter_speed').value),
-                focus_mode: document.getElementById('focus_mode').value,
-                lens_position: parseFloat(document.getElementById('lens_position').value),
-                awb_mode: document.getElementById('awb_mode').value,
-                framerate: parseFloat(document.getElementById('framerate').value)
-            };
-
-            fetch('/apply_settings', {
+        function setParams() {
+            const exposure = document.getElementById('input_exposure').value;
+            const gain = document.getElementById('input_gain').value;
+            fetch('/set_params', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(settings)
-            })
-            .then(response => response.json())
-            .then(data => {
-                alert(data.message);
-                console.log("New settings applied:", data.new_settings);
-                // Optionally, update UI elements with confirmed settings from server if needed
-            })
-            .catch(error => {
-                console.error('Error applying settings:', error);
-                alert('Error applying settings.');
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({exposure, gain})
             });
         }
+        function capture() {
+            fetch('/capture')
+                .then(res => res.json())
+                .then(data => alert("Saved: " + data.file));
+        }
+
+        setInterval(updateParams, 1000);
     </script>
 </body>
 </html>
+
