@@ -3,7 +3,7 @@ from datetime import datetime
 import time
 import os
 import json
-import db_manager
+import edge_status.scripts.db_manager as db_manager
 import websocket
 import threading
 import subprocess
