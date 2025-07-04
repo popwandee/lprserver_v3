@@ -1,5 +1,5 @@
 [Unit]
-Description=Raspberry Pi Monitor Service
+Description=Edge Status Monitor Service
 # ให้บริการเริ่มทำงานหลังจาก network พร้อมใช้งาน
 After=network.target 
 
@@ -10,7 +10,7 @@ After=network.target
 User=camuser 
 Group=users 
 WorkingDirectory=/home/camuser/aicamera/edge_status/ 
-ExecStart=/home/camuser/aicamera/venv_hailo/bin/python /home/camuser/aicamera/edge_status/edge_monitor.py 
+ExecStart=/home/camuser/aicamera/venv_hailo/bin/python /home/camuser/aicamera/edge_status/scripts/edge_monitor.py 
 # รีสตาร์ทบริการอัตโนมัติหากหยุดทำงาน
 Restart=always 
 # รอ 30 วินาทีก่อนรีสตาร์ท
