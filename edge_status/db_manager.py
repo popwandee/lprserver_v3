@@ -1,7 +1,7 @@
 import sqlite3
 import datetime
 
-DATABASE_NAME = '../db/edge_status.db'
+DATABASE_NAME = 'db/edge_status.db'
 
 def init_db():
     conn = sqlite3.connect(DATABASE_NAME)
