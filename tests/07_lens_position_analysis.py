@@ -12,6 +12,7 @@ config = picam2.create_still_configuration(main={"size": (640, 480)})
 picam2.configure(config)
 picam2.start()
 time.sleep(2)
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
 results = []
 output_dir = "lens_scan"
@@ -36,14 +37,13 @@ for pos in positions:  # ทดลองตั้งแต่ 0 ถึง 10.0
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     sharpness = cv2.Laplacian(gray, cv2.CV_64F).var()
 
-    filename = f"{output_dir}/lens_{pos:.2f}_sharp{int(sharpness)}.jpg"
+    filename = f"{output_dir}/{timestamp}lens_{pos:.2f}_sharp{int(sharpness)}.jpg"
     cv2.putText(frame, f"Pos:{pos} Sharp:{int(sharpness)} FoM:{focus_fom}", (10, 30),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255,255,255), 2)
     cv2.imwrite(filename, frame)
 
     results.append((round(pos, 2), sharpness, focus_fom, exposure, analogue_gain, digital_gain, lux, filename))
     print(f"[Lens={pos:.2f}] Sharpness={int(sharpness)}, FocusFoM={focus_fom}, Lux={int(lux)}")
-timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 filename = f"lens_scan_results{timestamp}.csv"
             
 # 🔽 บันทึกลง CSV
