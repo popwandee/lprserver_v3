@@ -14,7 +14,6 @@ from difflib import SequenceMatcher
 import requests
 import socket
 
-from logging.handlers import TimedRotatingFileHandler
 
 env_path = os.path.join(os.path.dirname(__file__), 'src', '.env.production')
 load_dotenv(env_path)

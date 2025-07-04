@@ -1,8 +1,28 @@
 import sqlite3
 import datetime
+import os
+import logging
+from logging.handlers import TimedRotatingFileHandler
+# Configure logging
 
-DATABASE_NAME = 'db/edge_status.db'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, '..', '..'))
 
+LOG_FILE = os.path.join(PROJECT_ROOT, 'log', 'db_monitor.log')
+if not os.path.exists(LOG_FILE):
+    logging.critical(f"Log file '{LOG_FILE}' does not exist or cannot be created.")
+    # Define log directory and log file , create log file
+    LOG_DIR = os.path.dirname(LOG_FILE)
+    os.makedirs(LOG_DIR, exist_ok=True)
+# Create a logger 
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+file_handler = TimedRotatingFileHandler(LOG_FILE, when="midnight", backupCount=7) #Keep logs from the last 7 days.
+file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+file_handler.setLevel(logging.DEBUG)  # Ensure all levels are logged
+logger.addHandler(file_handler)
+
+DATABASE_NAME = os.path.join(PROJECT_ROOT, 'db', 'edge_status.db')
 def init_db():
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()

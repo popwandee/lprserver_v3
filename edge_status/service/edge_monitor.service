@@ -9,7 +9,7 @@ After=network.target
 [Service]
 User=camuser 
 Group=users 
-WorkingDirectory=/home/camuser/aicamera/edge_status/ 
+WorkingDirectory=/home/camuser/aicamera/
 ExecStart=/home/camuser/aicamera/venv_hailo/bin/python /home/camuser/aicamera/edge_status/scripts/edge_monitor.py 
 # รีสตาร์ทบริการอัตโนมัติหากหยุดทำงาน
 Restart=always 
