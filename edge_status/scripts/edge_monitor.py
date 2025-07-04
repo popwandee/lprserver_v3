@@ -254,8 +254,8 @@ def main():
     db_manager.init_db() # ตรวจสอบและสร้างฐานข้อมูลหากยังไม่มี
 
     # เริ่ม thread สำหรับตรวจสอบและส่งข้อมูลที่ยังไม่ส่ง
-    websocket_sender_thread = threading.Thread(target=check_and_send_unsent_data, daemon=True)
-    websocket_sender_thread.start()
+    #websocket_sender_thread = threading.Thread(target=check_and_send_unsent_data, daemon=True)
+    #websocket_sender_thread.start()
     start_datetime, start_time = get_system_start_time()
     while True:
         # Calculate elapsed time
