@@ -1,5 +1,5 @@
 import psutil
-import datetime
+from datetime import datetime
 import time
 import os
 import json
@@ -66,7 +66,7 @@ def check_power_status():
 
 # --- ฟังก์ชันหลักในการตรวจสอบสถานะ ---
 def get_pi_status():
-    timestamp = datetime.datetime.now().isoformat()
+    timestamp = datetime.now().isoformat()
     voltage = subprocess.check_output(["vcgencmd", "measure_volts"], text=True).strip()
     temperature_raw = subprocess.check_output(["vcgencmd", "measure_temp"], text=True).strip()
     cpu_status_raw = subprocess.check_output(["vcgencmd", "get_throttled"], text=True).strip()
@@ -270,7 +270,7 @@ def main():
         # Get system status
         #voltage, temperature, cpu_status_raw, cpu_status, temperature_warning 
 
-        print(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Collecting Pi status...")
+        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Collecting Pi status...")
         status_data = get_pi_status()
         print(json.dumps(status_data, indent=2))
 

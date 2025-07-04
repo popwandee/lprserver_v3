@@ -13,11 +13,14 @@ from src.ocr_process import OCRProcessor
 from difflib import SequenceMatcher
 import requests
 import socket
-
+from flask import Flask, Response
+import threading
 from logging.handlers import TimedRotatingFileHandler
 
 env_path = os.path.join(os.path.dirname(__file__), 'src', '.env.production')
 load_dotenv(env_path)
+
+app = Flask(__name__)
 
 # Configure logging
 LOG_FILE = os.getenv("DETECTION_LOG_FILE")
@@ -65,6 +68,7 @@ def get_location():
         location = f"0,0"
     return location
 
+
 def similar(a, b):
     """Return a similarity ratio between two strings."""
     return SequenceMatcher(None, a, b).ratio()
@@ -92,6 +96,9 @@ class VehicleLicensePlateDetector:
         self.db_path = os.getenv("DB_PATH")
         self.hw_location = os.getenv("HEF_MODEL_PATH")
         self.model_zoo_url = os.getenv("MODEL_ZOO_URL")
+        self.prev_bg_frame = None  # สำหรับเก็บเฟรมก่อนหน้า
+        self.bg_diff_threshold = 30  # ปรับ threshold ตามความเหมาะสม
+        self.bg_min_area = 5000      # ขนาด pixel ที่เปลี่ยนแปลงขั้นต่ำ
         self.ocr_similarity_threshold = ocr_similarity_threshold
         self.image_similarity_threshold = image_similarity_threshold
         self.prev_ocr_label = None
@@ -131,6 +138,18 @@ class VehicleLicensePlateDetector:
             """Stop the detection process via SocketIO"""
             self.should_run = False
             logging.info("Received stop command, shutting down...")
+        try:
+            self.picam2 = Picamera2()
+            config = self.picam2.create_still_configuration(main={"size": (4608, 2592)})
+            self.picam2.configure(config)
+            self.picam2.start()
+            logging.info("Picamera2 started successfully.")
+        except Exception as e:
+            logging.error(f"Failed to initialize Picamera2: {e}")
+            raise
+
+        # สำหรับ thread safety (ถ้าจะใช้หลาย thread)
+        self.lock = threading.Lock()
 
     def init_database(self):
         """สร้างไดเรกทอรี `db/` และไฟล์ฐานข้อมูลหากยังไม่มี"""
@@ -158,7 +177,24 @@ class VehicleLicensePlateDetector:
         """)
         conn.commit()
         conn.close()
+    def is_scene_changed(self, frame):
+        """ตรวจสอบว่าฉากมีการเปลี่ยนแปลงหรือไม่"""
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        if self.prev_bg_frame is None:
+            self.prev_bg_frame = gray
+            return False  # เฟรมแรกยังไม่มีการเปรียบเทียบ
 
+        # คำนวณความแตกต่าง
+        diff = cv2.absdiff(self.prev_bg_frame, gray)
+        _, thresh = cv2.threshold(diff, self.bg_diff_threshold, 255, cv2.THRESH_BINARY)
+        changed_area = np.sum(thresh > 0)
+
+        # อัปเดตเฟรมล่าสุด
+        self.prev_bg_frame = gray
+
+        # ถ้ามี pixel เปลี่ยนแปลงมากพอ ถือว่ามีวัตถุใหม่
+        return changed_area > self.bg_min_area
+    
     @staticmethod
     def print_image_size(image_path):
 
@@ -205,27 +241,15 @@ class VehicleLicensePlateDetector:
 
     def capture_video_frame(self):
         """Capture frames continuously and process them in real-time"""
-        picam2 = Picamera2()
+        """ดึงเฟรมจากกล้องที่เปิดอยู่แล้ว"""
         try:
-            picam2.start()
-            frame = picam2.capture_array()
-            # Picamera2 try adjusting focus here:
-            # Set the AfMode (Autofocus Mode) to be continuous 
-            # the nearest focus point is 10 centimeters.
-            picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous}) 
-            #picam2.start_and_capture_files("aurofocus.jpg", num_files=1, delay=0.5) # test to take  picture
-            # Fixing the focus ,set the value to 0.0 for an infinite focus.
-            # LensPosition value to 0.5 give approximately a 50 cm focal distance.
-            #picam2.set_controls({"AfMode": controls.AfModeEnum.Manual, "LensPosition": 0.0})
-            # to get a series of sharp images. set the autofocus to high speed
-           # picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous, "AfSpeed": controls.AfSpeedEnum.Fast})
+            with self.lock:
+                frame = self.picam2.capture_array()
             frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+            return frame_bgr
         except Exception as e:
             logging.warning(f"Error capturing video frame: {e}")
-            frame_bgr = None
-        finally:
-            picam2.close()
-        return frame_bgr
+            return None
 
     def save_image(self, image,timestamp, image_type, output_dir="lpr_images"):
         """Save an image with a timestamp-based filename"""
@@ -281,18 +305,27 @@ class VehicleLicensePlateDetector:
         """Runs vehicle detection, license plate detection, and OCR on an image, with similarity check."""
         image = self.capture_video_frame()
         if image is None or not isinstance(image, np.ndarray):
-            logging.info("Image capture failed or invalid image type!")
+            logging.warning("Image capture failed or invalid image type!")
             return
         else:
             logging.info("Capture image before process image :OK\n")
+
+        if not self.is_scene_changed(image):
+            logging.info("No significant scene change detected, skipping detection.")
+            return
+
+        logging.info("Scene changed, running detection.")
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
         resized_image_array = self.resize_with_letterbox(
             image, (self.vehicle_model.input_shape[0][1],self.vehicle_model.input_shape[0][2])
             )  
-      
+        self.save_image(resized_image_array,timestamp, f"scene_change")
+        #self.save_image(image, timestamp, "scene_change_raw")
+
         detected_vehicles = self.vehicle_model(resized_image_array)
         detected_license_plates = self.lp_detection_model(resized_image_array)
+        
 
         if detected_license_plates.results:
             cropped_license_plates = self.crop_license_plates(detected_license_plates.image, detected_license_plates.results)
@@ -388,11 +421,32 @@ class VehicleLicensePlateDetector:
             logging.info("Process manually stopped via keyboard.")
         finally:
             logging.info("Detection system shutting down.")
-        
+            try:
+                self.picam2.stop()
+                self.picam2.close()
+                logging.info("Picamera2 stopped and closed.")
+            except Exception as e:
+                logging.error(f"Error closing Picamera2: {e}")
+def gen_frames(camera):
+    while True:
+        frame = camera.capture_array("lores")  # Use low-res stream
+        _, buffer = cv2.imencode('.jpg', frame)
+        frame_bytes = buffer.tobytes()
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')     
+           
 def main():
     ocr = OCRProcessor(lang_list=['en', 'th'])
     detector = VehicleLicensePlateDetector(ocr_processor=ocr)
     detector.run()
+    
+    @app.route('/video_feed')
+    def video_feed():
+        return Response(gen_frames(detector.picam2), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+    # Start Flask in a thread
+    flask_thread = threading.Thread(target=lambda: app.run(host='0.0.0.0', port=5000), daemon=True)
+    flask_thread.start()
     
 if __name__ == "__main__":
     main()
