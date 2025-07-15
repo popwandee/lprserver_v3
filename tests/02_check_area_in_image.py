@@ -16,7 +16,7 @@ def capture_and_annotate_image(output_filename="anotate_image.jpg",annotate_roi 
 
     # กำหนดค่าคอนฟิกสำหรับกล้อง
     # คุณสามารถปรับ resolution ได้ตามต้องการ
-    camera_config = picam2.create_still_configuration(main={"size": (4608, 2592)})
+    camera_config = picam2.create_still_configuration(main={"size": (3280, 2464)}) #main={"size": (4608, 2592)}
     picam2.configure(camera_config)
 
     #picam2.start_preview(Preview.QTGL)
