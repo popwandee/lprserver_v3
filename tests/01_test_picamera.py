@@ -1,71 +1,55 @@
 import os
-import logging
-import json
-from picamera2 import Picamera2, Preview
-from libcamera import controls
-import time
 from datetime import datetime
-
-# --- Configuration ---
-LOG_FILENAME = "log/picamera2_metadata.log"
+from src.camera import CameraManager
 
 # --- Setup Logging ---
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s - %(levelname)s - %(message)s',
-                    handlers=[
-                        logging.FileHandler(LOG_FILENAME),
-                        logging.StreamHandler()
-                    ])
+from src.logging_config import setup_logging
+setup_logging()
+import logging
+logging.info("เริ่มต้นโปรแกรม")
 
-def capture_image_and_metadata():
-    logging.info("Initializing Picamera2...")
-    picam2 = None # Initialize picam2 to None
+def main():
+    logging.info("=== CameraManager Test Start ===")
+    cam = CameraManager(main_size=(640, 480), lores_size=(320, 240), display="main")
 
-    try:
-        picam2 = Picamera2()
+    # Test camera initialization
+    logging.info("Initializing camera...")
+    cam.initialize_camera()
+    if not cam.picam2:
+        logging.error("Camera failed to initialize.")
+        return
 
-        # Configure the camera.
-        # You can adjust resolution here if needed. For Camera Module 3,
-        # a good default for still capture might be the native resolution or a common one.
-        # This example uses a common 4:3 aspect ratio suitable for many purposes.
-        capture_config = picam2.create_still_configuration(main={"size": (1920, 1440)},
-                                                          lores={"size": (640, 480)},
-                                                          display="lores")
-        picam2.configure(capture_config)
+    # Test preset controls
+    for mode in ["autofocus_day", "autofocus_night", "manualfocus_day", "manualfocus_night"]:
+        logging.info(f"Setting preset controls: {mode}")
+        cam.preset_controls(mode)
 
-        # Start the camera. No preview required.
-        picam2.start()
-        logging.info("Camera started. Waiting for auto-exposure and auto-white-balance to settle...")
+    # Test still image capture
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    still_path = f"img/test_still_{timestamp}.jpg"
+    frame, metadata = cam.test_still_image(still_path)
+    if metadata:
+        logging.info(f"Still image metadata: {metadata}")
+    else:
+        logging.error("Failed to capture still image.")
 
-        # Give the camera a moment to settle auto-exposure and auto-white-balance
-        # This can prevent overly dark or bright first images
-        picam2.set_controls({"AeEnable": True, "AwbEnable": True, "FrameRate": 30.0})
-        # Wait a bit longer for stabilization if needed, adjust as per your environment
+    # Test video recording
+    video_path = f"img/test_video_{timestamp}.mp4"
+    video_metadata = cam.test_video_stream(video_path, duration=3)
+    if video_metadata:
+        logging.info(f"Video metadata: {video_metadata}")
+    else:
+        logging.error("Failed to record video.")
 
-        time.sleep(5) # Give it 5 seconds to settle
-        timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
-        OUTPUT_FILENAME = f"img/{timestamp_str}.jpg"
+    # Test stop and reset
+    logging.info("Stopping camera...")
+    cam.stop_camera()
+    logging.info("Resetting camera...")
+    cam.reset_camera()
+    logging.info("Stopping camera after reset...")
+    cam.stop_camera()
 
-        logging.info(f"Capturing image to {OUTPUT_FILENAME}...")
-        # Capture the image
-        request = picam2.capture_request()
-        request.save("main", OUTPUT_FILENAME)
-        logging.info(f"Image saved successfully to {OUTPUT_FILENAME}")
-
-        # --- Extract and Log Metadata ---
-        metadata = request.get_metadata()
-        logging.info("--- Image Metadata ---")
-        logging.info(json.dumps(metadata, indent=4))
-        logging.info("--------------------")
-        request.release()
-    except Exception as e:
-        logging.error(f"An error occurred: {e}")
-    finally:
-        if picam2:
-            logging.info("Stopping camera...")
-            picam2.stop()
-            picam2.close()
-            logging.info("Camera stopped and resources released.")
+    logging.info("=== CameraManager Test End ===")
 
 if __name__ == "__main__":
-    capture_image_and_metadata()
+    main()
