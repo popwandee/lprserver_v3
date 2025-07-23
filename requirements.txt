@@ -16,3 +16,7 @@ websockets
 python-dotenv
 pandas
 matplotlib
+requests
+sqlite3
+libcamera
+difflib
