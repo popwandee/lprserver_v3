@@ -11,9 +11,9 @@ import numpy as np
 from picamera2 import Picamera2
 from libcamera import controls
 # 🔧 Config
-CSV_PATH = "experiment_results.csv"
-IMAGE_DIR = "experiment_results"
-METADATA_DIR = "experiment_results"
+CSV_PATH = "experiment_results_imx708Wide_car_daytime_gopro.csv"
+IMAGE_DIR = "experiment_results_imx708Wide_car_daytime_gopro"
+METADATA_DIR = "experiment_results_imx708Wide_car_daytime_gopro"
 os.makedirs(IMAGE_DIR, exist_ok=True)
 
 # 🧠 Initialize
