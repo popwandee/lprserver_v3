@@ -94,10 +94,16 @@ def resize_with_letterbox(image, target_size=(640, 640), padding_value=(0, 0, 0)
     if image is None or not isinstance(image, np.ndarray):
         logging.warning("resize_with_letterbox received Captured image is invalid input!")
         return None, None, None, None
-    # Convert BGR to RGB (if needed) if it's BGR, as many models expect RGB
-    if len(image.shape) == 3 and image.shape[-1] == 3:
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
+    logging.info(f"Resizing image from shape {image.shape} to target size {target_size}")
+    if len(image.shape) != 3 or image.shape[2] not in [3, 4]:
+        logging.error(f"Invalid image shape: {image.shape}. Expected 3 channels (RGB/BGR) or 4 channels (RGBA).")
+        return None, None, None, None
+    # Force image to 3 channels (BGR) for all models
+    if image.shape[2] == 4:
+        image = cv2.cvtColor(image, cv2.COLOR_BGRA2BGR)
+    channels = 3
+    padding_value = (0, 0, 0)
+    
     original_height, original_width, channels = image.shape
     target_height, target_width = target_size
 

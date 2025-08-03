@@ -1,0 +1,42 @@
+@startuml Entity Relationship Diagram
+entity camera_metadata {
+    * id : INTEGER <<PK>>
+    * frame_id : TEXT <<UNIQUE>>
+    timestamp : TEXT
+    exposure_time : REAL
+    analog_gain : REAL
+    digital_gain : REAL
+    lux : REAL
+    colour_temperature : REAL
+    lens_position : REAL
+    focus_state : INTEGER
+    image_filename : TEXT
+    processed_image_filename : TEXT
+}
+
+entity detection_results {
+    * id : INTEGER <<PK>>
+    frame_id : TEXT
+    license_plate_text : TEXT
+    lp_confidence : REAL
+    lp_box_x : INTEGER
+    lp_box_y : INTEGER
+    lp_box_w : INTEGER
+    lp_box_h : INTEGER
+    lp_image_filename : TEXT
+    sent_to_server : INTEGER
+    sent_timestamp : TEXT
+}
+
+entity health_checks {
+    * id : INTEGER <<PK>>
+    timestamp : TEXT
+    component : TEXT
+    status : TEXT
+    message : TEXT
+    sent_to_server : INTEGER
+    sent_timestamp : TEXT
+}
+
+camera_metadata ||--o{ detection_results : "frame_id"
+@enduml

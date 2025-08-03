@@ -20,3 +20,4 @@ requests
 sqlite3
 libcamera
 difflib
+eventlet

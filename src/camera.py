@@ -72,6 +72,26 @@ class CameraManager:
         except Exception as e:
             logging.error(f"Failed to set camera controls: {e}")
 
+    def get_request(self, stream="main"):
+        """
+        Capture a request from the camera and return (frame, metadata).
+        stream: "main" or "lores"
+        """
+        if not self.picam2:
+            logging.error("Try to get request but Camera not initialized.")
+            return None, None
+        try:
+            request = self.picam2.capture_request()
+            frame = request.make_array(stream)
+            metadata = request.get_metadata()
+            request.release()
+
+            logging.info(f"Captured {stream} resolution stream with metadata.")
+            return frame, metadata
+        except Exception as e:
+            logging.error(f"Failed to capture {stream} frame: {e}")
+            return
+        
     def test_still_image(self, output_path):
         """Capture a still image and save to output_path. Returns (frame, metadata)"""
         if not self.picam2:

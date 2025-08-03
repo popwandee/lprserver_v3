@@ -68,26 +68,39 @@ class DetectionThread(threading.Thread):
         logger.info("Object detection thread started")
         while self.should_run:
             try:
-                request = self.cam_manager.get_request()
-                if request is None:
-                    logger.warning("No frame from camera.")
+                frame, metadata = self.cam_manager.get_request("main") # 'main' Or 'lores' for low resolution
+                if frame is None:
+                    logger.error("Failed to get frame from camera.")
                     time.sleep(0.1)
                     continue
-                frame = request.make_array('main') # Or 'lores' for low resolution
-                meta = request.get_metadata() 
-                logging.debug(f"Frame metadata: {meta}")
-                request.release()
+                logging.debug(f'Captured frame with shape: {frame.shape}, metadata: {metadata}')
 
                 # Convert to BGR if your model expects it (OpenCV default is BGR)
                 # picamera2's default format might be RGB, depending on configuration
-                if frame.shape[2] == 3: # Check if it's an RGB image
-                    frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                else:
-                    frame_bgr = frame # Assuming it's already BGR or grayscale
+                #if frame.shape[2] == 4:  # BGRA/RGBA
+                #    frame_bgr = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
+                #elif frame.shape[2] == 3:
+                #    frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                #else:
+                #    frame_bgr = frame # Assuming it's already BGR or grayscale
+                logging.debug(f'Frame converted to BGR with shape: {frame.shape}')
+                logging.debug(f'frame_bgr dtype: {frame.dtype}, min: {np.min(frame)}, max: {np.max(frame)}')
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                base_dir = "output"
+                os.makedirs(base_dir, exist_ok=True)
+                frame_path = os.path.join(base_dir, f"frame_{timestamp}.jpg")
+                cv2.imwrite(frame_path, frame) #สีเพี้ยน
+                
+                frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR) # สีปกติของ OpenCV คือ BGR
+                frame_bgr_path = os.path.join(base_dir, f"frame_bgr_{timestamp}.jpg")
+                cv2.imwrite(frame_bgr_path, frame_bgr)
 
+                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)# สีปกติ
+                frame_rgb_path = os.path.join(base_dir, f"frame_rgb_{timestamp}.jpg")
+                cv2.imwrite(frame_rgb_path, frame_rgb)
                 # Perform object detection on frame_bgr
                 # 1. Vehicle Detection
-                resized = resize_with_letterbox(frame_bgr, (self.vehicle_model.input_shape[0][1], self.vehicle_model.input_shape[0][2]))
+                resized = resize_with_letterbox(frame, (self.vehicle_model.input_shape[0][1], self.vehicle_model.input_shape[0][2]))
                 vehicle_results = self.vehicle_model(resized)
                 vehicle_boxes = getattr(vehicle_results, "results", [])
 
@@ -100,7 +113,11 @@ class DetectionThread(threading.Thread):
                     v_crop = crop_license_plates(frame, [vbox])
                     if not v_crop or v_crop[0] is None:
                         continue
-                    lp_results = self.lp_detection_model(resize_with_letterbox(v_crop[0], (self.lp_detection_model.input_shape[0][1], self.lp_detection_model.input_shape[0][2])))
+                    if v_crop[0].shape[2] == 4:
+                        v_crop_bgr = cv2.cvtColor(v_crop[0], cv2.COLOR_BGRA2BGR)
+                    else:
+                        v_crop_bgr = v_crop[0]
+                    lp_results = self.lp_detection_model(resize_with_letterbox(v_crop_bgr, (self.lp_detection_model.input_shape[0][1], self.lp_detection_model.input_shape[0][2])))
                     lp_boxes += getattr(lp_results, "results", [])
 
                 frame_with_lp = draw_bounding_boxes(frame_with_vehicles, lp_boxes, color=(0,0,255), thickness=2)

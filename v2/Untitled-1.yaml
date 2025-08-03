@@ -1,0 +1,207 @@
+(venv_hailo) camuser@aicamera1:~/aicamera $ python v2/app.py
+root: INFO - Logging setup complete.
+database_manager: INFO - Database tables checked/created successfully.
+root: INFO - Database connection successful.
+easyocr.easyocr: WARNING - Neither CUDA nor MPS are available - defaulting to CPU. Note: This module is much faster with a GPU.
+detection_processor: INFO - Loading detection models...
+degirum.zoo_manager: INFO - Local inference with local zoo from 'v2/models' dir
+degirum.zoo_manager: INFO - Local inference with local zoo from 'v2/models' dir
+degirum.zoo_manager: INFO - Local inference with local zoo from 'v2/models' dir
+detection_processor: INFO - Detection models loaded <degirum.model._ClientModel object at 0x7fff0953bb10> and <degirum.model._ClientModel object at 0x7fff094e83d0> 
+__main__: INFO - Setting up application: Initializing camera and starting background threads.
+[48:47:50.539734449] [2851343]  INFO Camera camera_manager.cpp:326 libcamera v0.5.0+59-d83ff0a4
+[48:47:50.547545199] [2851531]  INFO RPI pisp.cpp:720 libpisp version v1.2.1 981977ff21f3 29-04-2025 (14:13:50)
+[48:47:50.557967994] [2851531]  INFO RPI pisp.cpp:1179 Registered camera /base/axi/pcie@1000120000/rp1/i2c@80000/imx708@1a to CFE device /dev/media0 and ISP device /dev/media1 using PiSP variant BCM2712_D0
+picamera2.picamera2: INFO - Initialization successful.
+picamera2.picamera2: INFO - Camera now open.
+picamera2.picamera2: INFO - Camera configuration has been adjusted!
+[48:47:50.564440554] [2851343]  INFO Camera camera.cpp:1205 configuring streams: (0) 1280x720-XBGR8888 (1) 640x480-YUV420 (2) 1536x864-BGGR_PISP_COMP1
+[48:47:50.564598610] [2851531]  INFO RPI pisp.cpp:1483 Sensor: /base/axi/pcie@1000120000/rp1/i2c@80000/imx708@1a - Selected sensor format: 1536x864-SBGGR10_1X10 - Selected CFE format: 1536x864-PC1B
+picamera2.picamera2: INFO - Configuration successful!
+camera_handler: INFO - Set AwbMode: auto.
+camera_handler: INFO - Camera controls applied successfully.
+picamera2.picamera2: INFO - Camera started
+camera_handler: INFO - Camera initialized with resolution: (1280, 720), framerate: 30
+camera_handler: INFO - Camera controls applied: Brightness=0.0, Contrast=1.0, Saturation=1.0, Sharpness=1.0,  AWBMode=auto
+health_monitor: INFO - Starting all system health checks...
+health_monitor: INFO - Health Check - Camera: PASS - Camera initialized and streaming.
+health_monitor: INFO - Health Check - Disk Space: PASS - Enough disk space: 35.12 GB free.
+health_monitor: ERROR - LICENSE_PLATE_DETECTION_MODEL: is not set in config.
+health_monitor: INFO - Health Check - Detection Models: FAIL - License plate detection model not found in config.
+health_monitor: INFO - Health Check - EasyOCR: PASS - EasyOCR module is importable.
+health_monitor: INFO - Health Check - Database: PASS - Database connection is active.
+health_monitor: INFO - Health Check - Network Connectivity: PASS - Network connectivity to 8.8.8.8:53 successful.
+health_monitor: INFO - All system health checks completed.
+picamera2.picamera2: INFO - Camera stopped
+camera_handler: INFO - Camera stopped successfully.
+picamera2.picamera2: INFO - Camera closed successfully.
+camera_handler: INFO - Camera resources released.
+detection_processor: INFO - Loading detection models...
+degirum.zoo_manager: INFO - Local inference with local zoo from 'v2/models' dir
+degirum.zoo_manager: INFO - Local inference with local zoo from 'v2/models' dir
+degirum.zoo_manager: INFO - Local inference with local zoo from 'v2/models' dir
+detection_processor: INFO - Detection models loaded <degirum.model._ClientModel object at 0x7fff095261d0> and <degirum.model._ClientModel object at 0x7fff09524310> 
+__main__: INFO - Camera initialized and started by app.py on thread start.
+__main__: INFO - Starting metadata sender thread...
+__main__: INFO - Metadata sender thread started.
+__main__: INFO - Starting detection thread...
+detection_processor: INFO - Detection processor thread started.
+__main__: INFO - Detection thread started.
+__main__: INFO - Starting WebSocket sender thread...
+websocket_client: INFO - WebSocket sender thread started.
+__main__: INFO - WebSocket sender thread started.
+websocket_client: INFO - Attempting to connect to WebSocket server: ws://100.95.46.128:8765 (Attempt 1/10)
+__main__: INFO - Starting health monitor thread...
+health_monitor: INFO - Health monitor thread started.
+__main__: INFO - Health monitor thread started.
+health_monitor: INFO - Starting all system health checks...
+__main__: INFO - Application setup complete.
+health_monitor: INFO - Health Check - Camera: FAIL - Camera not initialized or not started.
+ * Serving Flask app 'app'
+ * Debug mode: on
+werkzeug: INFO - WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.28:5000
+werkzeug: INFO - Press CTRL+C to quit
+werkzeug: INFO -  * Restarting with stat
+health_monitor: INFO - Health Check - Disk Space: PASS - Enough disk space: 35.12 GB free.
+health_monitor: ERROR - LICENSE_PLATE_DETECTION_MODEL: is not set in config.
+health_monitor: INFO - Health Check - Detection Models: FAIL - License plate detection model not found in config.
+websocket_client: INFO - Successfully connected to WebSocket server.
+health_monitor: INFO - Health Check - EasyOCR: PASS - EasyOCR module is importable.
+health_monitor: INFO - Health Check - Database: PASS - Database connection is active.
+health_monitor: INFO - Health Check - Network Connectivity: PASS - Network connectivity to 8.8.8.8:53 successful.
+health_monitor: INFO - All system health checks completed.
+root: INFO - Logging setup complete.
+database_manager: INFO - Database tables checked/created successfully.
+root: INFO - Database connection successful.
+easyocr.easyocr: WARNING - Neither CUDA nor MPS are available - defaulting to CPU. Note: This module is much faster with a GPU.
+websocket_client: INFO - Attempting to connect to WebSocket server: ws://100.95.46.128:8765 (Attempt 1/10)
+websocket_client: INFO - Successfully connected to WebSocket server.
+websocket_client: INFO - Attempting to connect to WebSocket server: ws://100.95.46.128:8765 (Attempt 1/10)
+websocket_client: INFO - Successfully connected to WebSocket server.
+detection_processor: INFO - Loading detection models...
+degirum.zoo_manager: INFO - Local inference with local zoo from 'v2/models' dir
+degirum.zoo_manager: INFO - Local inference with local zoo from 'v2/models' dir
+degirum.zoo_manager: INFO - Local inference with local zoo from 'v2/models' dir
+detection_processor: INFO - Detection models loaded <degirum.model._ClientModel object at 0x7ffe6f7495d0> and <degirum.model._ClientModel object at 0x7ffe730f8a90> 
+__main__: INFO - Setting up application: Initializing camera and starting background threads.
+[48:48:02.004604647] [2851571]  INFO Camera camera_manager.cpp:326 libcamera v0.5.0+59-d83ff0a4
+[48:48:02.012773194] [2851759]  INFO RPI pisp.cpp:720 libpisp version v1.2.1 981977ff21f3 29-04-2025 (14:13:50)
+[48:48:02.024092492] [2851759]  INFO RPI pisp.cpp:1179 Registered camera /base/axi/pcie@1000120000/rp1/i2c@80000/imx708@1a to CFE device /dev/media0 and ISP device /dev/media1 using PiSP variant BCM2712_D0
+picamera2.picamera2: INFO - Initialization successful.
+picamera2.picamera2: INFO - Camera now open.
+picamera2.picamera2: INFO - Camera configuration has been adjusted!
+[48:48:02.029009213] [2851571]  INFO Camera camera.cpp:1205 configuring streams: (0) 1280x720-XBGR8888 (1) 640x480-YUV420 (2) 1536x864-BGGR_PISP_COMP1
+[48:48:02.029179436] [2851759]  INFO RPI pisp.cpp:1483 Sensor: /base/axi/pcie@1000120000/rp1/i2c@80000/imx708@1a - Selected sensor format: 1536x864-SBGGR10_1X10 - Selected CFE format: 1536x864-PC1B
+picamera2.picamera2: INFO - Configuration successful!
+camera_handler: INFO - Set AwbMode: auto.
+camera_handler: INFO - Camera controls applied successfully.
+picamera2.picamera2: INFO - Camera started
+camera_handler: INFO - Camera initialized with resolution: (1280, 720), framerate: 30
+camera_handler: INFO - Camera controls applied: Brightness=0.0, Contrast=1.0, Saturation=1.0, Sharpness=1.0,  AWBMode=auto
+health_monitor: INFO - Starting all system health checks...
+health_monitor: INFO - Health Check - Camera: PASS - Camera initialized and streaming.
+health_monitor: INFO - Health Check - Disk Space: PASS - Enough disk space: 35.12 GB free.
+health_monitor: ERROR - LICENSE_PLATE_DETECTION_MODEL: is not set in config.
+health_monitor: INFO - Health Check - Detection Models: FAIL - License plate detection model not found in config.
+health_monitor: INFO - Health Check - EasyOCR: PASS - EasyOCR module is importable.
+health_monitor: INFO - Health Check - Database: PASS - Database connection is active.
+health_monitor: INFO - Health Check - Network Connectivity: PASS - Network connectivity to 8.8.8.8:53 successful.
+health_monitor: INFO - All system health checks completed.
+picamera2.picamera2: INFO - Camera stopped
+camera_handler: INFO - Camera stopped successfully.
+picamera2.picamera2: INFO - Camera closed successfully.
+camera_handler: INFO - Camera resources released.
+detection_processor: INFO - Loading detection models...
+degirum.zoo_manager: INFO - Local inference with local zoo from 'v2/models' dir
+degirum.zoo_manager: INFO - Local inference with local zoo from 'v2/models' dir
+degirum.zoo_manager: INFO - Local inference with local zoo from 'v2/models' dir
+detection_processor: INFO - Detection models loaded <degirum.model._ClientModel object at 0x7ffe6c8e80d0> and <degirum.model._ClientModel object at 0x7ffe6c8ab150> 
+__main__: INFO - Camera initialized and started by app.py on thread start.
+__main__: INFO - Starting metadata sender thread...
+__main__: INFO - Metadata sender thread started.
+__main__: INFO - Starting detection thread...
+detection_processor: INFO - Detection processor thread started.
+__main__: INFO - Detection thread started.
+__main__: INFO - Starting WebSocket sender thread...
+websocket_client: INFO - WebSocket sender thread started.
+__main__: INFO - WebSocket sender thread started.
+websocket_client: INFO - Attempting to connect to WebSocket server: ws://100.95.46.128:8765 (Attempt 1/10)
+__main__: INFO - Starting health monitor thread...
+health_monitor: INFO - Health monitor thread started.
+__main__: INFO - Health monitor thread started.
+health_monitor: INFO - Starting all system health checks...
+__main__: INFO - Application setup complete.
+health_monitor: INFO - Health Check - Camera: FAIL - Camera not initialized or not started.
+werkzeug: WARNING -  * Debugger is active!
+werkzeug: INFO -  * Debugger PIN: 119-755-943
+health_monitor: INFO - Health Check - Disk Space: PASS - Enough disk space: 35.12 GB free.
+websocket_client: INFO - Successfully connected to WebSocket server.
+health_monitor: ERROR - LICENSE_PLATE_DETECTION_MODEL: is not set in config.
+health_monitor: INFO - Health Check - Detection Models: FAIL - License plate detection model not found in config.
+health_monitor: INFO - Health Check - EasyOCR: PASS - EasyOCR module is importable.
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:30] "GET /socket.io/?EIO=4&transport=polling&t=PXfDf3Y HTTP/1.1" 200 -
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:30] "POST /socket.io/?EIO=4&transport=polling&t=PXfDhUo&sid=kj9NIuPCGxwZ-CwbAAAA HTTP/1.1" 200 -
+health_monitor: INFO - Health Check - Database: PASS - Database connection is active.
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:30] "GET /socket.io/?EIO=4&transport=polling&t=PXfDhUp&sid=kj9NIuPCGxwZ-CwbAAAA HTTP/1.1" 200 -
+health_monitor: INFO - Health Check - Network Connectivity: PASS - Network connectivity to 8.8.8.8:53 successful.
+health_monitor: INFO - All system health checks completed.
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:33] "GET /socket.io/?EIO=4&transport=websocket&sid=kj9NIuPCGxwZ-CwbAAAA HTTP/1.1" 200 -
+websocket_client: INFO - Attempting to connect to WebSocket server: ws://100.95.46.128:8765 (Attempt 1/10)
+websocket_client: INFO - Successfully connected to WebSocket server.
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:34] "GET /socket.io/?EIO=4&transport=polling&t=PXfDiWi HTTP/1.1" 200 -
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:34] "POST /socket.io/?EIO=4&transport=polling&t=PXfDiWw&sid=gGA2oONMGz76pPq6AAAC HTTP/1.1" 200 -
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:34] "GET /socket.io/?EIO=4&transport=polling&t=PXfDiWw.0&sid=gGA2oONMGz76pPq6AAAC HTTP/1.1" 200 -
+websocket_client: INFO - Attempting to connect to WebSocket server: ws://100.95.46.128:8765 (Attempt 1/10)
+websocket_client: INFO - Successfully connected to WebSocket server.
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:37] "GET /socket.io/?EIO=4&transport=websocket&sid=gGA2oONMGz76pPq6AAAC HTTP/1.1" 200 -
+__main__: INFO - Tearing down application: Stopping background threads and closing resources.
+__main__: INFO - Signaling background threads to stop...
+detection_processor: INFO - Stopping detection processor thread...
+health_monitor: INFO - Stopping health monitor thread...
+websocket_client: INFO - Stopping WebSocket client thread...
+detection_processor: INFO - Detection processor thread stopped.
+health_monitor: INFO - Health monitor thread stopped.
+websocket_client: INFO - Attempting to connect to WebSocket server: ws://100.95.46.128:8765 (Attempt 1/10)
+websocket_client: INFO - Successfully connected to WebSocket server.
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:39] "GET /socket.io/?EIO=4&transport=polling&t=PXfDjcz HTTP/1.1" 200 -
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:39] "POST /socket.io/?EIO=4&transport=polling&t=PXfDjd5&sid=LKW2QJ_kJ3QXgy5cAAAE HTTP/1.1" 200 -
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:39] "GET /socket.io/?EIO=4&transport=polling&t=PXfDjd6&sid=LKW2QJ_kJ3QXgy5cAAAE HTTP/1.1" 200 -
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:39] "GET /socket.io/?EIO=4&transport=polling&t=PXfDjdH&sid=LKW2QJ_kJ3QXgy5cAAAE HTTP/1.1" 200 -
+websocket_client: INFO - WebSocket sender thread stopped.
+websocket_client: INFO - WebSocket connection closed.
+__main__: INFO - Background threads stopped.
+database_manager: INFO - Database connection closed.
+__main__: INFO - Application teardown complete.
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:40] "GET / HTTP/1.1" 200 -
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:40] "GET /socket.io/?EIO=4&transport=websocket&sid=LKW2QJ_kJ3QXgy5cAAAE HTTP/1.1" 200 -
+__main__: INFO - Tearing down application: Stopping background threads and closing resources.
+__main__: INFO - Signaling background threads to stop...
+detection_processor: INFO - Stopping detection processor thread...
+health_monitor: INFO - Stopping health monitor thread...
+websocket_client: INFO - Stopping WebSocket client thread...
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:40] "GET /socket.io/?EIO=4&transport=polling&t=PXfDjxR HTTP/1.1" 200 -
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:40] "POST /socket.io/?EIO=4&transport=polling&t=PXfDjxc&sid=j9yRbuDWErLl_1MHAAAG HTTP/1.1" 200 -
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:40] "GET /socket.io/?EIO=4&transport=polling&t=PXfDjxd&sid=j9yRbuDWErLl_1MHAAAG HTTP/1.1" 200 -
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:40] "GET /socket.io/?EIO=4&transport=polling&t=PXfDjxp&sid=j9yRbuDWErLl_1MHAAAG HTTP/1.1" 200 -
+__main__: INFO - Background threads stopped.
+__main__: INFO - Application teardown complete.
+camera_handler: INFO - Starting video stream generator.
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:42] "GET /video_feed HTTP/1.1" 200 -
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:43] "GET /socket.io/?EIO=4&transport=websocket&sid=j9yRbuDWErLl_1MHAAAG HTTP/1.1" 200 -
+websocket_client: INFO - Attempting to connect to WebSocket server: ws://100.95.46.128:8765 (Attempt 1/10)
+websocket_client: INFO - Successfully connected to WebSocket server.
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:44] "GET /socket.io/?EIO=4&transport=polling&t=PXfDkv6 HTTP/1.1" 200 -
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:44] "POST /socket.io/?EIO=4&transport=polling&t=PXfDkvL&sid=ljjK8UIyJHsHPvErAAAI HTTP/1.1" 200 -
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:44] "GET /socket.io/?EIO=4&transport=polling&t=PXfDkvM&sid=ljjK8UIyJHsHPvErAAAI HTTP/1.1" 200 -
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:44] "GET /socket.io/?EIO=4&transport=polling&t=PXfDkvU&sid=ljjK8UIyJHsHPvErAAAI HTTP/1.1" 200 -
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:47] "GET /socket.io/?EIO=4&transport=websocket&sid=ljjK8UIyJHsHPvErAAAI HTTP/1.1" 200 -
+websocket_client: INFO - Attempting to connect to WebSocket server: ws://100.95.46.128:8765 (Attempt 1/10)
+websocket_client: INFO - Successfully connected to WebSocket server.
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:48] "GET /socket.io/?EIO=4&transport=polling&t=PXfDm06 HTTP/1.1" 200 -
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:48] "POST /socket.io/?EIO=4&transport=polling&t=PXfDm0F&sid=VfBV1IKeesAg4ZdGAAAK HTTP/1.1" 200 -
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:48] "GET /socket.io/?EIO=4&transport=polling&t=PXfDm0G&sid=VfBV1IKeesAg4ZdGAAAK HTTP/1.1" 200 -
+werkzeug: INFO - 100.100.1.1 - - [02/Aug/2025 12:17:48] "GET /socket.io/?EIO=4&transport=polling&t=PXfDm0Q&sid=VfBV1IKeesAg4ZdGAAAK HTTP/1.1" 200 -
+^C(venv_hailo) camuser@aicamera1:~/aicamera $ 

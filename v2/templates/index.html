@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raspberry Pi LPR Detector</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        .container { max-width: 900px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1, h2 { color: #0056b3; }
+        .video-feed { width: 100%; max-width: 640px; border: 2px solid #ddd; border-radius: 5px; margin-bottom: 20px; }
+        form { margin-top: 20px; padding: 15px; border: 1px solid #eee; border-radius: 5px; background-color: #f9f9f9; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], input[type="number"], select {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .flash-message {
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .flash-message.success { background-color: #d4edda; color: #155724; border-color: #c3e6cb; }
+        .flash-message.danger { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+        .health-status-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .health-status-table th, .health-status-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .health-status-table th {
+            background-color: #f2f2f2;
+        }
+        .status-PASS { color: green; font-weight: bold; }
+        .status-FAIL { color: red; font-weight: bold; }
+        /* CSS เพื่อจัดรูปแบบส่วนแสดงผล Metadata */
+         .metadata-container {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        .metadata-container h3 {
+            margin-top: 0;
+            font-size: 1.2em;
+            color: #495057;
+        }
+        .metadata-item {
+            margin-bottom: 5px;
+        }
+        .metadata-label {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AI Camera for LPR Detector</h1>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash-message {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <h2>Live Camera Feed</h2>
+        <img src="{{ url_for('video_feed') }}" class="video-feed" alt="Camera Live Feed">
+        <div class="metadata-container">
+            <h3>Latest Metadata</h3>
+            {% if latest_metadata %}
+                {% for key, value in latest_metadata.items() %}
+                    <div class="metadata-item">
+                        <span class="metadata-label">{{ key }}:</span> {{ value }}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>No metadata available yet.</p>
+            {% endif %}
+        </div>
+        <h2>Camera Settings</h2>
+        <form id="camera-settings-form" action="{{ url_for('update_camera_settings') }}" method="post">
+            <div class="form-group">    
+            <label for="resolution">Resolution (WidthxHeight):</label>
+            <input type="text" id="resolution" name="resolution" 
+                   value="{{ current_properties.resolution[0] }}x{{ current_properties.resolution[1] }}" 
+                   pattern="\d+x\d+" title="Format: WIDTHxHEIGHT (e.g., 1280x720)" required>
+
+            <label for="framerate">Framerate (FPS):</label>
+            <input type="number" id="framerate" name="framerate" 
+                   value="{{ current_properties.framerate }}" min="1" max="60" required>
+
+            <label for="brightness">Brightness (-1.0 to 1.0):</label>
+            <input type="number" id="brightness" name="brightness" step="0.1" 
+                   value="{{ current_properties.brightness }}" min="-1.0" max="1.0">
+
+            <label for="contrast">Contrast (0.0 to 2.0):</label>
+            <input type="number" id="contrast" name="contrast" step="0.1" 
+                   value="{{ current_properties.contrast }}" min="0.0" max="2.0">
+
+            <label for="saturation">Saturation (0.0 to 2.0):</label>
+            <input type="number" id="saturation" name="saturation" step="0.1" 
+                   value="{{ current_properties.saturation }}" min="0.0" max="2.0">
+            
+            <label for="sharpness">Sharpness (0.0 to 4.0):</label>
+            <input type="number" id="sharpness" name="sharpness" step="0.1" 
+                   value="{{ current_properties.sharpness }}" min="0.0" max="4.0">
+
+            <label for="exposure_mode">Exposure Mode:</label>
+            <select id="exposure_mode" name="exposure_mode">
+                {% for mode in exposure_modes %}
+                    <option value="{{ mode }}" {% if mode == current_properties.exposure_mode %}selected{% endif %}>{{ mode.replace('_', ' ').title() }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="awb_mode">AWB Mode:</label>
+            <select id="awb_mode" name="awb_mode">
+                {% for mode in awb_modes %}
+                    <option value="{{ mode }}" {% if mode == current_properties.awb_mode %}selected{% endif %}>{{ mode.replace('_', ' ').title() }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="button-group">
+            <button type="submit">Apply Settings & Restart</button>
+            <button type="button" id="close-camera-btn" class="btn btn-danger">Close Camera</button>
+        </div>
+        </form>
+    </div>
+
+    <div class="container">
+        <h2>System Health Status (Last 10 Checks)</h2>
+        <table class="health-status-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Component</th>
+                    <th>Status</th>
+                    <th>Message</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if latest_health_checks %}
+                    {% for check in latest_health_checks %}
+                        <tr>
+                            <td>{{ check.timestamp | datetimeformat }}</td>
+                            <td>{{ check.component }}</td>
+                            <td class="status-{{ check.status }}">{{ check.status }}</td>
+                            <td>{{ check.message }}</td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="4">No health check data available yet.</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+
+        document.getElementById('close-camera-btn').addEventListener('click', function() {
+            if (confirm('Are you sure you want to close the camera? This will stop all detection and video streaming.')) {
+                // ส่งคำขอไปยัง Flask เพื่อปิดกล้อง
+                fetch('/close_camera', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            alert('Camera closed successfully!');
+                            // หยุดแสดงภาพวิดีโอ
+                            document.getElementById('video-feed').src = '';
+                            document.getElementById('video-feed').alt = 'Camera is closed.';
+                        } else {
+                            alert('Error closing camera: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while trying to close the camera.');
+                    });
+            }
+        });
+
+        // เชื่อมต่อ WebSocket และรับข้อมูล Metadata
+        var socket = io();
+        socket.on('connect', function() {
+            console.log('Connected to WebSocket server!');
+        });
+        
+        socket.on('camera_metadata', function(data) {
+            console.log('Received camera metadata:', data);
+            document.getElementById('shutter-speed-value').innerText = (data.shutter_speed / 1000) + ' ms';
+            document.getElementById('analog-gain-value').innerText = data.analog_gain;
+            document.getElementById('digital-gain-value').innerText = data.digital_gain;
+            document.getElementById('exposure-time-value').innerText = data.exposure_time / 1000 + ' ms';
+        });
+    </script>
+</body>
+</html>

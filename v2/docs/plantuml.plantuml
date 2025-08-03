@@ -1,0 +1,47 @@
+@startuml Class Diagram for Flask App and Components
+class CameraHandler {
+    +initialize_camera()
+    +generate_frames()
+    +close_camera()
+    +is_initialized
+    +is_started
+}
+
+class DetectionProcessor {
+    +run()
+    +stop()
+    +load_license_plate_model()
+}
+
+class DatabaseManager {
+    +close_connection()
+    +get_latest_health_checks()
+}
+
+class WebSocketClient {
+    +run()
+    +stop()
+}
+
+class HealthMonitor {
+    +run()
+    +stop()
+}
+
+class FlaskApp {
+    +index()
+    +video_feed()
+    +update_camera_settings()
+    +close_camera()
+}
+
+FlaskApp --> CameraHandler : uses
+FlaskApp --> DetectionProcessor : uses
+FlaskApp --> DatabaseManager : uses
+FlaskApp --> WebSocketClient : uses
+FlaskApp --> HealthMonitor : uses
+
+CameraHandler --> queue.Queue : frames_queue, metadata_queue
+DetectionProcessor --> queue.Queue : frames_queue
+
+@enduml

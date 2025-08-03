@@ -1,0 +1,25 @@
+@startuml Cross Function Flow
+|Flask App|
+start
+:Receive HTTP request;
+:Call camera_handler.generate_frames() or other handler;
+|CameraHandler|
+:Initialize camera;
+:Capture frame & metadata;
+:Put frame in frames_queue;
+:Put metadata in metadata_queue;
+|DetectionProcessor|
+:Take frame from frames_queue;
+:Run detection & OCR;
+:Save results to database;
+|DatabaseManager|
+:Insert metadata & detection results;
+|WebSocketClient|
+:Send unsent detections/health checks to server;
+|HealthMonitor|
+:Run periodic health checks;
+:Insert health check results to database;
+|Flask App|
+:Serve video feed or API response;
+stop
+@enduml

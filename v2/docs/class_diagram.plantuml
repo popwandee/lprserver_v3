@@ -1,0 +1,61 @@
+@startuml Class Diagram
+class CameraHandler {
+    +initialize_camera()
+    +generate_frames()
+    +capture_frame_and_metadata()
+    +close_camera()
+    +is_initialized
+    +is_started
+}
+
+class DetectionProcessor {
+    +run()
+    +stop()
+    +load_detection_models()
+    +detect_vehicles()
+    +detect_license_plates()
+    +perform_ocr()
+    +process_frame()
+}
+
+class DatabaseManager {
+    +insert_camera_metadata()
+    +insert_detection_result()
+    +get_unsent_detections()
+    +update_detection_sent_status()
+    +insert_health_check_result()
+    +get_latest_health_checks()
+    +get_unsent_health_checks()
+    +update_health_check_sent_status()
+    +close_connection()
+}
+
+class WebSocketClient {
+    +run()
+    +stop()
+    +connect()
+    +send_detection()
+    +send_health_check()
+}
+
+class HealthMonitor {
+    +run()
+    +stop()
+    +run_all_checks()
+    +check_camera()
+    +check_disk_space()
+    +check_model_loading()
+    +check_easyocr_init()
+    +check_database_connection()
+    +check_network_connectivity()
+}
+
+CameraHandler --> queue.Queue : frames_queue, metadata_queue
+DetectionProcessor --> CameraHandler
+DetectionProcessor --> DatabaseManager
+DetectionProcessor --> queue.Queue : frames_queue
+WebSocketClient --> DatabaseManager
+HealthMonitor --> DatabaseManager
+HealthMonitor --> CameraHandler
+
+@enduml
