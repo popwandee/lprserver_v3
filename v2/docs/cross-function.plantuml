@@ -1,25 +1,65 @@
-@startuml Cross Function Flow
-|Flask App|
-start
-:Receive HTTP request;
-:Call camera_handler.generate_frames() or other handler;
-|CameraHandler|
-:Initialize camera;
-:Capture frame & metadata;
-:Put frame in frames_queue;
-:Put metadata in metadata_queue;
-|DetectionProcessor|
-:Take frame from frames_queue;
-:Run detection & OCR;
-:Save results to database;
-|DatabaseManager|
-:Insert metadata & detection results;
-|WebSocketClient|
-:Send unsent detections/health checks to server;
-|HealthMonitor|
-:Run periodic health checks;
-:Insert health check results to database;
-|Flask App|
-:Serve video feed or API response;
-stop
+@startuml CrossFunction_LPR_System
+' ใช้ skinparam เพื่อปรับรูปแบบ lane
+skinparam sequence {
+  ParticipantPadding 20
+  BoxPadding 10
+  ArrowThickness 1
+  LifeLineBorderColor black
+  LifeLineBackgroundColor #DDDDDD
+  BackgroundColor #FDFDFD
+}
+
+title Cross-Function Diagram - LPR System
+
+' กำหนด Lane
+participant "User / Web Browser" as User
+participant "Flask Web Server\n(App.py)" as FlaskApp
+participant "CameraHandler" as Camera
+participant "Queue\n(Frame_queue,\nMetadata_queue)" as Queue
+participant "Detection Processor" as Detection
+participant "DatabaseManager" as DB
+participant "HealthMonitor" as Health
+participant "WebSocketClient" as WSClient
+participant "LPR WebSocket Server" as WSServer
+participant "LPR Flask Server" as LPRServer
+
+== Initialization ==
+User -> FlaskApp : Access /
+FlaskApp -> Camera : initialize_camera()
+Camera -> Queue : put frame & metadata
+Camera -> FlaskApp : generate_frames() for /video_feed
+
+== Detection Thread ==
+Queue -> Detection : get frame from frames_queue
+Detection -> Detection : vehicle detection
+Detection -> Detection : license plate detection
+Detection -> Detection : OCR
+Detection -> DB : save detection result
+
+== Metadata Thread ==
+Queue -> FlaskApp : send metadata via SocketIO
+
+== Health Monitor ==
+Health -> Camera : check camera status
+Health -> DB : log health check
+Health -> FlaskApp : update /healthmonitor
+
+== WebSocket Sender ==
+WSClient -> DB : get unsent_detections
+WSClient -> DB : get unsent_health_checks
+WSClient -> WSServer : send JSON + images
+WSServer -> LPRServer : store data in MySQL
+
+== User Actions ==
+User -> FlaskApp : /update_camera_settings
+FlaskApp -> Camera : stop + re-init
+FlaskApp -> Detection : restart thread
+FlaskApp -> Health : restart thread
+
+User -> FlaskApp : /shutdown
+FlaskApp -> WSClient : stop
+FlaskApp -> Health : stop
+FlaskApp -> Detection : stop
+FlaskApp -> Camera : release
+
 @enduml

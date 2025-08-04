@@ -1,0 +1,48 @@
+@startuml
+title AI Camera (ALPR) - Use Case Diagram
+
+left to right direction
+
+actor User
+actor Admin
+actor Manager
+actor Analyst
+
+rectangle "AI Camera (ALPR) System" {
+  
+  usecase "Live Camera Feed" as UC1
+  usecase "System Health Monitor" as UC2
+  usecase "Camera Setting/ Select Detection Model" as UC3
+  usecase "User Management" as UC4
+  usecase "Overview Report\n Daily Detetions" as UC5
+  usecase "User Logs" as UC6
+  usecase "Detection and Route Analysis" as UC7
+  usecase "Vehicle Blacklist Management" as UC8
+  usecase "Suspecius Analysis" as UC9
+  usecase "Storage for Image and logs management" as UC10
+usecase "Reset Camera" as UC11
+usecase "Shutdown App" as UC12
+usecase "Stop all thread" as UC13
+usecase "Restart All thread" as UC14
+}
+
+User --> UC1
+User --> UC2
+
+Admin --> UC2
+Admin --> UC3
+Admin --> UC4
+Admin --> UC10
+Admin --> UC11
+Admin --> UC12
+Admin --> UC13
+Admin --> UC14
+
+Manager --> UC2
+Manager --> UC5
+Manager --> UC6
+
+Analyst --> UC7
+Analyst --> UC8
+Analyst --> UC9
+@enduml

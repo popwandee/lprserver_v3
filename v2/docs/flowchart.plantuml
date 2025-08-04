@@ -1,92 +1,88 @@
-@startuml Class Diagram
-package "Startup" {
-  class Application {
-    +initialize_camera()
-    +run_all_checks()
-    +load_models()
-    +start_threads()
-  }
-}
+@startuml
+title AI Camera (LPR) System Startup Flow
 
-package "CameraHandler" {
-  class CameraHandler {
-    +initialize_camera()
-    +generate_frames()
-    +adjust_settings()
-    +close_camera()
-  }
+start
 
-  CameraHandler --> frames_queue : put frames
-  CameraHandler --> metadata_queue : put metadata
-}
+:Load config.py;
+:load_dotenv(.env.production);
 
-package "DetectionProcessor" {
-  class DetectionProcessor {
-    +run()
-    +detect_vehicle()
-    +detect_license_plate()
-    +perform_OCR()
-    +save_images()
-    +save_to_database()
-  }
-  DetectionProcessor --> frames_queue : get frames
-}
+:Configure Logging;
+note right
+INFO → Terminal
+DEBUG → Daily File (rotate @ midnight, keep 30 days)
+end note
 
-package "WebSocketClient" {
-  class WebSocketClient {
-    +connect()
-    +get_unsent_detections()
-    +get_unsent_health_checks()
-    +send_data()
-    +update_status()
-  }
-  WebSocketClient --> DatabaseManager : query/update
-}
+:Create Queues;
+note right
+frames_queue = Queue(maxsize=10)
+metadata_queue = Queue(maxsize=1)
+end note
 
-package "HealthMonitor" {
-  class HealthMonitor {
-    +run()
-    +check_camera()
-    +check_disk()
-    +check_models()
-    +check_OCR()
-    +check_database()
-    +check_network()
-    +log_results()
-  }
-  HealthMonitor --> DatabaseManager : log health checks
-}
+:Create db_lock = threading.Lock();
 
-package "Flask Web App" {
-  class FlaskApp {
-    +index()
-    +video_feed()
-    +update_camera_settings()
-    +close_camera()
-    +shutdown_application()
-  }
-  FlaskApp --> CameraHandler : control
-  FlaskApp --> DetectionProcessor : monitor
-  FlaskApp --> HealthMonitor : display status
-  FlaskApp --> WebSocketClient : trigger
-  FlaskApp --> DatabaseManager : query health checks
-}
+:Initialize CameraHandler;
+:Initialize DatabaseManager;
+:Initialize DetectionProcessor;
+:Initialize WebSocketClient;
+:Initialize HealthMonitor;
 
-database "DatabaseManager" {
-  class DatabaseManager {
-    +save_metadata()
-    +save_detection_results()
-    +get_unsent_detections()
-    +get_unsent_health_checks()
-    +update_sent_status()
-    +log_health_checks()
-  }
-}
+:Create Threads;
+note right
+- camera_thread
+- object_detection_thread
+- sender_thread
+- healthmonitor_thread
+- metadata_thread
+end note
 
-Application --> CameraHandler
-Application --> DetectionProcessor
-Application --> WebSocketClient
-Application --> HealthMonitor
-Application --> FlaskApp
-Application --> DatabaseManager
+:CameraHandler.initialize_camera();
+:DetectionProcessor.load_model();
+:HealthMonitor.run_all_checks();
+
+if (System Healthy?) then (yes)
+  :Start All Threads;
+else (no)
+  :Log Error to Terminal;
+  stop
+endif
+
+fork
+  :Thread 1: Camera → capture frame + metadata → frames_queue, metadata_queue;
+fork again
+  :Thread 2: Video Feed → Stream to Flask App;
+fork again
+  :Thread 3: Metadata → metadata_queue → SocketIO → Flask UI;
+fork again
+  :Thread 4: Detection → frames_queue → Detect → OCR → Save to DB;
+fork again
+  :Thread 5: HealthMonitor → periodic checks → Save to DB;
+fork again
+  :Thread 6: WebSocket Sender → Send unsent data to LPR Server;
+end fork
+
+group User Commands via Web UI
+  alt Toggle Camera or Reset
+    :Stop Detection & HealthMonitor;
+    :Close Camera;
+    :Reopen Camera;
+    :Restart Detection & HealthMonitor;
+  else Change Camera Parameters
+    :Stop Detection & HealthMonitor;
+    :Close Camera;
+    :Apply new controls;
+    :Reopen Camera;
+    :Restart Detection & HealthMonitor;
+  else Stop All Threads
+    :Stop sender → healthmonitor → detection → video feed → camera;
+    :Wait for restart command;
+  else Start All Threads
+    :Check if threads running;
+    :Stop if needed;
+    :Start sender → healthmonitor → detection → video feed → camera;
+  else Shutdown System
+    :Stop All Threads;
+    :Release resources;
+    stop
+  end
+end group
 @enduml
