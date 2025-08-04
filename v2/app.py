@@ -98,7 +98,7 @@ def run_metadata_sender():
 def start_threads():
     """Starts the background detection and sender threads."""
     global detection_thread, sender_thread, monitor_thread,metadata_thread
-     # เราจะให้แน่ใจว่ากล้องเปิดอยู่เสมอเมื่อเริ่ม thread
+    # เราจะให้แน่ใจว่ากล้องเปิดอยู่เสมอเมื่อเริ่ม thread
     if not camera_handler.is_initialized :
         #camera_handler.initialize_camera()
         logger.info("Camera initialized and started by app.py on thread start.")
