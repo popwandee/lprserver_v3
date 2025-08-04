@@ -1,0 +1,92 @@
+@startuml Class Diagram
+package "Startup" {
+  class Application {
+    +initialize_camera()
+    +run_all_checks()
+    +load_models()
+    +start_threads()
+  }
+}
+
+package "CameraHandler" {
+  class CameraHandler {
+    +initialize_camera()
+    +generate_frames()
+    +adjust_settings()
+    +close_camera()
+  }
+
+  CameraHandler --> frames_queue : put frames
+  CameraHandler --> metadata_queue : put metadata
+}
+
+package "DetectionProcessor" {
+  class DetectionProcessor {
+    +run()
+    +detect_vehicle()
+    +detect_license_plate()
+    +perform_OCR()
+    +save_images()
+    +save_to_database()
+  }
+  DetectionProcessor --> frames_queue : get frames
+}
+
+package "WebSocketClient" {
+  class WebSocketClient {
+    +connect()
+    +get_unsent_detections()
+    +get_unsent_health_checks()
+    +send_data()
+    +update_status()
+  }
+  WebSocketClient --> DatabaseManager : query/update
+}
+
+package "HealthMonitor" {
+  class HealthMonitor {
+    +run()
+    +check_camera()
+    +check_disk()
+    +check_models()
+    +check_OCR()
+    +check_database()
+    +check_network()
+    +log_results()
+  }
+  HealthMonitor --> DatabaseManager : log health checks
+}
+
+package "Flask Web App" {
+  class FlaskApp {
+    +index()
+    +video_feed()
+    +update_camera_settings()
+    +close_camera()
+    +shutdown_application()
+  }
+  FlaskApp --> CameraHandler : control
+  FlaskApp --> DetectionProcessor : monitor
+  FlaskApp --> HealthMonitor : display status
+  FlaskApp --> WebSocketClient : trigger
+  FlaskApp --> DatabaseManager : query health checks
+}
+
+database "DatabaseManager" {
+  class DatabaseManager {
+    +save_metadata()
+    +save_detection_results()
+    +get_unsent_detections()
+    +get_unsent_health_checks()
+    +update_sent_status()
+    +log_health_checks()
+  }
+}
+
+Application --> CameraHandler
+Application --> DetectionProcessor
+Application --> WebSocketClient
+Application --> HealthMonitor
+Application --> FlaskApp
+Application --> DatabaseManager
+@enduml

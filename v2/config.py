@@ -18,7 +18,7 @@ os.makedirs(IMAGE_SAVE_DIR, exist_ok=True)
 # Model paths (replace with your actual model paths)
 VEHICLE_DETECTION_MODEL =  os.getenv("VEHICLE_DETECTION_MODEL")
 LICENSE_PLATE_DETECTION_MODEL = os.getenv("LICENSE_PLATE_DETECTION_MODEL")
-LICENSE_PLACE_OCR_MODEL = os.getenv("LICENSE_PLACE_OCR_MODEL")
+LICENSE_PLATE_OCR_MODEL = os.getenv("LICENSE_PLACE_OCR_MODEL")
 # Ensure model paths are set
 EASYOCR_LANGUAGES = ['en', 'th']  
 
