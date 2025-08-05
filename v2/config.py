@@ -36,7 +36,7 @@ DEFAULT_AWB_MODE = 'auto' # 'auto', 'fluorescent', 'incandescent', 'tungsten',  
 
 # Threading intervals (in seconds)
 DETECTION_INTERVAL = 0.1 # How often the detection thread tries to get a frame
-SENDER_INTERVAL = 1.0    # How often the sender thread checks for new detections
+SENDER_INTERVAL = 60.0   # How often the sender thread checks for new detections (1 minute)
 
 # Flask app configuration
 FLASK_PORT = 5000
