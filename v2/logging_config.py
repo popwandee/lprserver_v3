@@ -24,11 +24,11 @@ def setup_logging():
     # ป้องกันการเพิ่ม handler ซ้ำ
     if not logger.handlers:
         file_handler = TimedRotatingFileHandler(LOG_FILE, when="midnight", backupCount=7)
-        file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s: %(levelname)s -  %(message)s'))
+        file_handler.setFormatter(logging.Formatter('%(asctime)s: %(levelname)s - %(name)s:  %(message)s'))
         file_handler.setLevel(logging.DEBUG)
 
         console_handler = logging.StreamHandler()
-        console_handler.setFormatter(logging.Formatter('%(name)s: %(levelname)s - %(message)s'))
+        console_handler.setFormatter(logging.Formatter('%(levelname)s - %(name)s:  %(message)s'))
         console_handler.setLevel(logging.INFO)
 
         logger.addHandler(file_handler)

@@ -1,0 +1,25 @@
+{
+  "timestamp": "2025-08-05T18:54:06.344891",
+  "image_path": "/home/camuser/aicamera/v2/static/images/123.jpg",
+  "image_filename": "123.jpg",
+  "vehicles": [
+    {
+      "bbox": [
+        219,
+        76,
+        836,
+        348
+      ],
+      "confidence": 0.8977115154266357,
+      "label": "Car"
+    }
+  ],
+  "license_plates": [],
+  "ocr_results": [],
+  "summary": {
+    "total_vehicles": 1,
+    "total_license_plates": 0,
+    "total_ocr_results": 0,
+    "successful_ocr": 0
+  }
+}

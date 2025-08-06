@@ -1,0 +1,498 @@
+{
+  "timestamp": "2025-08-05T18:54:31.368069",
+  "total_images_processed": 9,
+  "total_vehicles_detected": 14,
+  "total_license_plates_detected": 9,
+  "total_successful_ocr": 5,
+  "results": [
+    {
+      "timestamp": "2025-08-05T18:54:03.121162",
+      "image_path": "/home/camuser/aicamera/v2/static/images/121.jpg",
+      "image_filename": "121.jpg",
+      "vehicles": [
+        {
+          "bbox": [
+            127,
+            69,
+            474,
+            569
+          ],
+          "confidence": 0.8403695821762085,
+          "label": "Car"
+        },
+        {
+          "bbox": [
+            413,
+            154,
+            523,
+            265
+          ],
+          "confidence": 0.7786772847175598,
+          "label": "Car"
+        },
+        {
+          "bbox": [
+            0,
+            14,
+            91,
+            387
+          ],
+          "confidence": 0.531898558139801,
+          "label": "Car"
+        },
+        {
+          "bbox": [
+            47,
+            116,
+            162,
+            267
+          ],
+          "confidence": 0.4374309480190277,
+          "label": "Car"
+        }
+      ],
+      "license_plates": [
+        {
+          "bbox": [
+            260,
+            465,
+            350,
+            527
+          ],
+          "confidence": 0.732332706451416,
+          "label": "Vehicle registration plate"
+        },
+        {
+          "bbox": [
+            486,
+            234,
+            503,
+            246
+          ],
+          "confidence": 0.6723694801330566,
+          "label": "Vehicle registration plate"
+        }
+      ],
+      "ocr_results": [
+        {
+          "license_plate_index": 0,
+          "bbox": [
+            260,
+            465,
+            350,
+            527
+          ],
+          "confidence": 0.732332706451416,
+          "ocr_text": "เกทพ11",
+          "lp_image_path": "/home/camuser/aicamera/v2/test_results/lp_121_0.jpg"
+        },
+        {
+          "license_plate_index": 1,
+          "bbox": [
+            486,
+            234,
+            503,
+            246
+          ],
+          "confidence": 0.6723694801330566,
+          "ocr_text": "",
+          "lp_image_path": "/home/camuser/aicamera/v2/test_results/lp_121_1.jpg"
+        }
+      ],
+      "summary": {
+        "total_vehicles": 4,
+        "total_license_plates": 2,
+        "total_ocr_results": 2,
+        "successful_ocr": 1
+      }
+    },
+    {
+      "timestamp": "2025-08-05T18:54:05.286447",
+      "image_path": "/home/camuser/aicamera/v2/static/images/122.jpg",
+      "image_filename": "122.jpg",
+      "vehicles": [
+        {
+          "bbox": [
+            95,
+            120,
+            554,
+            590
+          ],
+          "confidence": 0.37494251132011414,
+          "label": "Car"
+        }
+      ],
+      "license_plates": [
+        {
+          "bbox": [
+            454,
+            472,
+            517,
+            523
+          ],
+          "confidence": 0.6399476528167725,
+          "label": "Vehicle registration plate"
+        }
+      ],
+      "ocr_results": [
+        {
+          "license_plate_index": 0,
+          "bbox": [
+            454,
+            472,
+            517,
+            523
+          ],
+          "confidence": 0.6399476528167725,
+          "ocr_text": "",
+          "lp_image_path": "/home/camuser/aicamera/v2/test_results/lp_122_0.jpg"
+        }
+      ],
+      "summary": {
+        "total_vehicles": 1,
+        "total_license_plates": 1,
+        "total_ocr_results": 1,
+        "successful_ocr": 0
+      }
+    },
+    {
+      "timestamp": "2025-08-05T18:54:06.344891",
+      "image_path": "/home/camuser/aicamera/v2/static/images/123.jpg",
+      "image_filename": "123.jpg",
+      "vehicles": [
+        {
+          "bbox": [
+            219,
+            76,
+            836,
+            348
+          ],
+          "confidence": 0.8977115154266357,
+          "label": "Car"
+        }
+      ],
+      "license_plates": [],
+      "ocr_results": [],
+      "summary": {
+        "total_vehicles": 1,
+        "total_license_plates": 0,
+        "total_ocr_results": 0,
+        "successful_ocr": 0
+      }
+    },
+    {
+      "timestamp": "2025-08-05T18:54:09.509368",
+      "image_path": "/home/camuser/aicamera/v2/static/images/124.jpg",
+      "image_filename": "124.jpg",
+      "vehicles": [
+        {
+          "bbox": [
+            45,
+            142,
+            616,
+            609
+          ],
+          "confidence": 0.531898558139801,
+          "label": "Car"
+        }
+      ],
+      "license_plates": [
+        {
+          "bbox": [
+            204,
+            396,
+            291,
+            470
+          ],
+          "confidence": 0.7595610618591309,
+          "label": "Vehicle registration plate"
+        }
+      ],
+      "ocr_results": [
+        {
+          "license_plate_index": 0,
+          "bbox": [
+            204,
+            396,
+            291,
+            470
+          ],
+          "confidence": 0.7595610618591309,
+          "ocr_text": "5770",
+          "lp_image_path": "/home/camuser/aicamera/v2/test_results/lp_124_0.jpg"
+        }
+      ],
+      "summary": {
+        "total_vehicles": 1,
+        "total_license_plates": 1,
+        "total_ocr_results": 1,
+        "successful_ocr": 1
+      }
+    },
+    {
+      "timestamp": "2025-08-05T18:54:14.107063",
+      "image_path": "/home/camuser/aicamera/v2/static/images/125.jpg",
+      "image_filename": "125.jpg",
+      "vehicles": [
+        {
+          "bbox": [
+            66,
+            116,
+            464,
+            599
+          ],
+          "confidence": 0.4053304195404053,
+          "label": "Car"
+        }
+      ],
+      "license_plates": [
+        {
+          "bbox": [
+            238,
+            298,
+            310,
+            344
+          ],
+          "confidence": 0.732332706451416,
+          "label": "Vehicle registration plate"
+        }
+      ],
+      "ocr_results": [
+        {
+          "license_plate_index": 0,
+          "bbox": [
+            238,
+            298,
+            310,
+            344
+          ],
+          "confidence": 0.732332706451416,
+          "ocr_text": "",
+          "lp_image_path": "/home/camuser/aicamera/v2/test_results/lp_125_0.jpg"
+        }
+      ],
+      "summary": {
+        "total_vehicles": 1,
+        "total_license_plates": 1,
+        "total_ocr_results": 1,
+        "successful_ocr": 0
+      }
+    },
+    {
+      "timestamp": "2025-08-05T18:54:16.572189",
+      "image_path": "/home/camuser/aicamera/v2/static/images/126.jpg",
+      "image_filename": "126.jpg",
+      "vehicles": [
+        {
+          "bbox": [
+            29,
+            68,
+            601,
+            581
+          ],
+          "confidence": 0.8567737936973572,
+          "label": "Car"
+        }
+      ],
+      "license_plates": [
+        {
+          "bbox": [
+            119,
+            378,
+            196,
+            438
+          ],
+          "confidence": 0.732332706451416,
+          "label": "Vehicle registration plate"
+        }
+      ],
+      "ocr_results": [
+        {
+          "license_plate_index": 0,
+          "bbox": [
+            119,
+            378,
+            196,
+            438
+          ],
+          "confidence": 0.732332706451416,
+          "ocr_text": "7กกรง84",
+          "lp_image_path": "/home/camuser/aicamera/v2/test_results/lp_126_0.jpg"
+        }
+      ],
+      "summary": {
+        "total_vehicles": 1,
+        "total_license_plates": 1,
+        "total_ocr_results": 1,
+        "successful_ocr": 1
+      }
+    },
+    {
+      "timestamp": "2025-08-05T18:54:22.468226",
+      "image_path": "/home/camuser/aicamera/v2/static/images/127.jpg",
+      "image_filename": "127.jpg",
+      "vehicles": [
+        {
+          "bbox": [
+            135,
+            20,
+            497,
+            593
+          ],
+          "confidence": 0.8977115154266357,
+          "label": "Car"
+        },
+        {
+          "bbox": [
+            529,
+            118,
+            640,
+            286
+          ],
+          "confidence": 0.7069429159164429,
+          "label": "Car"
+        }
+      ],
+      "license_plates": [
+        {
+          "bbox": [
+            279,
+            430,
+            362,
+            498
+          ],
+          "confidence": 0.6399476528167725,
+          "label": "Vehicle registration plate"
+        }
+      ],
+      "ocr_results": [
+        {
+          "license_plate_index": 0,
+          "bbox": [
+            279,
+            430,
+            362,
+            498
+          ],
+          "confidence": 0.6399476528167725,
+          "ocr_text": "",
+          "lp_image_path": "/home/camuser/aicamera/v2/test_results/lp_127_0.jpg"
+        }
+      ],
+      "summary": {
+        "total_vehicles": 2,
+        "total_license_plates": 1,
+        "total_ocr_results": 1,
+        "successful_ocr": 0
+      }
+    },
+    {
+      "timestamp": "2025-08-05T18:54:24.939868",
+      "image_path": "/home/camuser/aicamera/v2/static/images/128.jpg",
+      "image_filename": "128.jpg",
+      "vehicles": [
+        {
+          "bbox": [
+            71,
+            32,
+            416,
+            308
+          ],
+          "confidence": 0.8717494606971741,
+          "label": "Car"
+        }
+      ],
+      "license_plates": [
+        {
+          "bbox": [
+            261,
+            227,
+            332,
+            268
+          ],
+          "confidence": 0.7595610618591309,
+          "label": "Vehicle registration plate"
+        }
+      ],
+      "ocr_results": [
+        {
+          "license_plate_index": 0,
+          "bbox": [
+            261,
+            227,
+            332,
+            268
+          ],
+          "confidence": 0.7595610618591309,
+          "ocr_text": "สค_2523",
+          "lp_image_path": "/home/camuser/aicamera/v2/test_results/lp_128_0.jpg"
+        }
+      ],
+      "summary": {
+        "total_vehicles": 1,
+        "total_license_plates": 1,
+        "total_ocr_results": 1,
+        "successful_ocr": 1
+      }
+    },
+    {
+      "timestamp": "2025-08-05T18:54:30.367151",
+      "image_path": "/home/camuser/aicamera/v2/static/images/129.jpg",
+      "image_filename": "129.jpg",
+      "vehicles": [
+        {
+          "bbox": [
+            44,
+            150,
+            576,
+            548
+          ],
+          "confidence": 0.8403695821762085,
+          "label": "Car"
+        },
+        {
+          "bbox": [
+            478,
+            167,
+            602,
+            244
+          ],
+          "confidence": 0.6232087016105652,
+          "label": "Car"
+        }
+      ],
+      "license_plates": [
+        {
+          "bbox": [
+            261,
+            409,
+            381,
+            488
+          ],
+          "confidence": 0.6061967015266418,
+          "label": "Vehicle registration plate"
+        }
+      ],
+      "ocr_results": [
+        {
+          "license_plate_index": 0,
+          "bbox": [
+            261,
+            409,
+            381,
+            488
+          ],
+          "confidence": 0.6061967015266418,
+          "ocr_text": "2090",
+          "lp_image_path": "/home/camuser/aicamera/v2/test_results/lp_129_0.jpg"
+        }
+      ],
+      "summary": {
+        "total_vehicles": 2,
+        "total_license_plates": 1,
+        "total_ocr_results": 1,
+        "successful_ocr": 1
+      }
+    }
+  ]
+}

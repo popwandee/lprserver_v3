@@ -10,7 +10,6 @@ from datetime import datetime
 from picamera2 import Picamera2
 from libcamera import controls
 from src.ocr_process import OCRProcessor
-from src.ocr_process import OCRProcessor
 from difflib import SequenceMatcher
 import requests
 import socket

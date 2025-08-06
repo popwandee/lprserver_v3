@@ -1,0 +1,68 @@
+@startuml System Architecture
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam componentStyle rectangle
+
+package "Hardware Layer" {
+    [Raspberry Pi] as RPI
+    [Hailo AI Accelerator] as HAILO
+    [Camera Module] as CAM
+}
+
+package "Software Layer" {
+    package "Core Components" {
+        [Flask Web Server] as FLASK
+        [Camera Manager] as CAM_MGR
+        [Detection Thread] as DETECT
+        [Health Monitor] as HEALTH
+        [Database Manager] as DB
+    }
+    
+    package "AI Models" {
+        [Vehicle Detection Model] as VEH_MODEL
+        [License Plate Detection Model] as LP_MODEL
+        [OCR Model] as OCR_MODEL
+        [EasyOCR] as EASY_OCR
+    }
+    
+    package "Web Interface" {
+        [Live Camera View] as LIVE_VIEW
+        [Detection Results] as DETECT_VIEW
+        [Health Monitoring] as HEALTH_VIEW
+        [Detection Detail] as DETAIL_VIEW
+    }
+}
+
+package "Data Layer" {
+    [SQLite Database] as SQLITE
+    [Image Storage] as IMG_STORE
+}
+
+RPI --> CAM
+RPI --> HAILO
+CAM --> CAM_MGR
+HAILO --> VEH_MODEL
+HAILO --> LP_MODEL
+HAILO --> OCR_MODEL
+
+CAM_MGR --> DETECT
+DETECT --> VEH_MODEL
+DETECT --> LP_MODEL
+DETECT --> OCR_MODEL
+DETECT --> EASY_OCR
+DETECT --> DB
+
+FLASK --> CAM_MGR
+FLASK --> DETECT
+FLASK --> HEALTH
+FLASK --> DB
+
+DB --> SQLITE
+DETECT --> IMG_STORE
+
+FLASK --> LIVE_VIEW
+FLASK --> DETECT_VIEW
+FLASK --> HEALTH_VIEW
+FLASK --> DETAIL_VIEW
+
+@enduml 

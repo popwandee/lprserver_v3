@@ -25,13 +25,13 @@ EASYOCR_LANGUAGES = ['en', 'th']
 WEBSOCKET_SERVER_URL = os.getenv("WEBSOCKET_SERVER_URL") 
 
 # Camera properties defaults
-DEFAULT_RESOLUTION = (1280, 720)
+DEFAULT_RESOLUTION = (640, 640)
 DEFAULT_FRAMERATE = 30
 DEFAULT_BRIGHTNESS = 0.0 # -1.0 to 1.0
 DEFAULT_CONTRAST = 1.0   # 0.0 to 2.0
 DEFAULT_SATURATION = 1.0 # 0.0 to 2.0
 DEFAULT_SHARPNESS = 1.0  # 0.0 to 4.0
-DEFAULT_AWB_MODE = 'auto' # 'auto', 'fluorescent', 'incandescent', 'tungsten',  'horizon', 'daylight', 'cloudy', 'shade', 'custom'
+DEFAULT_AWB_MODE = 0 # 0=auto, 1=fluorescent, 2=incandescent, 3=tungsten, 4=horizon, 5=daylight, 6=cloudy, 7=shade, 8=custom
 
 # Threading intervals (in seconds)
 DETECTION_INTERVAL = 0.1 # How often the detection thread tries to get a frame

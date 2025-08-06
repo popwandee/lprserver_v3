@@ -2,6 +2,7 @@ import sqlite3
 import logging
 from datetime import datetime
 import threading
+import uuid
 from config import DATABASE_PATH
 
 logger = logging.getLogger(__name__)
@@ -238,6 +239,90 @@ class DatabaseManager:
             except sqlite3.Error as e:
                 logger.error(f"Error inserting health check result for {component}: {e}")
 
+    def insert_detection_result(self, license_plate, vehicle_image_path, license_plate_image_path, 
+                               cropped_image_path, timestamp, location="", hostname="", confidence=0.0):
+        """
+        Inserts a detection result into the database.
+        Simplified version for the detection thread.
+        """
+        with self.db_lock:
+            if not self.conn:
+                logger.error("Cannot insert detection result: Database connection not established.")
+                return
+
+            try:
+                # Generate a unique frame ID
+                frame_id = str(uuid.uuid4())
+                
+                # Insert camera metadata first
+                self.cursor.execute('''
+                    INSERT INTO camera_metadata (
+                        timestamp, frame_id, exposure_time, analog_gain, digital_gain,
+                        lux, colour_temperature, lens_position, focus_state,
+                        image_filename, processed_image_filename
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    timestamp, frame_id, 0, 0, 0, 0, 0, 0, 0,
+                    vehicle_image_path, license_plate_image_path
+                ))
+                
+                # Insert detection result
+                self.cursor.execute('''
+                    INSERT INTO detection_results (
+                        frame_id, license_plate_text, lp_confidence,
+                        lp_box_x, lp_box_y, lp_box_w, lp_box_h, lp_image_filename
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    frame_id, license_plate, confidence, 0, 0, 0, 0, cropped_image_path
+                ))
+                
+                self.conn.commit()
+                logger.info(f"Inserted detection result: {license_plate}")
+                
+            except sqlite3.Error as e:
+                logger.error(f"Error inserting detection result: {e}")
+
+    def insert_vehicle_detection(self, vehicle_image_path, license_plate_image_path, timestamp, location="", hostname=""):
+        """
+        Inserts a vehicle detection (without license plate) into the database.
+        """
+        with self.db_lock:
+            if not self.conn:
+                logger.error("Cannot insert vehicle detection: Database connection not established.")
+                return
+
+            try:
+                # Generate a unique frame ID
+                frame_id = str(uuid.uuid4())
+                
+                # Insert camera metadata first
+                self.cursor.execute('''
+                    INSERT INTO camera_metadata (
+                        timestamp, frame_id, exposure_time, analog_gain, digital_gain,
+                        lux, colour_temperature, lens_position, focus_state,
+                        image_filename, processed_image_filename
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    timestamp, frame_id, 0, 0, 0, 0, 0, 0, 0,
+                    vehicle_image_path, license_plate_image_path
+                ))
+                
+                # Insert detection result with empty license plate
+                self.cursor.execute('''
+                    INSERT INTO detection_results (
+                        frame_id, license_plate_text, lp_confidence,
+                        lp_box_x, lp_box_y, lp_box_w, lp_box_h, lp_image_filename
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    frame_id, "VEHICLE_ONLY", 0.0, 0, 0, 0, 0, ""
+                ))
+                
+                self.conn.commit()
+                logger.info(f"Inserted vehicle detection (no license plate)")
+                
+            except sqlite3.Error as e:
+                logger.error(f"Error inserting vehicle detection: {e}")
+
     def get_latest_health_checks(self, limit=10):
         """
         Retrieves the latest health check results.
@@ -309,6 +394,222 @@ class DatabaseManager:
                 logger.debug(f"Updated sent status for health_check_id: {check_id}")
             except sqlite3.Error as e:
                 logger.error(f"Error updating health check sent status for id {check_id}: {e}")
+    def get_detection_data_paginated(self, page=1, per_page=10, sort_by='timestamp', sort_order='desc', 
+                                   search='', date_from='', date_to=''):
+        """
+        Get detection data with pagination, sorting, and filtering
+        """
+        with self.db_lock:
+            if not self.conn:
+                logger.error("Cannot get detection data: Database connection not established.")
+                return {'results': [], 'total': 0, 'total_pages': 0}
+            
+            try:
+                # Build WHERE clause for filtering
+                where_conditions = []
+                params = []
+                
+                if search:
+                    where_conditions.append("(dr.license_plate_text LIKE ? OR cm.image_filename LIKE ?)")
+                    params.extend([f'%{search}%', f'%{search}%'])
+                
+                if date_from:
+                    where_conditions.append("cm.timestamp >= ?")
+                    params.append(date_from)
+                
+                if date_to:
+                    where_conditions.append("cm.timestamp <= ?")
+                    params.append(date_to)
+                
+                where_clause = " WHERE " + " AND ".join(where_conditions) if where_conditions else ""
+                
+                # Validate sort_by to prevent SQL injection
+                allowed_sort_fields = ['timestamp', 'license_plate_text', 'lp_confidence', 'exposure_time', 'analog_gain']
+                if sort_by not in allowed_sort_fields:
+                    sort_by = 'timestamp'
+                
+                # Get total count
+                count_query = f'''
+                    SELECT COUNT(*) FROM detection_results dr
+                    JOIN camera_metadata cm ON dr.frame_id = cm.frame_id
+                    {where_clause}
+                '''
+                self.cursor.execute(count_query, params)
+                total = self.cursor.fetchone()[0]
+                
+                # Calculate pagination
+                total_pages = (total + per_page - 1) // per_page
+                offset = (page - 1) * per_page
+                
+                # Get paginated data
+                query = f'''
+                    SELECT 
+                        dr.id,
+                        dr.license_plate_text,
+                        dr.lp_confidence,
+                        dr.lp_image_filename,
+                        cm.timestamp,
+                        cm.exposure_time,
+                        cm.analog_gain,
+                        cm.lux,
+                        cm.image_filename,
+                        cm.processed_image_filename
+                    FROM detection_results dr
+                    JOIN camera_metadata cm ON dr.frame_id = cm.frame_id
+                    {where_clause}
+                    ORDER BY cm.{sort_by} {sort_order.upper()}
+                    LIMIT ? OFFSET ?
+                '''
+                
+                self.cursor.execute(query, params + [per_page, offset])
+                rows = self.cursor.fetchall()
+                
+                # Convert to list of dictionaries
+                columns = ['id', 'license_plate_text', 'lp_confidence', 'lp_image_filename', 
+                          'timestamp', 'exposure_time', 'analog_gain', 'lux', 
+                          'image_filename', 'processed_image_filename']
+                results = [dict(zip(columns, row)) for row in rows]
+                
+                return {
+                    'results': results,
+                    'total': total,
+                    'total_pages': total_pages
+                }
+                
+            except sqlite3.Error as e:
+                logger.error(f"Error getting detection data: {e}")
+                return {'results': [], 'total': 0, 'total_pages': 0}
+
+    def get_detection_statistics(self):
+        """
+        Get detection statistics
+        """
+        with self.db_lock:
+            if not self.conn:
+                logger.error("Cannot get detection stats: Database connection not established.")
+                return {}
+            
+            try:
+                # Total detections
+                self.cursor.execute("SELECT COUNT(*) FROM detection_results")
+                total_detections = self.cursor.fetchone()[0]
+                
+                # Today's detections
+                today = datetime.now().strftime('%Y-%m-%d')
+                self.cursor.execute("""
+                    SELECT COUNT(*) FROM detection_results dr
+                    JOIN camera_metadata cm ON dr.frame_id = cm.frame_id
+                    WHERE DATE(cm.timestamp) = ?
+                """, (today,))
+                today_detections = self.cursor.fetchone()[0]
+                
+                # Average confidence
+                self.cursor.execute("SELECT AVG(lp_confidence) FROM detection_results WHERE lp_confidence > 0")
+                avg_confidence = self.cursor.fetchone()[0] or 0
+                
+                # Most common license plates
+                self.cursor.execute("""
+                    SELECT license_plate_text, COUNT(*) as count
+                    FROM detection_results
+                    WHERE license_plate_text IS NOT NULL AND license_plate_text != ''
+                    GROUP BY license_plate_text
+                    ORDER BY count DESC
+                    LIMIT 5
+                """)
+                top_plates = self.cursor.fetchall()
+                
+                return {
+                    'total_detections': total_detections,
+                    'today_detections': today_detections,
+                    'avg_confidence': round(avg_confidence, 2),
+                    'top_plates': [{'plate': plate, 'count': count} for plate, count in top_plates]
+                }
+                
+            except sqlite3.Error as e:
+                logger.error(f"Error getting detection statistics: {e}")
+                return {}
+
+    def get_health_data_paginated(self, page=1, per_page=20, component='', status_filter=''):
+        """Get health data with pagination and filtering"""
+        try:
+            with self.db_lock:
+                # Build WHERE clause for filtering
+                where_conditions = []
+                params = []
+                
+                if component:
+                    where_conditions.append("component LIKE ?")
+                    params.append(f"%{component}%")
+                
+                if status_filter:
+                    where_conditions.append("status = ?")
+                    params.append(status_filter)
+                
+                where_clause = " WHERE " + " AND ".join(where_conditions) if where_conditions else ""
+                
+                # Get total count
+                count_query = f"SELECT COUNT(*) FROM health_checks{where_clause}"
+                self.cursor.execute(count_query, params)
+                total = self.cursor.fetchone()[0]
+                
+                # Calculate pagination
+                offset = (page - 1) * per_page
+                total_pages = (total + per_page - 1) // per_page
+                
+                # Get paginated data
+                data_query = f"""
+                    SELECT id, timestamp, component, status, message 
+                    FROM health_checks{where_clause}
+                    ORDER BY timestamp DESC 
+                    LIMIT ? OFFSET ?
+                """
+                self.cursor.execute(data_query, params + [per_page, offset])
+                
+                results = []
+                for row in self.cursor.fetchall():
+                    results.append({
+                        'id': row[0],
+                        'timestamp': row[1],
+                        'component': row[2],
+                        'status': row[3],
+                        'message': row[4]
+                    })
+                
+                return {
+                    'results': results,
+                    'total': total,
+                    'total_pages': total_pages
+                }
+        except Exception as e:
+            logger.error(f"Error getting health data: {e}")
+            return {
+                'results': [],
+                'total': 0,
+                'total_pages': 0
+            }
+
+    def get_detection_by_id(self, detection_id):
+        """Get detection result by ID"""
+        try:
+            with self.db_lock:
+                self.cursor.execute("""
+                    SELECT * FROM detection_results 
+                    WHERE id = ?
+                """, (detection_id,))
+                
+                result = self.cursor.fetchone()
+                if result:
+                    # Convert to dictionary
+                    columns = [description[0] for description in self.cursor.description]
+                    detection = dict(zip(columns, result))
+                    return detection
+                else:
+                    return None
+                    
+        except Exception as e:
+            logger.error(f"Error getting detection by ID: {e}")
+            return None
+
     def close_connection(self):
         """
         Closes the database connection.

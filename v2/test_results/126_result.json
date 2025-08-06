@@ -1,0 +1,49 @@
+{
+  "timestamp": "2025-08-05T18:54:16.572189",
+  "image_path": "/home/camuser/aicamera/v2/static/images/126.jpg",
+  "image_filename": "126.jpg",
+  "vehicles": [
+    {
+      "bbox": [
+        29,
+        68,
+        601,
+        581
+      ],
+      "confidence": 0.8567737936973572,
+      "label": "Car"
+    }
+  ],
+  "license_plates": [
+    {
+      "bbox": [
+        119,
+        378,
+        196,
+        438
+      ],
+      "confidence": 0.732332706451416,
+      "label": "Vehicle registration plate"
+    }
+  ],
+  "ocr_results": [
+    {
+      "license_plate_index": 0,
+      "bbox": [
+        119,
+        378,
+        196,
+        438
+      ],
+      "confidence": 0.732332706451416,
+      "ocr_text": "7กกรง84",
+      "lp_image_path": "/home/camuser/aicamera/v2/test_results/lp_126_0.jpg"
+    }
+  ],
+  "summary": {
+    "total_vehicles": 1,
+    "total_license_plates": 1,
+    "total_ocr_results": 1,
+    "successful_ocr": 1
+  }
+}

@@ -1,0 +1,31 @@
+@startuml Test Flow
+!theme plain
+skinparam backgroundColor #FFFFFF
+
+start
+
+:Unit Tests;
+if (All Tests Pass?) then (Yes)
+    :Integration Tests;
+    if (Integration OK?) then (Yes)
+        :System Tests;
+        if (System OK?) then (Yes)
+            :Performance Tests;
+            if (Performance OK?) then (Yes)
+                :Deploy to Production;
+            else (No)
+                :Optimize Performance;
+            endif
+        else (No)
+            :Fix System Issues;
+        endif
+    else (No)
+        :Fix Integration Issues;
+    endif
+else (No)
+    :Fix Unit Test Issues;
+endif
+
+stop
+
+@enduml 

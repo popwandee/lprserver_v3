@@ -1,0 +1,16 @@
+{
+  "initialized": false,
+  "streaming": false,
+  "initialization_count": 0,
+  "last_settings": {
+    "resolution": [640, 640],
+    "framerate": 30,
+    "brightness": 0.0,
+    "contrast": 1.0,
+    "saturation": 1.0,
+    "sharpness": 1.0,
+    "awb_mode": "auto"
+  },
+  "last_initialization": null,
+  "last_error": null
+} 

@@ -1,65 +1,108 @@
-@startuml CrossFunction_LPR_System
-' ใช้ skinparam เพื่อปรับรูปแบบ lane
-skinparam sequence {
-  ParticipantPadding 20
-  BoxPadding 10
-  ArrowThickness 1
-  LifeLineBorderColor black
-  LifeLineBackgroundColor #DDDDDD
-  BackgroundColor #FDFDFD
-}
+@startuml Cross-Function Diagram
+!theme plain
+skinparam backgroundColor #FFFFFF
 
-title Cross-Function Diagram - LPR System
+|User|
+start
+:Access Web Interface;
+:Navigate to Live Camera;
 
-' กำหนด Lane
-participant "User / Web Browser" as User
-participant "Flask Web Server\n(App.py)" as FlaskApp
-participant "CameraHandler" as Camera
-participant "Queue\n(Frame_queue,\nMetadata_queue)" as Queue
-participant "Detection Processor" as Detection
-participant "DatabaseManager" as DB
-participant "HealthMonitor" as Health
-participant "WebSocketClient" as WSClient
-participant "LPR WebSocket Server" as WSServer
-participant "LPR Flask Server" as LPRServer
+|Web Browser|
+:Load Main Page;
+:Request Video Feed;
 
-== Initialization ==
-User -> FlaskApp : Access /
-FlaskApp -> Camera : initialize_camera()
-Camera -> Queue : put frame & metadata
-Camera -> FlaskApp : generate_frames() for /video_feed
+|Flask Web Server|
+:Initialize Application;
+:Start Camera Manager;
+:Start Detection Thread;
+:Start Health Monitor;
 
-== Detection Thread ==
-Queue -> Detection : get frame from frames_queue
-Detection -> Detection : vehicle detection
-Detection -> Detection : license plate detection
-Detection -> Detection : OCR
-Detection -> DB : save detection result
+|Camera Manager|
+:Initialize PiCamera2;
+:Configure Streams (640x640);
+:Start Video Streaming;
 
-== Metadata Thread ==
-Queue -> FlaskApp : send metadata via SocketIO
+|Detection Thread|
+:Load AI Models;
+:Begin Frame Processing;
 
-== Health Monitor ==
-Health -> Camera : check camera status
-Health -> DB : log health check
-Health -> FlaskApp : update /healthmonitor
+|Health Monitor|
+:Begin System Monitoring;
+:Log Health Status;
 
-== WebSocket Sender ==
-WSClient -> DB : get unsent_detections
-WSClient -> DB : get unsent_health_checks
-WSClient -> WSServer : send JSON + images
-WSServer -> LPRServer : store data in MySQL
+while (System Running?) is (Yes)
+    |Camera Manager|
+    :Capture Frame;
+    :Process Frame (640x640);
+    
+    |Detection Thread|
+    :Get Frame from Camera;
+    :Detect Vehicles;
+    
+    if (Vehicle Detected?) then (Yes)
+        :Save Vehicle Image;
+        :Detect License Plates;
+        
+        if (License Plate Detected?) then (Yes)
+            :Filter Valid Plates;
+            :Draw Bounding Boxes;
+            :Save Image with Boxes;
+            :Crop License Plate;
+            
+            if (Plate Size >= 256x128?) then (Yes)
+                :Resize to 256x128;
+                :Hailo OCR Processing;
+                
+                if (OCR Successful?) then (Yes)
+                    :Save OCR Result;
+                else (No)
+                    :EasyOCR Processing;
+                    if (EasyOCR Successful?) then (Yes)
+                        :Save OCR Result;
+                    else (No)
+                        :Log No Text Found;
+                    endif
+                endif
+                
+                |Database Manager|
+                :Save Detection Result;
+            else (No)
+                :Skip OCR Processing;
+            endif
+        else (No)
+            |Database Manager|
+            :Save Vehicle Detection Only;
+        endif
+    else (No)
+        :Continue to Next Frame;
+    endif
+    
+    |Health Monitor|
+    :Check System Health;
+    :Log Health Status;
+    
+    |Flask Web Server|
+    :Serve Video Feed;
+    :Handle API Requests;
+    
+    |Web Browser|
+    :Display Video Feed;
+    :Update UI Status;
+    
+    :Wait for Next Frame;
+endwhile (No)
 
-== User Actions ==
-User -> FlaskApp : /update_camera_settings
-FlaskApp -> Camera : stop + re-init
-FlaskApp -> Detection : restart thread
-FlaskApp -> Health : restart thread
+|Flask Web Server|
+:Shutdown Application;
+:Stop All Threads;
 
-User -> FlaskApp : /shutdown
-FlaskApp -> WSClient : stop
-FlaskApp -> Health : stop
-FlaskApp -> Detection : stop
-FlaskApp -> Camera : release
+|Camera Manager|
+:Stop Camera;
+:Release Resources;
+
+|Database Manager|
+:Close Connections;
+
+stop
 
 @enduml

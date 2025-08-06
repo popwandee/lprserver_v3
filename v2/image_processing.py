@@ -1,156 +1,262 @@
+#!/usr/bin/env python3
+"""
+Image Processing Module for AI Camera v2
+Provides image processing utilities for detection and OCR
+"""
+
 import cv2
 import numpy as np
-from collections import Counter
 import logging
+from typing import List, Tuple, Optional
 
-def denoise_image_gaussian(image):
-    """Reduce noise using Gaussian blur."""
-    return cv2.GaussianBlur(image, (5, 5), 0)
+logger = logging.getLogger(__name__)
 
-def denoise_image(image):
-    """Reduce noise using Gaussian blur."""
-    return cv2.fastNlMeansDenoisingColored(image, None, 10, 10, 7, 21)
-
-def enhance_night_image(image):
-    """Improve low-light image quality."""
-    denoised = cv2.fastNlMeansDenoisingColored(image, None, 10, 10, 7, 21)
-    lab = cv2.cvtColor(denoised, cv2.COLOR_BGR2LAB)
-    l, a, b = cv2.split(lab)
-    l = cv2.equalizeHist(l)
-    enhanced = cv2.merge((l, a, b))
-    return cv2.cvtColor(enhanced, cv2.COLOR_LAB2BGR)
-
-def sharpen_image(image):
-    """Enhance edges using a sharpening kernel."""
-    kernel = np.array([[0, -1, 0],
-                       [-1, 5,-1],
-                       [0, -1, 0]])
-    return cv2.filter2D(image, -1, kernel)
-
-def detect_rotation(image):
-    """Detect rotation angle of the image using Hough Transform."""
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    edges = cv2.Canny(gray, 50, 150, apertureSize=3)
-    lines = cv2.HoughLines(edges, 1, np.pi / 180, threshold=100)
-
-    if lines is None:
-        return 0
-
-    angles = []
-    for rho, theta in lines[:, 0]:
-        angle = (theta * 180 / np.pi) - 90
-        angles.append(angle)
-
-    median_angle = np.median(angles)
-    return median_angle
-
-def is_ocr_friendly(image):
-    """Check basic OCR readability conditions."""
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    _, thresh = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    edges = cv2.Canny(thresh, 50, 150)
-    blur_score = cv2.Laplacian(gray, cv2.CV_64F).var()
-    rotated = detect_rotation(gray)
-    return {
-        "contrast_ok": np.mean(gray) > 60,
-        "sharpness_ok": blur_score > 100,
-        "angle_ok": abs(rotated) < 5
-    }
-
-def rotate_image(image, angle):
-    """Rotate image around its center by the given angle."""
-    angle=detect_rotation(image)
-    (h, w) = image.shape[:2]
-    center = (w // 2, h // 2)
-    M = cv2.getRotationMatrix2D(center, angle, 1.0)
-    return cv2.warpAffine(image, M, (w, h))
-
-def get_dominant_color(image):
-    """Return the most common color in the image (approximate)."""
-    # Resize to reduce computation, convert to RGB
-    small_img = cv2.resize(image, (64, 64))
-    colors = small_img.reshape((-1, 3))  # Flatten pixels
-    color_counts = Counter(map(tuple, colors))
-    dominant = color_counts.most_common(1)[0][0]
-    return dominant  # Returns (B, G, R) tuple
-
-def preprocess_for_ocr(image):
+def resize_with_letterbox(image: np.ndarray, target_size: Tuple[int, int], 
+                         color: Tuple[int, int, int] = (114, 114, 114)) -> Tuple[np.ndarray, float, Tuple[int, int]]:
     """
-    Preprocess image to improve OCR results: 
-    - Convert to grayscale
-    - Increase contrast
-    - Apply adaptive thresholding
-    - Optionally, denoise or sharpen
-    """
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    gray = cv2.equalizeHist(gray) # Histogram equalization for contrast
-    # Adaptive thresholding for varied lighting
-    thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                                   cv2.THRESH_BINARY, 31, 15)
-    return cv2.cvtColor(thresh, cv2.COLOR_GRAY2BGR)  # keep 3 channels for model input
-
-def resize_with_letterbox(image, target_size=(640, 640), padding_value=(0, 0, 0)):
-    """Resizes an image while maintaining aspect ratio and padding with letterbox."""
-    if image is None or not isinstance(image, np.ndarray):
-        logging.warning("resize_with_letterbox received Captured image is invalid input!")
-        return None, None, None, None
-    logging.info(f"Resizing image from shape {image.shape} to target size {target_size}")
-    if len(image.shape) != 3 or image.shape[2] not in [3, 4]:
-        logging.error(f"Invalid image shape: {image.shape}. Expected 3 channels (RGB/BGR) or 4 channels (RGBA).")
-        return None, None, None, None
-    # Force image to 3 channels (BGR) for all models
-    if image.shape[2] == 4:
-        image = cv2.cvtColor(image, cv2.COLOR_BGRA2BGR)
-    channels = 3
-    padding_value = (0, 0, 0)
+    Resize image with letterbox padding to maintain aspect ratio.
     
-    original_height, original_width, channels = image.shape
-    target_height, target_width = target_size
+    Args:
+        image: Input image
+        target_size: Target size (width, height)
+        color: Padding color (B, G, R)
+    
+    Returns:
+        resized_image: Resized image with letterbox
+        scale: Scale factor
+        pad: Padding (x, y)
+    """
+    try:
+        h, w = image.shape[:2]
+        target_w, target_h = target_size
+        
+        # Calculate scale
+        scale = min(target_w / w, target_h / h)
+        
+        # Calculate new dimensions
+        new_w = int(w * scale)
+        new_h = int(h * scale)
+        
+        # Resize image
+        resized = cv2.resize(image, (new_w, new_h))
+        
+        # Calculate padding
+        pad_x = (target_w - new_w) // 2
+        pad_y = (target_h - new_h) // 2
+        
+        # Create padded image
+        padded = np.full((target_h, target_w, 3), color, dtype=np.uint8)
+        padded[pad_y:pad_y + new_h, pad_x:pad_x + new_w] = resized
+        
+        return padded, scale, (pad_x, pad_y)
+        
+    except Exception as e:
+        logger.error(f"Error in resize_with_letterbox: {e}")
+        return image, 1.0, (0, 0)
 
-    scale_factor = min(target_width / original_width, target_height / original_height)
-    new_width = int(original_width * scale_factor)
-    new_height = int(original_height * scale_factor)
+def crop_license_plates(image: np.ndarray, detections: List[dict], 
+                       scale: float = 1.0, pad: Tuple[int, int] = (0, 0)) -> List[np.ndarray]:
+    """
+    Crop license plate regions from image based on detections.
+    
+    Args:
+        image: Original image
+        detections: List of detection dictionaries with bounding boxes
+        scale: Scale factor from letterbox resize
+        pad: Padding from letterbox resize
+    
+    Returns:
+        List of cropped license plate images
+    """
+    try:
+        cropped_plates = []
+        
+        for detection in detections:
+            if 'bbox' in detection:
+                x1, y1, x2, y2 = detection['bbox']
+                
+                # Convert coordinates to integers
+                x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+                
+                # Convert coordinates back to original image space
+                x1 = int((x1 - pad[0]) / scale)
+                y1 = int((y1 - pad[1]) / scale)
+                x2 = int((x2 - pad[0]) / scale)
+                y2 = int((y2 - pad[1]) / scale)
+                
+                # Ensure coordinates are within image bounds
+                x1 = max(0, min(x1, image.shape[1] - 1))
+                y1 = max(0, min(y1, image.shape[0] - 1))
+                x2 = max(x1 + 1, min(x2, image.shape[1]))
+                y2 = max(y1 + 1, min(y2, image.shape[0]))
+                
+                if x2 > x1 and y2 > y1:
+                    cropped = image[y1:y2, x1:x2]
+                    cropped_plates.append(cropped)
+        
+        return cropped_plates
+        
+    except Exception as e:
+        logger.error(f"Error in crop_license_plates: {e}")
+        return []
 
-    resized_image = cv2.resize(image, (new_width, new_height), interpolation=cv2.INTER_LINEAR)
+def draw_bounding_boxes(image: np.ndarray, detections: List[dict], 
+                       color: Tuple[int, int, int] = (0, 255, 0), 
+                       thickness: int = 2) -> np.ndarray:
+    """
+    Draw bounding boxes on image for detections.
+    
+    Args:
+        image: Input image
+        detections: List of detection dictionaries
+        color: BGR color for bounding boxes
+        thickness: Line thickness
+    
+    Returns:
+        Image with bounding boxes drawn
+    """
+    try:
+        result_image = image.copy()
+        
+        for detection in detections:
+            if 'bbox' in detection:
+                x1, y1, x2, y2 = detection['bbox']
+                
+                # Convert coordinates to integers
+                x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+                
+                # Ensure coordinates are within image bounds
+                x1 = max(0, min(x1, image.shape[1] - 1))
+                y1 = max(0, min(y1, image.shape[0] - 1))
+                x2 = max(x1 + 1, min(x2, image.shape[1]))
+                y2 = max(y1 + 1, min(y2, image.shape[0]))
+                
+                # Draw rectangle
+                cv2.rectangle(result_image, (x1, y1), (x2, y2), color, thickness)
+                
+                # Add label if available
+                if 'label' in detection:
+                    label = detection['label']
+                    if 'confidence' in detection:
+                        label += f" {detection['confidence']:.2f}"
+                    
+                    # Calculate text position
+                    text_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)[0]
+                    text_x = x1
+                    text_y = y1 - 10 if y1 > 20 else y1 + 20
+                    
+                    # Draw text background
+                    cv2.rectangle(result_image, 
+                                (text_x, text_y - text_size[1] - 5),
+                                (text_x + text_size[0], text_y + 5),
+                                color, -1)
+                    
+                    # Draw text
+                    cv2.putText(result_image, label, (text_x, text_y),
+                              cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+        
+        return result_image
+        
+    except Exception as e:
+        logger.error(f"Error in draw_bounding_boxes: {e}")
+        return image
 
-    letterboxed_image = np.full((target_height, target_width, channels), padding_value, dtype=np.uint8)
+def preprocess_for_ocr(image: np.ndarray) -> np.ndarray:
+    """
+    Preprocess image for OCR to improve text recognition.
+    
+    Args:
+        image: Input image
+    
+    Returns:
+        Preprocessed image
+    """
+    try:
+        # Convert to grayscale if needed
+        if len(image.shape) == 3:
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        else:
+            gray = image.copy()
+        
+        # Apply Gaussian blur to reduce noise
+        blurred = cv2.GaussianBlur(gray, (3, 3), 0)
+        
+        # Apply adaptive thresholding
+        thresh = cv2.adaptiveThreshold(
+            blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2
+        )
+        
+        # Apply morphological operations to clean up
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+        cleaned = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+        
+        return cleaned
+        
+    except Exception as e:
+        logger.error(f"Error in preprocess_for_ocr: {e}")
+        return image
 
-    offset_y = (target_height - new_height) // 2  # Padding on the top 
-    offset_x = (target_width - new_width) // 2  # Padding on the left 
+def enhance_image_for_detection(image: np.ndarray) -> np.ndarray:
+    """
+    Enhance image for better detection performance.
+    
+    Args:
+        image: Input image
+    
+    Returns:
+        Enhanced image
+    """
+    try:
+        # Convert to LAB color space
+        lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+        
+        # Apply CLAHE (Contrast Limited Adaptive Histogram Equalization)
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        lab[:, :, 0] = clahe.apply(lab[:, :, 0])
+        
+        # Convert back to BGR
+        enhanced = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+        
+        return enhanced
+        
+    except Exception as e:
+        logger.error(f"Error in enhance_image_for_detection: {e}")
+        return image
 
-    letterboxed_image[offset_y:offset_y + new_height, offset_x:offset_x + new_width] = resized_image
+def normalize_image(image: np.ndarray) -> np.ndarray:
+    """
+    Normalize image for model input.
+    
+    Args:
+        image: Input image
+    
+    Returns:
+        Normalized image
+    """
+    try:
+        # Convert to float and normalize to [0, 1]
+        normalized = image.astype(np.float32) / 255.0
+        return normalized
+        
+    except Exception as e:
+        logger.error(f"Error in normalize_image: {e}")
+        return image
 
-    return letterboxed_image
-
-def crop_license_plates(image, results):
-    """Extract license plate regions from detected bounding boxes"""
-    cropped_images = []
-
-    for result in results:
-        bbox = result.get("bbox")
-        if not bbox or len(bbox) != 4:
-            continue
-
-        x_min, y_min, x_max, y_max = map(int, bbox)
-
-        if x_min >= x_max or y_min >= y_max:
-            logging.warning(f"Warning: Invalid bounding box coordinates: {bbox}")
-            continue
-
-        x_min = max(0, x_min)
-        y_min = max(0, y_min)
-        x_max = min(image.shape[1], x_max)
-        y_max = min(image.shape[0], y_max)
-
-        cropped_images.append(image[y_min:y_max, x_min:x_max])
-
-    return cropped_images
-
-def draw_bounding_boxes(image, results, color=(0,255,0), thickness=2):
-    img = image.copy()
-    for result in results:
-        bbox = result.get("bbox")
-        if bbox and len(bbox) == 4:
-            x_min, y_min, x_max, y_max = map(int, bbox)
-            cv2.rectangle(img, (x_min, y_min), (x_max, y_max), color, thickness)
-    return img
+def denormalize_image(image: np.ndarray) -> np.ndarray:
+    """
+    Denormalize image from [0, 1] to [0, 255].
+    
+    Args:
+        image: Normalized image
+    
+    Returns:
+        Denormalized image
+    """
+    try:
+        # Convert back to uint8
+        denormalized = (image * 255).astype(np.uint8)
+        return denormalized
+        
+    except Exception as e:
+        logger.error(f"Error in denormalize_image: {e}")
+        return image 
