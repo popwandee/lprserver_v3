@@ -1,0 +1,19 @@
+@startuml ThreadBehavior
+title Thread Behavior
+
+start
+fork
+  :Camera Thread → capture frame + metadata → frames_queue, metadata_queue;
+fork again
+  :Video Feed → Stream to Flask App;
+fork again
+  :Metadata Thread → metadata_queue → SocketIO → Flask UI;
+fork again
+  :Detection Thread → frames_queue → Detect → OCR → Save to DB;
+fork again
+  :HealthMonitor Thread → periodic checks → Save to DB;
+fork again
+  :WebSocket Sender → Send unsent data to LPR Server;
+end fork
+stop
+@enduml

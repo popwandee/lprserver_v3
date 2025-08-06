@@ -1,61 +1,106 @@
-@startuml Class Diagram
+@startuml ClassDiagram_LPR_System
+
+title Class Diagram - AI Camera (LPR)
+
 class CameraHandler {
-    +initialize_camera()
-    +generate_frames()
-    +capture_frame_and_metadata()
-    +close_camera()
-    +is_initialized
-    +is_started
+  - camera_instance : Picamera2
+  - frames_queue :FrameQueue
+  - metadata_queue : MetadataQueue
+  + initialize_camera()
+  + generate_frames() : Generator
+  + start()
+  + stop()
+  + release()
+  + set_camera_settings()
 }
-
+class FrameQueue{
+-	queue : Queue
++	get_frame()
++	put_frame()
+}
+class MetadataQueue{
+-	queue : Queue
++	get_metadata()
++	put_metadata()
+}
 class DetectionProcessor {
-    +run()
-    +stop()
-    +load_detection_models()
-    +detect_vehicles()
-    +detect_license_plates()
-    +perform_ocr()
-    +process_frame()
+  - vehicle_detection_model
+  - lp_detection_model
+  - frames_queue :FrameQueue
+  + run_detection()
+  + detect_vehicle(frame)
+  + detect_license_plate(vehicle_frame)
+  + preprocess_plate(plate_frame)
+  + perform_ocr(preprocessed_frame)
+  + save_to_database()
+  + track_vehicle()
 }
 
-class DatabaseManager {
-    +insert_camera_metadata()
-    +insert_detection_result()
-    +get_unsent_detections()
-    +update_detection_sent_status()
-    +insert_health_check_result()
-    +get_latest_health_checks()
-    +get_unsent_health_checks()
-    +update_health_check_sent_status()
-    +close_connection()
-}
-
-class WebSocketClient {
-    +run()
-    +stop()
-    +connect()
-    +send_detection()
-    +send_health_check()
+class MetadataThread {
+  - metadata_queue : MetadataQueue
+  + send_metadata_to_ui()
 }
 
 class HealthMonitor {
-    +run()
-    +stop()
-    +run_all_checks()
-    +check_camera()
-    +check_disk_space()
-    +check_model_loading()
-    +check_easyocr_init()
-    +check_database_connection()
-    +check_network_connectivity()
+  - check_interval : int
+  + check_camera_status()
+  + check_disk_space()
+  + check_cpu_ram()
+  + check_models()
+  + check_easyocr()
+  + check_database()
+  + check_network()
+  + log_health_status()
 }
 
-CameraHandler --> queue.Queue : frames_queue, metadata_queue
-DetectionProcessor --> CameraHandler
-DetectionProcessor --> DatabaseManager
-DetectionProcessor --> queue.Queue : frames_queue
-WebSocketClient --> DatabaseManager
-HealthMonitor --> DatabaseManager
-HealthMonitor --> CameraHandler
+class WebSocketClient {
+  + connect()
+  + send_unsent_detections()
+  + send_unsent_health_checks()
+  + reconnect()
+}
 
-@enduml
+class FlaskWebApp {
+  + route /
+  + route /video_feed
+  + route /update_camera_settings()
+  + route /close_camera()
+  + route /reset_camera()
+  + route /start_app()
+  + route /stop_app()
+  + route /shutdown()
+  + route /detection_view
+  + route /healthmonitor
+  + route /config
+  + route /usermanagement
+}
+
+class DatabaseManager {
+  + save_detection()
+  + save_health_check()
+  + get_unsent_detections()
+  + get_unsent_health_checks()
+  + update_sent_status()
+}
+
+class LPRServer {
+  + receive_data()
+  + store_to_mysql()
+  + manage_users()
+  + analyze_routes()
+  + generate_reports()
+}
+
+CameraHandler --> FrameQueue :put frame
+FrameQueue  --> DetectionProcessor : provides frames
+CameraHandler -->MetadataQueue :put metadata
+MetadataQueue--> MetadataThread : provides metadata
+CameraHandler --> FlaskWebApp : controlled by
+DetectionProcessor --> DatabaseManager : save results
+HealthMonitor --> DatabaseManager : log health
+WebSocketClient --> DatabaseManager : query unsent data
+WebSocketClient --> LPRServer : send data
+FlaskWebApp --> CameraHandler : control camera
+DatabaseManager --> FlaskWebApp :get Detection/ HealthMonitor
+
+

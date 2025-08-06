@@ -98,10 +98,8 @@ def run_metadata_sender():
 def start_threads():
     """Starts the background detection and sender threads."""
     global detection_thread, sender_thread, monitor_thread,metadata_thread
-    # เราจะให้แน่ใจว่ากล้องเปิดอยู่เสมอเมื่อเริ่ม thread
-    if not camera_handler.is_initialized :
-        #camera_handler.initialize_camera()
-        logger.info("Camera initialized and started by app.py on thread start.")
+<<<
+   
     # Start Metadata Sender Thread
     if metadata_thread and metadata_thread.is_alive():
         logger.info("Metadata sender thread already running.")
@@ -165,7 +163,7 @@ def stop_threads():
             logger.warning("Health monitor thread did not terminate gracefully.")
             
     logger.info("Background threads stopped.")
-    #camera_handler.close_camera()
+    camera_handler.close_camera()
     db_manager.close_connection()
 
 
@@ -257,6 +255,7 @@ def close_camera():
         # หยุดการทำงานของทุก thread และคืนทรัพยากรกล้อง
         stop_threads()
         camera_handler.close_camera()
+        time.sleep(1)  # ให้เวลาสำหรับการปิดกล้อง
         # ล้างคิวเฟรมเพื่อให้แน่ใจว่าไม่มีงานค้าง
         while not frames_queue.empty():
             frames_queue.get()
@@ -273,21 +272,19 @@ def startup():
     """Initialize camera and start threads immediately on app start."""
     logger.info("Setting up application: Initializing camera and starting background threads.")
     # 1. Initialize camera with default settings or last saved if any (CameraHandler will manage this)
-    camera_handler.initialize_camera(
-        resolution=DEFAULT_RESOLUTION,
-        framerate=DEFAULT_FRAMERATE,
-        brightness=DEFAULT_BRIGHTNESS,
-        contrast=DEFAULT_CONTRAST,
-        saturation=DEFAULT_SATURATION,
-        sharpness=DEFAULT_SHARPNESS,
-        awb_mode=DEFAULT_AWB_MODE
-    )
+    if not camera_handler.is_initialized:
+        camera_handler.initialize_camera(
+            resolution=DEFAULT_RESOLUTION,
+            framerate=DEFAULT_FRAMERATE,
+            brightness=DEFAULT_BRIGHTNESS,
+            contrast=DEFAULT_CONTRAST,
+            saturation=DEFAULT_SATURATION,
+            sharpness=DEFAULT_SHARPNESS,
+            awb_mode=DEFAULT_AWB_MODE
+        )
     # 2. Run health check
     health_monitor.run_all_checks()
-    # 3. Close camera after health check
-    camera_handler.close_camera()
-    # 4. Start threads (ซึ่งจะ initialize กล้องใหม่สำหรับงานจริง)
-    detection_processor.load_detection_models()
+    # 3. Start threads 
     start_threads()
     logger.info("Application setup complete.")
 
@@ -301,4 +298,4 @@ def shutdown_application(exception=None):
 # --- Run the Flask App ---
 if __name__ == '__main__':
     startup()  
-    socketio.run(app, host=FLASK_HOST, port=FLASK_PORT, debug=True, allow_unsafe_werkzeug=True)
+    socketio.run(app, host=FLASK_HOST, port=FLASK_PORT, debug=True,use_reloader=False, allow_unsafe_werkzeug=True)

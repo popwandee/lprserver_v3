@@ -7,7 +7,7 @@ import importlib.util # To check if modules are importable
 
 from config import (
    BASE_DIR, DATABASE_PATH, IMAGE_SAVE_DIR, VEHICLE_DETECTION_MODEL,
-    LICENSE_PLATE_DETECTION_MODEL, EASYOCR_LANGUAGES, HEALTH_CHECK_INTERVAL
+   LICENSE_PLATE_DETECTION_MODEL, EASYOCR_LANGUAGES, HEALTH_CHECK_INTERVAL
 )
 from database_manager import DatabaseManager
 from camera_handler import CameraHandler # To check camera status
@@ -31,16 +31,6 @@ class HealthMonitor:
         component = "Camera"
         try:
             if self.camera_handler.is_initialized and getattr(self.camera_handler.picam2, "started", False):
-                # Attempt to get a frame to ensure it's actively working
-                # This might be too aggressive if run frequently; consider a lighter check
-                # if frames are not immediately available for health check purposes
-                # For this MVP, we assume a frame can be captured if started.
-                # A more thorough check might involve trying to capture a single frame
-                # and ensuring it's not None and has expected dimensions.
-                # frame, _ = self.camera_handler.capture_frame_and_metadata() # This is too heavy for a simple check
-                # if frame is None:
-                #     self._log_result(component, "FAIL", "Camera initialized but no frame captured.")
-                #     return False
                 self._log_result(component, "PASS", "Camera initialized and streaming.")
                 return True
             else:
@@ -70,34 +60,25 @@ class HealthMonitor:
         """Checks if detection models exist at their configured paths."""
         component = "Detection Models"
         all_models_found = True
-
+        print(f"Type of VEHICLE_DETECTION_MODEL: {type(VEHICLE_DETECTION_MODEL)}")
+        print(f"Type of LICENSE_PLATE_DETECTION_MODEL: {type(LICENSE_PLATE_DETECTION_MODEL)}")
         # Vehicle Detection Model
-        if not VEHICLE_DETECTION_MODEL: # Check if the model name is set in config
-            logger.error("VEHICLE_DETECTION_MODEL: is not set in config.")
-            self._log_result(component, "FAIL", "Vehicle detection model not found in config.")
+        vehicle_detection_model_path = os.path.join(BASE_DIR, 'models', VEHICLE_DETECTION_MODEL,VEHICLE_DETECTION_MODEL+'.hef')
+        if not os.path.isfile(vehicle_detection_model_path):
+            logger.error(f"Vehicle detection model file not found: {vehicle_detection_model_path}")
+            self._log_result(component, "FAIL", f"Vehicle detection model file not found: {vehicle_detection_model_path}")
             all_models_found = False
         else:
-            vehicle_detection_model_path = os.path.join(BASE_DIR, 'models', VEHICLE_DETECTION_MODEL,VEHICLE_DETECTION_MODEL+'.hef')
-            if not os.path.isfile(vehicle_detection_model_path):
-                logger.error(f"Vehicle detection model file not found: {vehicle_detection_model_path}")
-                self._log_result(component, "FAIL", f"Vehicle detection model file not found: {vehicle_detection_model_path}")
-                all_models_found = False
-            else:
-                logger.debug(f"Vehicle detection model found: {vehicle_detection_model_path}")
+            logger.info(f"Vehicle detection model found: {vehicle_detection_model_path}")
 
-        # License Plate Detection Model
-        if not LICENSE_PLATE_DETECTION_MODEL: # Check if the model name is set in config
-            logger.error("LICENSE_PLATE_DETECTION_MODEL: is not set in config.")
-            self._log_result(component, "FAIL", "License plate detection model not found in config.")
+        # License Plate Detection Model   
+        license_plate_detection_model_path = os.path.join(BASE_DIR, 'models', LICENSE_PLATE_DETECTION_MODEL,LICENSE_PLATE_DETECTION_MODEL+'.hef')
+        if not os.path.isfile(license_plate_detection_model_path):
+            logger.error(f"License plate detection model file not found: {license_plate_detection_model_path}")
+            self._log_result(component, "FAIL", f"License plate detection model file not found: {license_plate_detection_model_path}")
             all_models_found = False
-        else:   
-            license_plate_detection_model_path = os.path.join(BASE_DIR, 'models', LICENSE_PLATE_DETECTION_MODEL,LICENSE_PLATE_DETECTION_MODEL+'.hef')
-            if not os.path.isfile(license_plate_detection_model_path):
-                logger.error(f"License plate detection model file not found: {license_plate_detection_model_path}")
-                self._log_result(component, "FAIL", f"License plate detection model file not found: {license_plate_detection_model_path}")
-                all_models_found = False
-            else:
-                logger.debug(f"License plate detection model found: {license_plate_detection_model_path}")
+        else:
+            logger.info(f"License plate detection model found: {license_plate_detection_model_path}")
         
         if all_models_found:
             self._log_result(component, "PASS", "All detection model files found.")

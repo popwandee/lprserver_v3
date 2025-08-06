@@ -33,62 +33,72 @@ class CameraHandler:
     def __init__(self, frames_queue, metadata_queue=None):
         self.frames_queue = frames_queue if frames_queue is not None else queue.Queue(maxsize=10)
         self.metadata_queue = metadata_queue if metadata_queue is not None else queue.Queue(maxsize=10)     
+        self.init_lock = threading.Lock()
 
     def initialize_camera(self, resolution=DEFAULT_RESOLUTION, framerate=DEFAULT_FRAMERATE,
                           brightness=DEFAULT_BRIGHTNESS, contrast=DEFAULT_CONTRAST,
                           saturation=DEFAULT_SATURATION, sharpness=DEFAULT_SHARPNESS,
                           awb_mode=DEFAULT_AWB_MODE):
+
         """
         Initializes the Picamera2 with specified properties.
         If the camera is already initialized, it deactivates and re-initializes it.
         """
-        if self.picam2:
-            logger.info("Deactivating existing camera instance for re-initialization...")
-            self.picam2.stop()
-            self.picam2.close()
-            self.picam2 = None
-            self.is_initialized = False
-            time.sleep(0.5) # Give some time to release resources
+        
+        with self.init_lock:
+            import inspect
+            caller = inspect.stack()[1].function
+            logger.debug(f"initialize_camera() called by: {caller}")
+            if self.is_initialized:
+                logger.warning("Camera is already initialized. Skipping re-initialization.")
+                return
+            if self.picam2:
+                logger.info("Deactivating existing camera instance for re-initialization...")
+                self.picam2.stop()
+                self.picam2.close()
+                self.picam2 = None
+                self.is_initialized = False
+                time.sleep(0.5) # Give some time to release resources
 
-        try:
-            self.picam2 = Picamera2()
+            try:
+                self.picam2 = Picamera2()
 
-            # Store properties to re-apply after restart
-            self.configure_camera_properties = {
-                'resolution': resolution,
-                'framerate': framerate,
-                'brightness': brightness,
-                'contrast': contrast,
-                'saturation': saturation,
-                'sharpness': sharpness,
-                'awb_mode': awb_mode
-            }
+                # Store properties to re-apply after restart
+                self.configure_camera_properties = {
+                    'resolution': resolution,
+                    'framerate': framerate,
+                    'brightness': brightness,
+                    'contrast': contrast,
+                    'saturation': saturation,
+                    'sharpness': sharpness,
+                    'awb_mode': awb_mode
+                }
 
-            # Define the camera configuration
-            main_config = {"size": resolution}
-            lores_config = {"size": (640, 480)} # For efficient streaming/preview
+                # Define the camera configuration
+                main_config = {"size": resolution}
+                lores_config = {"size": (640, 480)} # For efficient streaming/preview
 
-            config = self.picam2.create_video_configuration(main=main_config, lores=lores_config, encode="lores")
-            self.picam2.configure(config)
+                config = self.picam2.create_video_configuration(main=main_config, lores=lores_config, encode="lores")
+                self.picam2.configure(config)
 
-            # Apply camera controls (brightness, contrast, etc.)
-            self.apply_camera_controls(
-                brightness=brightness,
-                contrast=contrast,
-                saturation=saturation,
-                sharpness=sharpness,
-                awb_mode=awb_mode
-            )
+                # Apply camera controls (brightness, contrast, etc.)
+                self.apply_camera_controls(
+                    brightness=brightness,
+                    contrast=contrast,
+                    saturation=saturation,
+                    sharpness=sharpness,
+                    awb_mode=awb_mode
+                )
 
-            self.picam2.start()
-            self.is_initialized = True
-            logger.info(f"Camera initialized with resolution: {resolution}, framerate: {framerate}")
-            logger.info(f"Camera controls applied: Brightness={brightness}, Contrast={contrast}, Saturation={saturation}, Sharpness={sharpness},  AWBMode={awb_mode}")
+                self.picam2.start()
+                self.is_initialized = True
+                logger.info(f"Camera initialized with resolution: {resolution}, framerate: {framerate}")
+                logger.info(f"Camera controls applied: Brightness={brightness}, Contrast={contrast}, Saturation={saturation}, Sharpness={sharpness},  AWBMode={awb_mode}")
 
-        except Exception as e:
-            self.is_initialized = False
-            logger.error(f"Error initializing camera: {e}")
-            self.picam2 = None # Ensure picam2 is None if initialization fails
+            except Exception as e:
+                self.is_initialized = False
+                logger.error(f"Error initializing camera: {e}")
+                self.picam2 = None # Ensure picam2 is None if initialization fails
 
     def apply_camera_controls(self, brightness, contrast, saturation, sharpness, awb_mode):
         """Applies various camera controls."""
@@ -187,38 +197,37 @@ class CameraHandler:
 
         while self.is_initialized and self.picam2.started:
             try:
-                while True:
-                    # 1. จับภาพและ Metadata ด้วย capture_request()
-                    request = self.picam2.capture_request()
-                    frame_np = request.make_array("main") # รับเฟรมเป็น numpy array
-                    metadata = request.get_metadata() # รับ metadata
-                    request.release()
+                # 1. จับภาพและ Metadata ด้วย capture_request()
+                request = self.picam2.capture_request()
+                frame_np = request.make_array("main") # รับเฟรมเป็น numpy array
+                metadata = request.get_metadata() # รับ metadata
+                request.release()
 
-                    # 2. แปลง numpy array เป็น JPEG เพื่อส่งไปยังเบราว์เซอร์ ผ่าน yield
-                    is_success, buffer = cv2.imencode(".jpg", frame_np)
-                    if not is_success:
-                        logging.error("Failed to encode frame to JPEG.")
-                        continue
-                    frame_bytes = buffer.tobytes()
+                # 2. แปลง numpy array เป็น JPEG เพื่อส่งไปยังเบราว์เซอร์ ผ่าน yield
+                is_success, buffer = cv2.imencode(".jpg", frame_np)
+                if not is_success:
+                    logging.error("Failed to encode frame to JPEG.")
+                    continue
+                frame_bytes = buffer.tobytes()
 
-                    # ส่งเฟรม JPEG ไปยัง Flask Response ,Yield the frame for Flask to stream to the browser
-                    yield (b'--frame\r\n'
-                        b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes  + b'\r\n')
-                    
-                    # 3. ใส่เฟรมและ metadata ลงในคิว
-                    if not self.frames_queue.full():
-                        self.frames_queue.put(frame_np) # ส่ง numpy array ไป detection thread
-                        self.metadata_queue.put(metadata) # ส่ง metadata ไปยัง Flask thread 
-                    else: # กรณี queue เต็ม (ให้เอาอันเก่าออกก่อน)
-                        try:
-                            self.frames_queue.get_nowait()
-                            self.metadata_queue.get_nowait()
-                        except queue.Empty: # กรณีคิวว่าง ไม่ต้องทำอะไร
-                            pass
-                        finally:# ใส่ frame ล่าสุดลง queue
-                            self.frames_queue.put(frame_np)
-                            self.metadata_queue.put(metadata)
-                    time.sleep(0.03) 
+                # ส่งเฟรม JPEG ไปยัง Flask Response ,Yield the frame for Flask to stream to the browser
+                yield (b'--frame\r\n'
+                    b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes  + b'\r\n')
+                
+                # 3. ใส่เฟรมและ metadata ลงในคิว
+                if not self.frames_queue.full():
+                    self.frames_queue.put(frame_np) # ส่ง numpy array ไป detection thread
+                    self.metadata_queue.put(metadata) # ส่ง metadata ไปยัง Flask thread 
+                else: # กรณี queue เต็ม (ให้เอาอันเก่าออกก่อน)
+                    try:
+                        self.frames_queue.get_nowait()
+                        self.metadata_queue.get_nowait()
+                    except queue.Empty: # กรณีคิวว่าง ไม่ต้องทำอะไร
+                        pass
+                    finally:# ใส่ frame ล่าสุดลง queue
+                        self.frames_queue.put(frame_np)
+                        self.metadata_queue.put(metadata)
+                time.sleep(0.03) 
             except Exception as e:
                 logger.error(f"Error generating frames: {e}")
                 time.sleep(1) # Wait before retrying
