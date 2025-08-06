@@ -44,14 +44,14 @@ class DetectionProcessor:
             )
 
             lp_detection_model = dg.load_model(
-                model_name=os.getenv("LICENSE_PLACE_DETECTION_MODEL"),
+                model_name=os.getenv("LICENSE_PLATE_DETECTION_MODEL"),
                 inference_host_address=os.getenv("HEF_MODEL_PATH"),
                 zoo_url=os.getenv("MODEL_ZOO_URL"),
                 overlay_color=[(255, 255, 0), (0, 255, 0)]
             )
 
             lp_ocr_model = dg.load_model(
-                model_name=os.getenv("LICENSE_PLACE_OCR_MODEL"),
+                model_name=os.getenv("LICENSE_PLATE_OCR_MODEL"),
                 inference_host_address=os.getenv("HEF_MODEL_PATH"),
                 zoo_url=os.getenv("MODEL_ZOO_URL"),
                 output_use_regular_nms=False,

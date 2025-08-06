@@ -8,18 +8,23 @@ logger = logging.getLogger(__name__)
 
 class DatabaseManager:
     _instance = None # Singleton instance
+    _lock = threading.Lock() # Thread safety for singleton
 
     def __new__(cls, db_lock=None):
         """
         Ensures only one instance of DatabaseManager exists (Singleton pattern).
+        Thread-safe implementation.
         """
         if cls._instance is None:
-            cls._instance = super(DatabaseManager, cls).__new__(cls)
-            cls._instance.conn = None
-            cls._instance.cursor = None
-            cls._instance.db_lock = db_lock
-            cls._instance.connect()
-            cls._instance._init_db()
+            with cls._lock:
+                # Double-check locking pattern
+                if cls._instance is None:
+                    cls._instance = super(DatabaseManager, cls).__new__(cls)
+                    cls._instance.conn = None
+                    cls._instance.cursor = None
+                    cls._instance.db_lock = db_lock
+                    cls._instance.connect()
+                    cls._instance._init_db()
         return cls._instance
 
     def _init_db(self, db_lock=None):

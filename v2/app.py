@@ -98,7 +98,8 @@ def run_metadata_sender():
 def start_threads():
     """Starts the background detection and sender threads."""
     global detection_thread, sender_thread, monitor_thread,metadata_thread
-     
+<<<
+   
     # Start Metadata Sender Thread
     if metadata_thread and metadata_thread.is_alive():
         logger.info("Metadata sender thread already running.")

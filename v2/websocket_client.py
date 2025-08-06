@@ -24,7 +24,7 @@ class WebSocketClient:
         Establishes a WebSocket connection to the server.
         Handles reconnection attempts.
         """
-        if self.websocket and not self.websocket.close:
+        if self.websocket and not self.websocket.closed:
             logger.info("WebSocket already connected.")
             return True
 
