@@ -112,7 +112,10 @@ def run_metadata_sender():
 def start_threads():
     """Starts the background detection and sender threads."""
     global detection_thread, sender_thread, monitor_thread,metadata_thread
+<<<<<<< HEAD:v2/app.py
 
+=======
+>>>>>>> 4b915fc (feat: Complete AI Camera v1.3 setup with Flask, Gunicorn, Nginx, and systemd):v1_2/app.py
    
     # Start Metadata Sender Thread
     if metadata_thread and metadata_thread.is_alive():

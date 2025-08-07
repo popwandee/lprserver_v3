@@ -1,0 +1,32 @@
+[Unit]
+Description=AI Camera v1.3 Flask Application
+After=network.target
+Wants=network.target
+
+[Service]
+Type=notify
+User=camuser
+Group=camuser
+WorkingDirectory=/home/camuser/aicamera
+Environment=PATH=/home/camuser/aicamera/venv_hailo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+Environment=FLASK_ENV=production
+Environment=FLASK_APP=v1_3.src.app:app
+
+ExecStart=/bin/bash -c 'source /home/camuser/aicamera/setup_env.sh && exec gunicorn --config /home/camuser/aicamera/gunicorn_config.py v1_3.src.app:app'
+ExecReload=/bin/kill -s HUP $MAINPID
+
+# Restart policy
+Restart=always
+RestartSec=10
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=aicamera_v1.3
+
+[Install]
+WantedBy=multi-user.target
