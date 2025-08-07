@@ -1,64 +1,137 @@
+#!/usr/bin/env python3
+"""
+AI Camera v1.3 Flask Application
+
+Main Flask application that integrates camera services and web interface.
+
+Author: AI Camera Team
+Version: 1.3
+Date: August 7, 2025
+"""
+
 import os
-import logging
-from flask import Flask, render_template, Response, request, redirect, url_for, flash, jsonify
+import sys
+from pathlib import Path
+# Import import helper first to setup paths
+from core.utils.import_helper import setup_import_paths, validate_imports
+setup_import_paths()
+
+# Add src to path
+sys.path.insert(0, str(Path(__file__).parent))
+
+from flask import Flask, render_template, jsonify, request, Response
 from flask_socketio import SocketIO
+import logging
 
-# Import our custom modules
-from .config import (
-    FLASK_HOST, FLASK_PORT, SECRET_KEY
-)
+from core.utils.logging_config import setup_logging, get_logger
+from core.dependency_container import get_container, get_service
+from web.blueprints import register_blueprints
 
-# Setup basic logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
-# Initialize Flask App
-app = Flask(__name__, 
-           template_folder='web/templates',
-           static_folder='web/static')
-app.config['SECRET_KEY'] = SECRET_KEY
-socketio = SocketIO(app)
+def create_app():
+    """Create and configure Flask application."""
+    # Setup logging
+    logger = setup_logging(level="INFO")
+    logger.info("Creating Flask application...")
+    
+    # Validate imports
+    import_errors = validate_imports()
+    if import_errors:
+        logger.warning("Some imports failed:")
+        for error in import_errors:
+            logger.warning(f"  {error}")
+    # Set template and static folders
+    current_dir = Path(__file__).parent
+    template_dir = current_dir / 'web' / 'templates'
+    static_dir = current_dir / 'web' / 'static'
 
-# --- Flask Routes ---
+    # Create Flask app
+    app = Flask(__name__, 
+                template_folder=str(template_dir),
+                static_folder=str(static_dir))
+    
+    # Load configuration
+    app.config.from_object('core.config')
+    
+    # Initialize dependency container
+    container = get_container()
+    logger.info("Dependency container initialized")
+    
+    # Initialize SocketIO
+    socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+    
+    # Register blueprints
+    register_blueprints(app, socketio)
+    
+    # Initialize camera service
+    try:
+        camera_manager = get_service('camera_manager')
+        if camera_manager:
+            camera_manager.initialize()
+            logger.info("Camera manager initialized")
+    except Exception as e:
+        logger.error(f"Failed to initialize camera manager: {e}")
+    
+    @app.route('/health')
+    def health():
+        """Health check endpoint."""
+        try:
+            camera_manager = get_service('camera_manager')
+            health_status = camera_manager.health_check() if camera_manager else {}
+            
+            return jsonify({
+                'status': 'healthy',
+                'camera': health_status,
+                'timestamp': '2025-08-07T16:00:00Z'
+            })
+        except Exception as e:
+            logger.error(f"Health check failed: {e}")
+            return jsonify({
+                'status': 'unhealthy',
+                'error': str(e),
+                'timestamp': '2025-08-07T16:00:00Z'
+            }), 500
+    
+    @app.errorhandler(404)
+    def not_found(error):
+        return render_template('errors/404.html'), 404
+    
+    @app.errorhandler(500)
+    def internal_error(error):
+        return render_template('errors/500.html'), 500
+    
+    logger.info("Flask application created successfully")
+    return app, socketio
 
-@app.route('/')
-def index():
-    """Home page with basic structure."""
-    return render_template('index.html')
 
-@app.route('/video_feed')
-def video_feed():
-    """Route to stream camera video feed."""
-    return Response("Video feed placeholder", mimetype='text/plain')
+def main():
+    """Main application entry point."""
+    app, socketio = create_app()
+    
+    # Run the application
+    host = app.config.get('FLASK_HOST', '0.0.0.0')
+    port = app.config.get('FLASK_PORT', 5000)
+    debug = app.config.get('DEBUG', False)
+    
+    logger = get_logger(__name__)
+    logger.info(f"Starting AI Camera application on {host}:{port}")
+    
+    try:
+        socketio.run(app, host=host, port=port, debug=debug, allow_unsafe_werkzeug=True)
+    except KeyboardInterrupt:
+        logger.info("Application stopped by user")
+    except Exception as e:
+        logger.error(f"Application error: {e}")
+    finally:
+        # Cleanup
+        try:
+            camera_manager = get_service('camera_manager')
+            if camera_manager:
+                camera_manager.cleanup()
+                logger.info("Camera manager cleaned up")
+        except Exception as e:
+            logger.error(f"Cleanup error: {e}")
 
-@app.route('/update_camera_settings', methods=['POST'])
-def update_camera_settings():
-    """Handles submission of camera settings form."""
-    flash('Camera settings updated successfully!', 'success')
-    return redirect(url_for('index'))
 
-@app.route('/close_camera', methods=['POST'])
-def close_camera():
-    """Stops camera and returns a JSON response."""
-    return jsonify({'status': 'success', 'message': 'Camera closed successfully.'})
-
-@app.route('/health')
-def health():
-    """Health check endpoint."""
-    return jsonify({'status': 'healthy', 'service': 'aicamera_v1.3'})
-
-# --- Application Startup and Shutdown ---
-
-def startup():
-    """Initialize application."""
-    logger.info("Setting up application: Basic initialization complete.")
-
-@app.teardown_appcontext
-def shutdown_application(exception=None):
-    """Gracefully shuts down resources when Flask app context ends."""
-    logger.info("Application teardown complete.")
-
-# --- Run the Flask App ---
 if __name__ == '__main__':
-    startup()  
-    socketio.run(app, host=FLASK_HOST, port=FLASK_PORT, debug=True, use_reloader=False, allow_unsafe_werkzeug=True)
+    main()

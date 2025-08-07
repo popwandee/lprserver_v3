@@ -1,9 +1,14 @@
 import os
 from dotenv import load_dotenv
-env_path = os.path.join(os.path.dirname(__file__),  '.env.production')
+env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env.production')
 load_dotenv(env_path)
 
-SECRET_KEY= os.getenv("SECRET_KEY")
+# Flask app configuration
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-this-in-production")
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+FLASK_PORT = int(os.getenv("FLASK_PORT", 5000))
+FLASK_HOST = os.getenv("FLASK_HOST", '0.0.0.0')  # Listen on all interfaces
+
 # Base directory for the project
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -36,10 +41,6 @@ DEFAULT_AWB_MODE = 0 # 0=auto, 1=fluorescent, 2=incandescent, 3=tungsten, 4=hori
 # Threading intervals (in seconds)
 DETECTION_INTERVAL = 0.1 # How often the detection thread tries to get a frame
 SENDER_INTERVAL = 60.0   # How often the sender thread checks for new detections (1 minute)
-
-# Flask app configuration
-FLASK_PORT = 5000
-FLASK_HOST = '0.0.0.0' # Listen on all interfaces
 
 # Health monitoring interval (in seconds, 3600 seconds = 1 hour)
 HEALTH_CHECK_INTERVAL = 3600

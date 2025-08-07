@@ -1,6 +1,7 @@
 # Core Flask and WSGI
 Flask==2.3.3
 Flask-SocketIO==5.3.6
+Flask-CORS==6.0.1
 gunicorn==21.2.0
 eventlet==0.33.3
 
@@ -24,7 +25,8 @@ websocket-client==1.6.4
 pandas==2.0.3
 sqlite3
 
-# Utilities
+# System Monitoring and Utilities
+psutil==7.0.0
 python-dotenv==1.0.0
 requests==2.31.0
 matplotlib==3.7.2

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Detection Processor Component for AI Camera v1.3
+Database Manager Component for AI Camera v1.3
 
 This is a stub component that will be implemented later.
 """
@@ -11,20 +11,20 @@ from typing import Dict, Any
 logger = logging.getLogger(__name__)
 
 
-class DetectionProcessor:
-    """Stub Detection Processor Component."""
+class DatabaseManager:
+    """Stub Database Manager Component."""
     
     def __init__(self, logger=None):
         self.logger = logger or logging.getLogger(__name__)
-        self.logger.info("DetectionProcessor initialized (stub)")
+        self.logger.info("DatabaseManager initialized (stub)")
     
     def get_status(self) -> Dict[str, Any]:
-        """Get detection processor status."""
+        """Get database status."""
         return {
             'status': 'stub',
-            'message': 'Detection processor not implemented yet'
+            'message': 'Database manager not implemented yet'
         }
     
     def cleanup(self):
         """Cleanup resources."""
-        self.logger.info("DetectionProcessor cleanup completed")
+        self.logger.info("DatabaseManager cleanup completed")

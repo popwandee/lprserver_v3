@@ -23,11 +23,15 @@ from picamera2.encoders import JpegEncoder
 from picamera2.outputs import FileOutput
 import io
 import json
-from ..config import (
-    DEFAULT_RESOLUTION, DEFAULT_FRAMERATE, DEFAULT_BRIGHTNESS,
-    DEFAULT_CONTRAST, DEFAULT_SATURATION, DEFAULT_SHARPNESS, DEFAULT_AWB_MODE,
-    IMAGE_SAVE_DIR
-)
+# Default camera settings
+DEFAULT_RESOLUTION = (1280, 720)
+DEFAULT_FRAMERATE = 30
+DEFAULT_BRIGHTNESS = 0.0
+DEFAULT_CONTRAST = 1.0
+DEFAULT_SATURATION = 1.0
+DEFAULT_SHARPNESS = 1.0
+DEFAULT_AWB_MODE = 'auto'
+IMAGE_SAVE_DIR = '/tmp/captured_images'
 
 logger = logging.getLogger(__name__)
 

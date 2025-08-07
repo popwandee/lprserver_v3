@@ -145,6 +145,7 @@ sudo systemctl restart aicamera_v1.3.service
 
 # ดู log
 sudo journalctl -u aicamera_v1.3.service -f
+sudo systemctl start aicamera_v1.3.service
 ```
 
 ## ⚙️ การตั้งค่า
@@ -446,7 +447,17 @@ pip install -r v1_3/requirements.txt --upgrade
 
 # Restart service
 sudo systemctl restart aicamera_v1.3.service
+
+# ตรวจสอบว่ามี process ใดใช้กล้องอยู่หรือไม่
+sudo fuser /dev/media* 2>/dev/null || echo "No processes using media devices"
+
+# ตรวจสอบสถานะการทำงาน
+sudo journalctl -u aicamera_v1.3.service --no-pager | tail -20
 ```
+ตอนนี้กล้องทำงานแล้ว
+แผนต่อไป 
+สั่งให้กล้องทำงาน streaming 
+ดำเนินการปิดและคืนทรัพยากรกล้องอย่างปลอดภัย
 
 ## 📞 การสนับสนุน
 

@@ -10,9 +10,9 @@ Group=camuser
 WorkingDirectory=/home/camuser/aicamera
 Environment=PATH=/home/camuser/aicamera/venv_hailo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 Environment=FLASK_ENV=production
-Environment=FLASK_APP=v1_3.src.app:app
+Environment=FLASK_APP=v1_3.src.wsgi:app
 
-ExecStart=/bin/bash -c 'source /home/camuser/aicamera/setup_env.sh && exec gunicorn --config /home/camuser/aicamera/gunicorn_config.py v1_3.src.app:app'
+ExecStart=/bin/bash -c 'source /home/camuser/aicamera/setup_env.sh && exec gunicorn --config /home/camuser/aicamera/gunicorn_config.py --worker-class gthread --workers 1 --threads 4 v1_3.src.wsgi:app'
 ExecReload=/bin/kill -s HUP $MAINPID
 
 # Restart policy

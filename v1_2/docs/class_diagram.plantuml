@@ -2,6 +2,7 @@
 !theme plain
 skinparam backgroundColor #FFFFFF
 
+<<<<<<< HEAD
 class CameraManager {
     -camera: Picamera2
     -is_initialized: bool
@@ -14,6 +15,42 @@ class CameraManager {
     +get_lores_frame(): np.ndarray
     +update_settings(**settings): bool
     +close(): void
+=======
+title Class Diagram - AI Camera (LPR)
+
+class CameraHandler {
+  - camera_instance : Picamera2
+  - frames_queue :FrameQueue
+  - metadata_queue : MetadataQueue
+  + initialize_camera()
+  + generate_frames() : Generator
+  + start()
+  + stop()
+  + release()
+  + set_camera_settings()
+}
+class FrameQueue{
+-	queue : Queue 
++	get_frame()
++	put_frame()
+}
+class MetadataQueue{
+-	queue : Queue
++	get_metadata()
++	put_metadata()
+}
+class DetectionProcessor {
+  - vehicle_detection_model
+  - lp_detection_model
+  - frames_queue :FrameQueue
+  + run_detection()
+  + detect_vehicle(frame)
+  + detect_license_plate(vehicle_frame)
+  + preprocess_plate(plate_frame)
+  + perform_ocr(preprocessed_frame)
+  + save_to_database()
+  + track_vehicle()
+>>>>>>> 48745e5 (basic camera module complete)
 }
 
 class DetectionThread {
