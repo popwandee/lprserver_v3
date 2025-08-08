@@ -165,7 +165,7 @@ class DependencyContainer:
         """Create application configuration."""
         # Import config values lazily to avoid circular imports
         try:
-            from config import (
+            from .config import (
                 FLASK_HOST, FLASK_PORT, SECRET_KEY,
                 VEHICLE_DETECTION_MODEL, LICENSE_PLATE_DETECTION_MODEL,
                 EASYOCR_LANGUAGES, IMAGE_SAVE_DIR, DETECTION_INTERVAL
