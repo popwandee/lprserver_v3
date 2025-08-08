@@ -22,7 +22,7 @@ from typing import Optional
 
 
 def setup_logging(
-    level: str = "INFO",
+    level: str = "DEBUG",
     log_dir: Optional[str] = None,
     max_bytes: int = 10 * 1024 * 1024,  # 10MB
     backup_count: int = 5
@@ -78,12 +78,12 @@ def setup_logging(
         filename=log_file,
         when='D',               # Daily rotation
         interval=1,
-        backupCount=15,         # Keep 15 files
+        backupCount=31,         # Keep 15 files
         encoding='utf-8'
     )
     file_handler.namer = lambda name: name.replace(".log", "") + ".log"
     file_handler.setFormatter(detailed_formatter)
-    # ลบไฟล์ที่เกิน 15 วัน
+    # ลบไฟล์ที่เกิน 31 วัน
     for f in log_dir.glob("aicamera_*.log"):
         try:
             mtime = datetime.fromtimestamp(f.stat().st_mtime)
