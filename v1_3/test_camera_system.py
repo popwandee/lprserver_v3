@@ -15,7 +15,7 @@ to validate their functionality according to the system requirements:
 
 Author: AI Camera Team
 Version: 1.3
-Date: December 2024
+Date: August 8, 2025
 """
 
 import sys
