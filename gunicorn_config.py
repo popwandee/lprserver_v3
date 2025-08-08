@@ -2,8 +2,8 @@
 import os
 import multiprocessing
 
-# Server socket
-bind = "0.0.0.0:8080"
+# Server socket - เปลี่ยนเป็น Unix socket
+bind = "unix:/tmp/aicamera.sock"  # เปลี่ยนจาก "0.0.0.0:8080"
 backlog = 2048
 
 # Worker processes - Thread workers for camera access
