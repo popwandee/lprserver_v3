@@ -2,40 +2,64 @@
 """
 Logging Configuration Utility for AI Camera v1.3
 
-This module provides logging configuration and utility functions.
+This module provides centralized logging configuration for the entire
+application with support for different log levels, file rotation,
+and structured logging.
 
 Author: AI Camera Team
 Version: 1.3
-Date: December 2024
+Date: August 8, 2025
 """
 
+import os
 import logging
 import logging.handlers
+from logging.handlers import TimedRotatingFileHandler
 import sys
 from pathlib import Path
+from datetime import datetime, timedelta
 from typing import Optional
 
-def setup_logging(level: str = "INFO", log_file: Optional[str] = None) -> logging.Logger:
+
+def setup_logging(
+    level: str = "INFO",
+    log_dir: Optional[str] = None,
+    max_bytes: int = 10 * 1024 * 1024,  # 10MB
+    backup_count: int = 5
+) -> logging.Logger:
     """
     Setup logging configuration.
     
     Args:
         level (str): Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-        log_file (str, optional): Path to log file
+        log_dir (Optional[str]): Directory for log files
+        max_bytes (int): Maximum size of log file before rotation
+        backup_count (int): Number of backup log files to keep
     
     Returns:
         logging.Logger: Configured logger
     """
+    # Create log directory if not specified
+    if log_dir is None:
+        log_dir = Path(__file__).parent.parent.parent / "logs"
+    
+    # ตั้งชื่อไฟล์ตามวันที่
+    log_dir = Path(log_dir)
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_file = log_dir / f"aicamera_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+
     # Convert string level to logging constant
     numeric_level = getattr(logging, level.upper(), None)
     if not isinstance(numeric_level, int):
         raise ValueError(f'Invalid log level: {level}')
     
     # Create formatter
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    detailed_formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s', datefmt='%Y-%m-%d %H:%M:%S'
     )
-    
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S'
+    )
     # Setup root logger
     root_logger = logging.getLogger()
     root_logger.setLevel(numeric_level)
@@ -50,17 +74,26 @@ def setup_logging(level: str = "INFO", log_file: Optional[str] = None) -> loggin
     root_logger.addHandler(console_handler)
     
     # Add file handler if specified
-    if log_file:
-        file_path = Path(log_file)
-        file_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        file_handler = logging.handlers.RotatingFileHandler(
-            file_path, maxBytes=10*1024*1024, backupCount=5
-        )
-        file_handler.setFormatter(formatter)
-        root_logger.addHandler(file_handler)
-    
+    file_handler = TimedRotatingFileHandler(
+        filename=log_file,
+        when='D',               # Daily rotation
+        interval=1,
+        backupCount=15,         # Keep 15 files
+        encoding='utf-8'
+    )
+    file_handler.namer = lambda name: name.replace(".log", "") + ".log"
+    file_handler.setFormatter(detailed_formatter)
+    # ลบไฟล์ที่เกิน 15 วัน
+    for f in log_dir.glob("aicamera_*.log"):
+        try:
+            mtime = datetime.fromtimestamp(f.stat().st_mtime)
+            if datetime.now() - mtime > timedelta(days=15):
+                f.unlink()
+        except Exception as e:
+            root_logger.warning(f"Failed to delete old log file {f}: {e}")
+
     return root_logger
+    
 
 def get_logger(name: str) -> logging.Logger:
     """
