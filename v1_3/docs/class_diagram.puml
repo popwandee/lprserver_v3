@@ -1,0 +1,163 @@
+@startuml AI_Camera_v1_3_Class_Diagram
+
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam classFontSize 12
+skinparam classFontName Arial
+
+title AI Camera v1.3 - Class Diagram
+
+' Core Components
+package "Core" {
+    class DependencyContainer {
+        - _services: Dict[str, Any]
+        - _lock: threading.Lock
+        + register_service(name: str, service: Any): void
+        + get_service(name: str): Any
+        + list_services(): List[str]
+        + clear_services(): void
+    }
+    
+    class ImportHelper {
+        + setup_import_paths(base_path: str): void
+        + import_module(module_path: str): Any
+        + validate_imports(): bool
+    }
+    
+    class LoggingConfig {
+        + get_logger(name: str): Logger
+        + setup_logging(): void
+        + configure_file_handler(): void
+    }
+}
+
+' Camera Components
+package "Components" {
+    class CameraHandler {
+        - _instance: CameraHandler
+        - _lock: threading.Lock
+        - picam2: Picamera2
+        - initialized: bool
+        - streaming: bool
+        - current_config: Dict
+        + initialize_camera(): bool
+        + start_camera(): bool
+        + stop_camera(): bool
+        + capture_frame(): Dict
+        + update_configuration(config: Dict): bool
+        + get_status(): Dict
+        + cleanup(): void
+    }
+    
+    class DetectionProcessor {
+        - model_path: str
+        - confidence_threshold: float
+        - initialized: bool
+        + initialize_model(): bool
+        + process_frame(frame: np.ndarray): List[Detection]
+        + get_model_info(): Dict
+    }
+    
+    class HealthMonitor {
+        - check_interval: float
+        - health_status: Dict
+        + start_monitoring(): void
+        + check_system_health(): Dict
+        + get_health_report(): Dict
+    }
+    
+    class DatabaseManager {
+        - connection: Any
+        - initialized: bool
+        + initialize_database(): bool
+        + save_detection(detection: Dict): bool
+        + get_detections(limit: int): List[Dict]
+        + cleanup(): void
+    }
+}
+
+' Services
+package "Services" {
+    class CameraManager {
+        - camera_handler: CameraHandler
+        - auto_start_enabled: bool
+        - startup_time: datetime
+        + initialize(): bool
+        + start(): bool
+        + stop(): bool
+        + restart(): bool
+        + get_status(): Dict
+        + update_configuration(config: Dict): Dict
+        + capture_image(): Dict
+    }
+    
+    class DetectionManager {
+        - detection_processor: DetectionProcessor
+        - camera_manager: CameraManager
+        + start_detection(): bool
+        + stop_detection(): bool
+        + process_frame(): Dict
+        + get_detection_status(): Dict
+    }
+    
+    class VideoStreaming {
+        - camera_manager: CameraManager
+        - streaming_active: bool
+        + start_streaming(): bool
+        + stop_streaming(): bool
+        + get_stream_status(): Dict
+    }
+    
+    class WebSocketSender {
+        - socketio: SocketIO
+        + send_status_update(status: Dict): void
+        + send_detection_result(result: Dict): void
+        + broadcast_message(event: str, data: Dict): void
+    }
+}
+
+' Web Blueprints
+package "Web Blueprints" {
+    class MainBlueprint {
+        + index(): str
+        + health(): Dict
+    }
+    
+    class CameraBlueprint {
+        + camera_dashboard(): str
+        + get_camera_status(): Dict
+        + start_camera(): Dict
+        + stop_camera(): Dict
+        + update_configuration(): Dict
+        + video_feed(): Response
+    }
+    
+    class DetectionBlueprint {
+        + detection_dashboard(): str
+        + start_detection(): Dict
+        + stop_detection(): Dict
+        + get_detection_status(): Dict
+    }
+    
+    class HealthBlueprint {
+        + health_dashboard(): str
+        + get_system_health(): Dict
+    }
+}
+
+' Relationships
+DependencyContainer ||--o{ CameraManager : manages
+DependencyContainer ||--o{ DetectionManager : manages
+DependencyContainer ||--o{ VideoStreaming : manages
+DependencyContainer ||--o{ WebSocketSender : manages
+
+CameraManager ||--|| CameraHandler : uses
+DetectionManager ||--|| DetectionProcessor : uses
+DetectionManager ||--|| CameraManager : uses
+VideoStreaming ||--|| CameraManager : uses
+
+CameraBlueprint ||--|| CameraManager : uses
+DetectionBlueprint ||--|| DetectionManager : uses
+HealthBlueprint ||--|| HealthMonitor : uses
+
+@enduml

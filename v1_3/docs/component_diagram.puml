@@ -1,0 +1,89 @@
+@startuml AI_Camera_v1_3_Component_Diagram
+
+!theme plain
+skinparam componentStyle rectangle
+skinparam componentFontSize 11
+skinparam componentFontName Arial
+
+title AI Camera v1.3 - Component Diagram
+
+package "Frontend (Web UI)" {
+    [Main Dashboard] as main_ui
+    [Camera Dashboard] as camera_ui
+    [Detection Dashboard] as detection_ui
+    [Health Dashboard] as health_ui
+    [WebSocket Client] as ws_client
+}
+
+package "Web Layer" {
+    [Flask App] as flask_app
+    [Main Blueprint] as main_bp
+    [Camera Blueprint] as camera_bp
+    [Detection Blueprint] as detection_bp
+    [Health Blueprint] as health_bp
+    [WebSocket Handler] as ws_handler
+}
+
+package "Service Layer" {
+    [Camera Manager] as camera_mgr
+    [Detection Manager] as detection_mgr
+    [Video Streaming] as video_stream
+    [WebSocket Sender] as ws_sender
+}
+
+package "Component Layer" {
+    [Camera Handler] as camera_handler
+    [Detection Processor] as detection_proc
+    [Health Monitor] as health_monitor
+    [Database Manager] as db_manager
+}
+
+package "Core Layer" {
+    [Dependency Container] as dep_container
+    [Import Helper] as import_helper
+    [Logging Config] as logging_config
+}
+
+package "External Systems" {
+    [Picamera2] as picamera2
+    [Hailo AI] as hailo_ai
+    [SQLite Database] as sqlite_db
+    [System Resources] as sys_res
+}
+
+' Frontend to Web Layer
+main_ui --> flask_app : HTTP GET/POST
+camera_ui --> flask_app : HTTP GET/POST
+detection_ui --> flask_app : HTTP GET/POST
+health_ui --> flask_app : HTTP GET/POST
+ws_client --> ws_handler : WebSocket
+
+' Web Layer to Service Layer
+main_bp --> camera_mgr : get_service()
+camera_bp --> camera_mgr : get_service()
+detection_bp --> detection_mgr : get_service()
+health_bp --> health_monitor : get_service()
+ws_handler --> ws_sender : get_service()
+
+' Service Layer to Component Layer
+camera_mgr --> camera_handler : uses
+detection_mgr --> detection_proc : uses
+detection_mgr --> camera_mgr : uses
+video_stream --> camera_mgr : uses
+
+' Component Layer to External Systems
+camera_handler --> picamera2 : controls
+detection_proc --> hailo_ai : uses
+db_manager --> sqlite_db : manages
+health_monitor --> sys_res : monitors
+
+' Core Layer Dependencies
+dep_container --> camera_mgr : manages
+dep_container --> detection_mgr : manages
+dep_container --> video_stream : manages
+dep_container --> ws_sender : manages
+
+import_helper --> dep_container : supports
+logging_config --> all : provides logging
+
+@enduml
