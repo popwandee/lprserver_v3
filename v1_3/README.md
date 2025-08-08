@@ -162,7 +162,7 @@ sudo systemctl start aicamera_v1.3.service
 - ✅ Camera Handler (v1.3) - Picamera2 integration with thread-safe access
 - ✅ Camera Manager (v1.3) - Service layer for video streaming and ML pipeline
 - ✅ Dependency Injection Container - Service management and DI pattern
-- ✅ Configuration Management - Environment-based config without dotenv dependency
+- ✅ **Configuration System (Updated)** - Using `/src/core/config.py` without dotenv dependency
 - ✅ Logging System - Structured logging with file rotation support
 
 **Key Features Verified:**
@@ -175,11 +175,14 @@ sudo systemctl start aicamera_v1.3.service
 
 **Testing Scripts:**
 ```bash
-# Run comprehensive dependency injection tests
-python3 test_camera_system.py
+# Test configuration system (✅ PASSING)
+python3 config_test.py
 
-# Run direct component tests  
+# Test camera components (requires Picamera2 hardware)
 python3 simple_camera_test.py
+
+# Test full dependency injection system
+python3 test_camera_system.py
 ```
 
 **Architecture Compliance: 100%** 
@@ -191,6 +194,14 @@ python3 simple_camera_test.py
 - ML Pipeline Ready ✅
 - Status Monitoring ✅
 - Configuration Management ✅
+
+**📋 Configuration System Update (Fixed):**
+- ✅ **Unified Config**: Uses single `/src/core/config.py` file 
+- ✅ **No dotenv dependency**: Removed external dependency conflicts
+- ✅ **Environment variables**: Full OS environment variable support
+- ✅ **Default values**: Sensible defaults for all configuration options
+- ✅ **Directory creation**: Auto-creates required directories
+- ✅ **Dependency injection**: Proper integration with DI container
 
 ## 💻 การใช้งาน
 

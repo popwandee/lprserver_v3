@@ -11,14 +11,11 @@ Date: December 2024
 
 import os
 from pathlib import Path
-from dotenv import load_dotenv
-env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env.production')
-load_dotenv(env_path)
 
 # Flask Configuration
-FLASK_HOST = os.getenv(FLASK_HOST)
-FLASK_PORT = int(os.getenv(FLASK_PORT))
-SECRET_KEY = os.getenv(SECRET_KEY)
+FLASK_HOST = os.getenv('FLASK_HOST', '0.0.0.0')
+FLASK_PORT = int(os.getenv('FLASK_PORT', 5000))
+SECRET_KEY = os.getenv('SECRET_KEY', 'default-secret-key-change-in-production')
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 # Base directory for the project
