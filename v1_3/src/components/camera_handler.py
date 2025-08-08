@@ -683,9 +683,11 @@ class CameraHandler:
             with self._lock:
                 if not self.initialized:
                     return {}
-                
-                return self.picam2.camera_configuration()
-                
+            
+                # Get raw configuration and make it JSON serializable
+                raw_config = self.picam2.camera_configuration()
+                return make_json_serializable(raw_config)
+            
         except Exception as e:
             self.logger.error(f"Failed to get configuration: {e}")
             return {}
@@ -705,22 +707,28 @@ class CameraHandler:
                 if not self.initialized:
                     self.logger.error("Camera not initialized")
                     return False
-                
+            
                 # Stop camera if streaming
                 was_streaming = self.streaming
                 if was_streaming:
+                    self.logger.info("Stopping camera for configuration update...")
                     self.stop_camera()
                 
                 # Apply new configuration
+                self.logger.info("Applying new camera configuration...")
                 self.picam2.configure(config)
                 self.current_config = self.picam2.camera_configuration()
                 
-                # Restart if was streaming
-                if was_streaming:
-                    self.start_camera()
+                # Always restart camera after configuration update
+                self.logger.info("Restarting camera with new configuration...")
+                restart_success = self.start_camera()
                 
-                self.logger.info("Configuration updated successfully")
-                return True
+                if restart_success:
+                    self.logger.info("Configuration updated and camera restarted successfully")
+                    return True
+                else:
+                    self.logger.error("Configuration updated but failed to restart camera")
+                    return False
                 
         except Exception as e:
             self.logger.error(f"Failed to update configuration: {e}")

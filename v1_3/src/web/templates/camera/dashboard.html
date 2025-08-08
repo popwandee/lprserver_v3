@@ -26,22 +26,20 @@
             display: block;
         }
         
+        /* Remove old overlay controls */
         .camera-controls {
-            background: rgba(0, 0, 0, 0.8);
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 10px;
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            opacity: 0;
-            transition: opacity 0.3s;
+            display: none; /* Hide old overlay controls */
         }
         
-        .video-container:hover .camera-controls {
-            opacity: 1;
+        /* New controls above video frame */
+        .camera-controls-above {
+            background: #f8f9fa;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .control-btn {
+            min-width: 80px;
+            font-size: 0.875rem;
         }
         
         .status-indicator {
@@ -67,10 +65,6 @@
             color: white;
             border-radius: 8px;
             padding: 15px;
-        }
-        
-        .control-btn {
-            min-width: 80px;
         }
         
         .log-container {
@@ -118,9 +112,9 @@
                         </h5>
                     </div>
                     <div class="card-body p-0">
-                        <div class="video-container">
-                            <img id="video-feed" src="/camera/video_feed" class="video-feed" alt="Camera Feed">
-                            <div class="camera-controls">
+                        <!-- Camera Control Buttons - Moved above video frame -->
+                        <div class="camera-controls-above mb-2 p-2 bg-light border-bottom">
+                            <div class="d-flex justify-content-center gap-2">
                                 <button id="start-btn" class="btn btn-success btn-sm control-btn">
                                     <i class="fas fa-play"></i> Start
                                 </button>
@@ -134,6 +128,11 @@
                                     <i class="fas fa-camera"></i> Capture
                                 </button>
                             </div>
+                        </div>
+                        
+                        <!-- Video Container -->
+                        <div class="video-container">
+                            <img id="video-feed" src="/camera/video_feed" class="video-feed" alt="Camera Feed">
                         </div>
                     </div>
                 </div>
@@ -375,12 +374,22 @@
         });
         
         socket.on('camera_control_response', function(response) {
-            const message = response.success ? response.message : `Error: ${response.error || response.message}`;
+            let message;
+            if (response.success) {
+                message = response.message || 'Command executed successfully';
+            } else {
+                message = response.error || response.message || 'Command failed';
+            }
             addLog(`Camera control: ${message}`, response.success ? 'success' : 'error');
         });
         
         socket.on('camera_config_response', function(response) {
-            const message = response.success ? response.message : `Error: ${response.error}`;
+            let message;
+            if (response.success) {
+                message = response.message || 'Configuration updated successfully';
+            } else {
+                message = response.error || 'Configuration update failed';
+            }
             addLog(`Configuration: ${message}`, response.success ? 'success' : 'error');
         });
         
