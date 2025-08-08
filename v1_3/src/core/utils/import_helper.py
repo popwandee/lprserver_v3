@@ -3,11 +3,11 @@
 Import Helper for AI Camera v1.3
 
 This module provides utilities for managing import paths and ensuring
-consistent imports across the application.
+consistent absolute imports across the application.
 
 Author: AI Camera Team
 Version: 1.3
-Date: August 7, 2025
+Date: August 8, 2025
 """
 
 import sys
@@ -21,98 +21,91 @@ logger = logging.getLogger(__name__)
 
 def setup_import_paths(base_path: Optional[str] = None) -> None:
     """
-    Setup import paths for the application.
+    Setup import paths for absolute imports.
     
     Args:
-        base_path: Base path to add to sys.path (defaults to src directory)
+        base_path: Base path to add to sys.path (defaults to project root)
     """
     if base_path is None:
-        # Get the src directory path
+        # Get the project root directory (aicamera/)
         current_file = Path(__file__)
-        src_path = current_file.parent.parent.parent  # Go up from utils/core/src
+        project_root = current_file.parent.parent.parent.parent  # Go up from utils/core/src/v1_3
     else:
-        src_path = Path(base_path)
+        project_root = Path(base_path)
     
-    src_path_str = str(src_path.absolute())
+    # Add project root to sys.path for absolute imports
+    project_root_str = str(project_root.absolute())
+    if project_root_str not in sys.path:
+        sys.path.insert(0, project_root_str)
+        logger.debug(f"Added project root: {project_root_str}")
     
-    # Add to sys.path if not already present
-    if src_path_str not in sys.path:
-        sys.path.insert(0, src_path_str)
-        logger.debug(f"Added {src_path_str} to Python path")
-        print(f"Added {src_path_str} to Python path")
-    # Also add parent directory for relative imports
-    parent_path = str(src_path.parent)
-    if parent_path not in sys.path:
-        sys.path.insert(0, parent_path)
-        logger.debug(f"Added {parent_path} to Python path")
-        print(f"Added {parent_path} to Python path")
+    # Add v1_3 directory for v1_3.* imports
+    v1_3_path = str(project_root / 'v1_3')
+    if v1_3_path not in sys.path:
+        sys.path.insert(0, v1_3_path)
+        logger.debug(f"Added v1_3 path: {v1_3_path}")
+    
+    # Add v1_3/src directory for src.* imports
+    v1_3_src_path = str(project_root / 'v1_3' / 'src')
+    if v1_3_src_path not in sys.path:
+        sys.path.insert(0, v1_3_src_path)
+        logger.debug(f"Added v1_3/src path: {v1_3_src_path}")
+    
     # Add current working directory
     cwd = str(Path.cwd())
     if cwd not in sys.path:
         sys.path.insert(0, cwd)
-        logger.debug(f"Added {cwd} to Python path")
-        print(f"Added {cwd} to Python path")
-     # Add v1_3 directory for absolute imports
-    v1_3_path = str(Path(cwd) / 'v1_3')
-    if v1_3_path not in sys.path:
-        sys.path.insert(0, v1_3_path)
-        logger.debug(f"Added {v1_3_path} to Python path")
-        print(f"Added {v1_3_path} to Python path")
-    
-    # Add v1_3/src directory for absolute imports
-    v1_3_src_path = str(Path(cwd) / 'v1_3' / 'src')
-    if v1_3_src_path not in sys.path:
-        sys.path.insert(0, v1_3_src_path)
-        logger.debug(f"Added {v1_3_src_path} to Python path")
-        print(f"Added {v1_3_src_path} to Python path")
-    # Add project root for absolute imports
-    project_root = str(Path(cwd))
-    if project_root not in sys.path:
-        sys.path.insert(0, project_root)
-        logger.debug(f"Added {project_root} to Python path")
-        print(f"Added {project_root} to Python path")
-        
-def get_module_path(module_name: str) -> Optional[str]:
+        logger.debug(f"Added CWD: {cwd}")
+
+
+def get_absolute_import_path(module_name: str) -> str:
     """
-    Get the absolute path for a module.
+    Get absolute import path for a module.
     
     Args:
-        module_name: Name of the module (e.g., 'core', 'components', 'services')
+        module_name: Module name (e.g., 'core', 'components', 'services')
         
     Returns:
-        Absolute path to the module or None if not found
+        Absolute import path
     """
-    try:
-        import importlib
-        module = importlib.import_module(module_name)
-        return os.path.dirname(module.__file__)
-    except ImportError:
-        return None
+    # Map relative module names to absolute paths
+    module_mapping = {
+        'core': 'v1_3.src.core',
+        'components': 'v1_3.src.components', 
+        'services': 'v1_3.src.services',
+        'web': 'v1_3.src.web',
+        'utils': 'v1_3.src.core.utils'
+    }
+    
+    return module_mapping.get(module_name, f'v1_3.src.{module_name}')
 
 
 def validate_imports() -> List[str]:
     """
-    Validate that all required modules can be imported.
+    Validate that all required modules can be imported using absolute paths.
     
     Returns:
         List of import errors (empty if all imports successful)
     """
     errors = []
     required_modules = [
-        'core.config',
-        'core.dependency_container',
-        'core.utils.logging_config',
-        'components.camera_handler',
-        'components.detection_processor',
-        'components.health_monitor',
-        'components.database_manager',
-        'services.camera_manager',
-        'services.detection_manager',
-        'services.video_streaming',
-        'services.websocket_sender',
-        'web.blueprints.main',
-        'web.blueprints.camera',
-        'web.blueprints.detection'
+        'v1_3.src.core.config',
+        'v1_3.src.core.dependency_container',
+        'v1_3.src.core.utils.logging_config',
+        'v1_3.src.components.camera_handler',
+        'v1_3.src.components.detection_processor',
+        'v1_3.src.components.health_monitor',
+        'v1_3.src.components.database_manager',
+        'v1_3.src.services.camera_manager',
+        'v1_3.src.services.detection_manager',
+        'v1_3.src.services.video_streaming',
+        'v1_3.src.services.websocket_sender',
+        'v1_3.src.web.blueprints.main',
+        'v1_3.src.web.blueprints.camera',
+        'v1_3.src.web.blueprints.detection',
+        'v1_3.src.web.blueprints.health',
+        'v1_3.src.web.blueprints.streaming',
+        'v1_3.src.web.blueprints.websocket'
     ]
     
     for module_name in required_modules:

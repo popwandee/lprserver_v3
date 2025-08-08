@@ -2,7 +2,8 @@
 """
 AI Camera v1.3 Flask Application
 
-Main Flask application that integrates camera services and web interface.
+Main Flask application that integrates camera services and web interface
+using absolute imports and existing blueprint structure.
 
 Author: AI Camera Team
 Version: 1.3
@@ -12,24 +13,23 @@ Date: August 7, 2025
 import os
 import sys
 from pathlib import Path
-# Import import helper first to setup paths
-from core.utils.import_helper import setup_import_paths, validate_imports
-setup_import_paths()
-
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent))
+from typing import Tuple
 
 from flask import Flask, render_template, jsonify, request, Response
 from flask_socketio import SocketIO
 import logging
 
-from core.utils.logging_config import setup_logging, get_logger
-from core.dependency_container import get_container, get_service
-from web.blueprints import register_blueprints
+# Import import helper first to setup paths
+from v1_3.src.core.utils.import_helper import setup_import_paths, validate_imports
+setup_import_paths()
+
+from v1_3.src.core.utils.logging_config import setup_logging, get_logger
+from v1_3.src.core.dependency_container import get_container, get_service
+from v1_3.src.web.blueprints import register_blueprints
 
 
 def create_app():
-    """Create and configure Flask application."""
+    """Create and configure Flask application using absolute imports."""
     # Setup logging
     logger = setup_logging(level="INFO")
     logger.info("Creating Flask application...")
@@ -40,6 +40,7 @@ def create_app():
         logger.warning("Some imports failed:")
         for error in import_errors:
             logger.warning(f"  {error}")
+    
     # Set template and static folders
     current_dir = Path(__file__).parent
     template_dir = current_dir / 'web' / 'templates'
@@ -50,8 +51,8 @@ def create_app():
                 template_folder=str(template_dir),
                 static_folder=str(static_dir))
     
-    # Load configuration
-    app.config.from_object('core.config')
+    # Load configuration using absolute import
+    app.config.from_object('v1_3.src.core.config')
     
     # Initialize dependency container
     container = get_container()
@@ -60,7 +61,7 @@ def create_app():
     # Initialize SocketIO
     socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
     
-    # Register blueprints
+    # Register blueprints using existing structure
     register_blueprints(app, socketio)
     
     # Initialize camera service

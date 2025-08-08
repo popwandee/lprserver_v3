@@ -28,7 +28,7 @@ timeout = 60  # Increased from 30 for camera operations
 keepalive = 2
 
 # The app path - using wsgi.py for better WSGI compatibility
-app = "v1_3.src.wsgi:app"
+# REMOVED: app = "v1_3.src.wsgi:app"  # This conflicts with command line
 
 # Preload app for better performance (DISABLED for camera safety)
 preload_app = False

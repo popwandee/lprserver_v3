@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Web Blueprints Module for AI Camera v1.3
+Enhanced Web Blueprints Module for AI Camera v1.3
 
 This module contains all Flask blueprints for the application.
-Each blueprint handles a specific area of functionality.
+Each blueprint handles a specific area of functionality using absolute imports.
 
 Blueprints:
 - main: Main dashboard and system overview
@@ -21,12 +21,13 @@ Date: August 7, 2025
 from flask import Flask
 from flask_socketio import SocketIO
 
-from web.blueprints.main import main_bp
-from web.blueprints.camera import camera_bp, register_camera_events
-from web.blueprints.health import health_bp
-from web.blueprints.streaming import streaming_bp
-from web.blueprints.detection import detection_bp
-from web.blueprints.websocket import websocket_bp
+# Import blueprints using absolute paths
+from v1_3.src.web.blueprints.main import main_bp
+from v1_3.src.web.blueprints.camera import camera_bp, register_camera_events
+from v1_3.src.web.blueprints.health import health_bp
+from v1_3.src.web.blueprints.streaming import streaming_bp
+from v1_3.src.web.blueprints.detection import detection_bp
+from v1_3.src.web.blueprints.websocket import websocket_bp
 
 
 def register_blueprints(app: Flask, socketio: SocketIO):

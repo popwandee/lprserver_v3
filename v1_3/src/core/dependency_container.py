@@ -3,7 +3,7 @@
 Dependency Injection Container for AI Camera v1.3
 
 This module implements a dependency injection container to manage all
-core components and their dependencies in a modular and testable way.
+core components and their dependencies in a modular using absolute imports.
 
 Components managed:
 - CameraManager (Picamera2 integration)
@@ -24,11 +24,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 # Import config values lazily to avoid circular imports
-# from config import (
-#     FLASK_HOST, FLASK_PORT, SECRET_KEY,
-#     VEHICLE_DETECTION_MODEL, LICENSE_PLATE_DETECTION_MODEL,
-#     EASYOCR_LANGUAGES, IMAGE_SAVE_DIR, DETECTION_INTERVAL
-# )
+from v1_3.src.core.config import (
+    FLASK_HOST, FLASK_PORT, SECRET_KEY,
+    VEHICLE_DETECTION_MODEL, LICENSE_PLATE_DETECTION_MODEL,
+    EASYOCR_LANGUAGES, IMAGE_SAVE_DIR, DETECTION_INTERVAL
+)
 
 T = TypeVar('T')
 
@@ -47,7 +47,7 @@ class DependencyContainer:
     Dependency Injection Container for managing service dependencies.
     
     This container manages the lifecycle and dependencies of all core
-    components in the AI Camera system.
+    components in the AI Camera system using absolute imports.
     
     Attributes:
         services (Dict[str, ServiceConfig]): Registered services
@@ -70,23 +70,23 @@ class DependencyContainer:
         self._register_default_services()
     
     def _register_default_services(self):
-        """Register default services with their configurations."""
+        """Register default services with their configurations using absolute imports."""
         # Core components
         self.register_service('logger', logging.Logger, singleton=True,
                         factory=self._create_logger)
         self.register_service('config', dict, singleton=True, 
                             factory=self._create_config)
         
-        # Register stub components (these exist)
+        # Register components using absolute imports
         try:
-            from components.detection_processor import DetectionProcessor
+            from v1_3.src.components.detection_processor import DetectionProcessor
             self.register_service('detection_processor', DetectionProcessor, 
                                 singleton=True, dependencies={'logger': 'logger'})
         except ImportError:
             self.logger.warning("DetectionProcessor not available")
         
         try:
-            from components.camera_handler import CameraHandler
+            from v1_3.src.components.camera_handler import CameraHandler
             self.register_service('camera_handler', CameraHandler, 
                                 singleton=True, 
                                 factory=CameraHandler.get_instance,  # Use Singleton factory
@@ -95,40 +95,31 @@ class DependencyContainer:
             self.logger.warning("CameraHandler not available")
         
         try:
-            from components.health_monitor import HealthMonitor
+            from v1_3.src.components.health_monitor import HealthMonitor
             self.register_service('health_monitor', HealthMonitor, 
                                 singleton=True, dependencies={'logger': 'logger'})
         except ImportError:
             self.logger.warning("HealthMonitor not available")
         
         try:
-            from components.database_manager import DatabaseManager
+            from v1_3.src.components.database_manager import DatabaseManager
             self.register_service('database_manager', DatabaseManager, 
                                 singleton=True, dependencies={'logger': 'logger'})
         except ImportError:
             self.logger.warning("DatabaseManager not available")
         
-        # Try to register service layer components
+        # Register service layer components using absolute imports
         try:
-            # Try absolute import first
-            from services.camera_manager import CameraManager, create_camera_manager
+            from v1_3.src.services.camera_manager import CameraManager, create_camera_manager
             self.register_service('camera_manager', CameraManager, 
                                 singleton=True, 
                                 factory=create_camera_manager,
                                 dependencies={'camera_handler': 'camera_handler', 'logger': 'logger'})
         except ImportError as e:
-            try:
-                # Try relative import as fallback
-                from ..services.camera_manager import CameraManager, create_camera_manager
-                self.register_service('camera_manager', CameraManager, 
-                                    singleton=True, 
-                                    factory=create_camera_manager,
-                                    dependencies={'camera_handler': 'camera_handler', 'logger': 'logger'})
-            except ImportError as e2:
-                self.logger.warning(f"CameraManager service not available: {e2}")
+            self.logger.warning(f"CameraManager service not available: {e}")
         
         try:
-            from services.detection_manager import DetectionManager, create_detection_manager
+            from v1_3.src.services.detection_manager import DetectionManager, create_detection_manager
             self.register_service('detection_manager', DetectionManager, 
                                 singleton=True,
                                 factory=create_detection_manager,
@@ -139,7 +130,7 @@ class DependencyContainer:
             self.logger.warning("DetectionManager service not available")
         
         try:
-            from services.video_streaming import VideoStreamingService, create_video_streaming_service
+            from v1_3.src.services.video_streaming import VideoStreamingService, create_video_streaming_service
             self.register_service('video_streaming', VideoStreamingService, 
                                 singleton=True,
                                 factory=create_video_streaming_service,
@@ -149,7 +140,7 @@ class DependencyContainer:
             self.logger.warning("VideoStreamingService not available")
         
         try:
-            from services.websocket_sender import WebSocketSender, create_websocket_sender
+            from v1_3.src.services.websocket_sender import WebSocketSender, create_websocket_sender
             self.register_service('websocket_sender', WebSocketSender, 
                                 singleton=True,
                                 factory=create_websocket_sender,
@@ -162,36 +153,17 @@ class DependencyContainer:
         return logging.getLogger('aicamera_v1.3')
 
     def _create_config(self) -> Dict[str, Any]:
-        """Create application configuration."""
-        # Import config values lazily to avoid circular imports
-        try:
-            from .config import (
-                FLASK_HOST, FLASK_PORT, SECRET_KEY,
-                VEHICLE_DETECTION_MODEL, LICENSE_PLATE_DETECTION_MODEL,
-                EASYOCR_LANGUAGES, IMAGE_SAVE_DIR, DETECTION_INTERVAL
-            )
-            return {
-                'flask_host': FLASK_HOST,
-                'flask_port': FLASK_PORT,
-                'secret_key': SECRET_KEY,
-                'vehicle_detection_model': VEHICLE_DETECTION_MODEL,
-                'license_plate_detection_model': LICENSE_PLATE_DETECTION_MODEL,
-                'easyocr_languages': EASYOCR_LANGUAGES,
-                'image_save_dir': IMAGE_SAVE_DIR,
-                'detection_interval': DETECTION_INTERVAL
-            }
-        except ImportError:
-            # Return default values if config import fails
-            return {
-                'flask_host': '0.0.0.0',
-                'flask_port': 5000,
-                'secret_key': 'default-secret-key',
-                'vehicle_detection_model': None,
-                'license_plate_detection_model': None,
-                'easyocr_languages': ['en', 'th'],
-                'image_save_dir': '/tmp/captured_images',
-                'detection_interval': 0.1
-            }
+        """Create application configuration using absolute imports."""
+        return {
+            'flask_host': FLASK_HOST,
+            'flask_port': FLASK_PORT,
+            'secret_key': SECRET_KEY,
+            'vehicle_detection_model': VEHICLE_DETECTION_MODEL,
+            'license_plate_detection_model': LICENSE_PLATE_DETECTION_MODEL,
+            'easyocr_languages': EASYOCR_LANGUAGES,
+            'image_save_dir': IMAGE_SAVE_DIR,
+            'detection_interval': DETECTION_INTERVAL
+        }
     
     def register_service(self, name: str, service_type: Type[T], 
                         singleton: bool = True, 
@@ -385,24 +357,3 @@ def shutdown_container():
     if _container:
         _container.shutdown()
         _container = None
-
-
-if __name__ == "__main__":
-    # Example usage
-    logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger(__name__)
-    
-    # Create container
-    container = DependencyContainer(logger)
-    
-    try:
-        # Get services
-        config = container.get_service('config')
-        logger.info(f"Config loaded: {list(config.keys())}")
-        
-        # Get registered services
-        services = container.get_registered_services()
-        logger.info(f"Registered services: {list(services.keys())}")
-        
-    finally:
-        container.shutdown()

@@ -11,15 +11,15 @@ import sys
 import logging
 
 # Import import helper first to setup paths
-from core.utils.import_helper import setup_import_paths, validate_imports
+from v1_3.src.core.utils.import_helper import setup_import_paths, validate_imports
 setup_import_paths()
 
-from core.utils.logging_config import setup_logging
+from v1_3.src.core.utils.logging_config import setup_logging
 # Add the src directory to the Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Import the application
-from app import create_app
+from v1_3.src.app import create_app
 app, socketio = create_app()
 
 # Setup logging

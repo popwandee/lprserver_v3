@@ -20,8 +20,10 @@ import time
 from datetime import datetime
 from flask import Blueprint, render_template, jsonify, request, Response, current_app
 from flask_socketio import emit, join_room, leave_room
-from core.dependency_container import get_service
-from core.utils.logging_config import get_logger
+
+# Use absolute imports
+from v1_3.src.core.dependency_container import get_service
+from v1_3.src.core.utils.logging_config import get_logger
 
 # Create blueprint
 camera_bp = Blueprint('camera', __name__, url_prefix='/camera')
@@ -424,29 +426,25 @@ def get_ml_frame():
 
 # WebSocket event handlers
 def register_camera_events(socketio):
-    """Register WebSocket events for camera control."""
+    """Register WebSocket events for camera functionality."""
     
     @socketio.on('connect', namespace='/camera')
     def handle_camera_connect():
-        """Handle client connection."""
         logger.info("Client connected to camera namespace")
-        emit('camera_connected', {'message': 'Connected to camera service'})
+        emit('camera_connected', {'status': 'Connected to camera service'})
     
     @socketio.on('disconnect', namespace='/camera')
     def handle_camera_disconnect():
-        """Handle client disconnection."""
         logger.info("Client disconnected from camera namespace")
     
     @socketio.on('join_camera_room', namespace='/camera')
     def handle_join_camera_room(data):
-        """Join camera control room."""
-        room = data.get('room', 'camera_control')
+        room = data.get('room', 'camera_room')
         join_room(room)
-        emit('camera_room_joined', {'room': room})
+        emit('joined_room', {'room': room})
     
     @socketio.on('camera_status_request', namespace='/camera')
     def handle_camera_status_request():
-        """Handle camera status request."""
         try:
             camera_manager = get_service('camera_manager')
             if camera_manager:
@@ -455,12 +453,11 @@ def register_camera_events(socketio):
             else:
                 emit('camera_status_update', {'error': 'Camera manager not available'})
         except Exception as e:
-            logger.error(f"Error handling camera status request: {e}")
+            logger.error(f"Error in camera status request: {e}")
             emit('camera_status_update', {'error': str(e)})
     
     @socketio.on('camera_control', namespace='/camera')
     def handle_camera_control(data):
-        """Handle camera control commands."""
         try:
             command = data.get('command')
             camera_manager = get_service('camera_manager')
@@ -473,38 +470,23 @@ def register_camera_events(socketio):
                 })
                 return
             
-            success = False
-            message = ""
-            
             if command == 'start':
                 success = camera_manager.start()
-                message = "Camera started" if success else "Failed to start camera"
             elif command == 'stop':
                 success = camera_manager.stop()
-                message = "Camera stopped" if success else "Failed to stop camera"
             elif command == 'restart':
                 success = camera_manager.restart()
-                message = "Camera restarted" if success else "Failed to restart camera"
-            elif command == 'capture':
-                image_data = camera_manager.capture_image()
-                success = image_data is not None
-                message = "Image captured" if success else "Failed to capture image"
             else:
-                message = f"Unknown command: {command}"
+                success = False
+                error = f"Unknown command: {command}"
             
             emit('camera_control_response', {
                 'command': command,
                 'success': success,
-                'message': message
+                'error': error if not success else None
             })
-            
-            # Broadcast status update to all clients
-            if success:
-                status = camera_manager.get_status()
-                socketio.emit('camera_status_update', status, namespace='/camera')
-                
         except Exception as e:
-            logger.error(f"Error handling camera control: {e}")
+            logger.error(f"Error in camera control: {e}")
             emit('camera_control_response', {
                 'command': data.get('command'),
                 'success': False,
@@ -513,32 +495,21 @@ def register_camera_events(socketio):
     
     @socketio.on('camera_config_update', namespace='/camera')
     def handle_camera_config_update(data):
-        """Handle camera configuration updates."""
         try:
-            config = data.get('config', {})
             camera_manager = get_service('camera_manager')
-            
-            if not camera_manager:
+            if camera_manager:
+                success = camera_manager.update_configuration(data)
+                emit('camera_config_response', {
+                    'success': success,
+                    'config': data
+                })
+            else:
                 emit('camera_config_response', {
                     'success': False,
                     'error': 'Camera manager not available'
                 })
-                return
-            
-            updated_config = camera_manager.update_configuration(config)
-            
-            emit('camera_config_response', {
-                'success': True,
-                'config': updated_config,
-                'message': 'Configuration updated successfully'
-            })
-            
-            # Broadcast status update
-            status = camera_manager.get_status()
-            socketio.emit('camera_status_update', status, namespace='/camera')
-            
         except Exception as e:
-            logger.error(f"Error updating camera config: {e}")
+            logger.error(f"Error in camera config update: {e}")
             emit('camera_config_response', {
                 'success': False,
                 'error': str(e)
@@ -546,7 +517,6 @@ def register_camera_events(socketio):
     
     @socketio.on('camera_health_request', namespace='/camera')
     def handle_camera_health_request():
-        """Handle camera health request."""
         try:
             camera_manager = get_service('camera_manager')
             if camera_manager:
@@ -555,7 +525,5 @@ def register_camera_events(socketio):
             else:
                 emit('camera_health_update', {'error': 'Camera manager not available'})
         except Exception as e:
-            logger.error(f"Error handling camera health request: {e}")
+            logger.error(f"Error in camera health request: {e}")
             emit('camera_health_update', {'error': str(e)})
-    
-    logger.info("Camera WebSocket events registered")
