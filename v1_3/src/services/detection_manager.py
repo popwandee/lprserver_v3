@@ -45,3 +45,6 @@ class DetectionManager:
 def create_detection_manager(detection_processor=None, database_manager=None, logger=None) -> DetectionManager:
     """Factory function for DetectionManager."""
     return DetectionManager(detection_processor, database_manager, logger)
+ 
+ ### Template
+ 
