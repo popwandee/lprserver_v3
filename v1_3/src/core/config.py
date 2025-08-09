@@ -77,8 +77,8 @@ if DATABASE_PATH:
 Path(BASE_DIR, 'log').mkdir(parents=True, exist_ok=True)
 
 # Debug: Print BASE_DIR for verification
-import logging
-logger = logging.getLogger(__name__)
+from v1_3.src.core.utils.logging_config import get_logger
+logger = get_logger(__name__)
 logger.info(f"Config BASE_DIR set to: {BASE_DIR}")
 logger.info(f"IMAGE_SAVE_DIR: {IMAGE_SAVE_DIR}")
 logger.info(f"DATABASE_PATH: {DATABASE_PATH}")

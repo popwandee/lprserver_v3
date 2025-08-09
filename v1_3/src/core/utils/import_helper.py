@@ -14,9 +14,9 @@ import sys
 import os
 from pathlib import Path
 from typing import List, Optional
-import logging
+from v1_3.src.core.utils.logging_config import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def setup_import_paths(base_path: Optional[str] = None) -> None:

@@ -19,7 +19,6 @@ Date: August 7, 2025
 
 import threading
 import time
-import logging
 import multiprocessing
 from typing import Dict, Any, Optional, Tuple
 from pathlib import Path
@@ -33,8 +32,8 @@ from picamera2.controls import Controls
 from libcamera import controls
 import cv2
 import numpy as np
-import logging
-logger = logging.getLogger(__name__)
+from v1_3.src.core.utils.logging_config import get_logger
+logger = get_logger(__name__)
 
 
 def make_json_serializable(obj: Any) -> Any:
@@ -123,7 +122,7 @@ class CameraHandler:
             if self._initialized:
                 return
                 
-            self.logger = logger or logging.getLogger(__name__)
+            self.logger = logger or get_logger(__name__)
             
             # Camera state
             self.picam2 = None

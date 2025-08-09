@@ -18,8 +18,9 @@ Version: 1.3
 Date: August 7, 2025
 """
 
-import logging
+from v1_3.src.core.utils.logging_config import get_logger
 from typing import Dict, Any, Optional, Type, TypeVar
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -64,7 +65,7 @@ class DependencyContainer:
         """
         self.services: Dict[str, ServiceConfig] = {}
         self.instances: Dict[str, Any] = {}
-        self.logger = logger or logging.getLogger(__name__)
+        self.logger = logger or get_logger(__name__)
         
         # Register default services
         self._register_default_services()
@@ -150,7 +151,7 @@ class DependencyContainer:
             
     def _create_logger(self, **kwargs) -> logging.Logger:
         """Create a logger instance."""
-        return logging.getLogger('aicamera_v1.3')
+        return get_logger('aicamera_v1.3')
 
     def _create_config(self) -> Dict[str, Any]:
         """Create application configuration using absolute imports."""

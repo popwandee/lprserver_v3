@@ -236,6 +236,188 @@ class DatabaseManager:
             self.logger.error(f"Error getting recent detections: {e}")
             return []
     
+    def get_detection_results_paginated(self, page: int = 1, per_page: int = 20, 
+                                      search: str = None, sort_by: str = 'created_at', 
+                                      sort_order: str = 'desc', date_from: str = None, 
+                                      date_to: str = None, has_vehicles: bool = None, 
+                                      has_plates: bool = None) -> Dict[str, Any]:
+        """
+        Get paginated detection results with search, filter, and sort capabilities.
+        
+        Args:
+            page: Page number (1-based)
+            per_page: Number of records per page
+            search: Search term for OCR results or plate text
+            sort_by: Column to sort by
+            sort_order: Sort order ('asc' or 'desc')
+            date_from: Start date filter (ISO format)
+            date_to: End date filter (ISO format)
+            has_vehicles: Filter by presence of vehicles
+            has_plates: Filter by presence of license plates
+            
+        Returns:
+            Dict containing results, pagination info, and metadata
+        """
+        try:
+            if not self.connection:
+                self.logger.error("Database connection not available")
+                return {'results': [], 'total': 0, 'page': 1, 'per_page': per_page, 'total_pages': 0}
+            
+            cursor = self.connection.cursor()
+            
+            # Build WHERE clause
+            where_conditions = []
+            params = []
+            
+            if search:
+                where_conditions.append("(ocr_results LIKE ? OR vehicle_detections LIKE ? OR plate_detections LIKE ?)")
+                search_term = f"%{search}%"
+                params.extend([search_term, search_term, search_term])
+            
+            if date_from:
+                where_conditions.append("date(created_at) >= ?")
+                params.append(date_from)
+            
+            if date_to:
+                where_conditions.append("date(created_at) <= ?")
+                params.append(date_to)
+            
+            if has_vehicles is not None:
+                if has_vehicles:
+                    where_conditions.append("vehicles_count > 0")
+                else:
+                    where_conditions.append("vehicles_count = 0")
+            
+            if has_plates is not None:
+                if has_plates:
+                    where_conditions.append("plates_count > 0")
+                else:
+                    where_conditions.append("plates_count = 0")
+            
+            where_clause = ""
+            if where_conditions:
+                where_clause = "WHERE " + " AND ".join(where_conditions)
+            
+            # Validate sort parameters
+            valid_sort_columns = ['id', 'created_at', 'timestamp', 'vehicles_count', 'plates_count', 'processing_time_ms']
+            if sort_by not in valid_sort_columns:
+                sort_by = 'created_at'
+            
+            if sort_order.lower() not in ['asc', 'desc']:
+                sort_order = 'desc'
+            
+            # Get total count
+            count_query = f"SELECT COUNT(*) as total FROM detection_results {where_clause}"
+            cursor.execute(count_query, params)
+            total = cursor.fetchone()['total']
+            
+            # Calculate pagination
+            offset = (page - 1) * per_page
+            total_pages = (total + per_page - 1) // per_page
+            
+            # Get paginated results
+            query = f"""
+                SELECT * FROM detection_results 
+                {where_clause}
+                ORDER BY {sort_by} {sort_order.upper()}
+                LIMIT ? OFFSET ?
+            """
+            
+            cursor.execute(query, params + [per_page, offset])
+            rows = cursor.fetchall()
+            
+            results = []
+            for row in rows:
+                result = {
+                    'id': row['id'],
+                    'timestamp': row['timestamp'],
+                    'vehicles_count': row['vehicles_count'],
+                    'plates_count': row['plates_count'],
+                    'annotated_image_path': row['annotated_image_path'],
+                    'processing_time_ms': row['processing_time_ms'],
+                    'created_at': row['created_at']
+                }
+                
+                # Deserialize JSON fields
+                try:
+                    result['ocr_results'] = json.loads(row['ocr_results'] or '[]')
+                    result['cropped_plates_paths'] = json.loads(row['cropped_plates_paths'] or '[]')
+                    result['vehicle_detections'] = json.loads(row['vehicle_detections'] or '[]')
+                    result['plate_detections'] = json.loads(row['plate_detections'] or '[]')
+                except json.JSONDecodeError as e:
+                    self.logger.warning(f"Error deserializing JSON for record {row['id']}: {e}")
+                    result['ocr_results'] = []
+                    result['cropped_plates_paths'] = []
+                    result['vehicle_detections'] = []
+                    result['plate_detections'] = []
+                
+                results.append(result)
+            
+            return {
+                'results': results,
+                'total': total,
+                'page': page,
+                'per_page': per_page,
+                'total_pages': total_pages,
+                'has_next': page < total_pages,
+                'has_prev': page > 1
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error getting paginated detection results: {e}")
+            return {'results': [], 'total': 0, 'page': 1, 'per_page': per_page, 'total_pages': 0}
+    
+    def get_detection_result_by_id(self, result_id: int) -> Optional[Dict[str, Any]]:
+        """
+        Get single detection result by ID with full details.
+        
+        Args:
+            result_id: ID of the detection result
+            
+        Returns:
+            Optional[Dict[str, Any]]: Detection result with full details or None
+        """
+        try:
+            if not self.connection:
+                self.logger.error("Database connection not available")
+                return None
+            
+            cursor = self.connection.cursor()
+            cursor.execute("SELECT * FROM detection_results WHERE id = ?", (result_id,))
+            row = cursor.fetchone()
+            
+            if not row:
+                return None
+            
+            result = {
+                'id': row['id'],
+                'timestamp': row['timestamp'],
+                'vehicles_count': row['vehicles_count'],
+                'plates_count': row['plates_count'],
+                'annotated_image_path': row['annotated_image_path'],
+                'processing_time_ms': row['processing_time_ms'],
+                'created_at': row['created_at']
+            }
+            
+            # Deserialize JSON fields with full details
+            try:
+                result['ocr_results'] = json.loads(row['ocr_results'] or '[]')
+                result['cropped_plates_paths'] = json.loads(row['cropped_plates_paths'] or '[]')
+                result['vehicle_detections'] = json.loads(row['vehicle_detections'] or '[]')
+                result['plate_detections'] = json.loads(row['plate_detections'] or '[]')
+            except json.JSONDecodeError as e:
+                self.logger.warning(f"Error deserializing JSON for record {result_id}: {e}")
+                result['ocr_results'] = []
+                result['cropped_plates_paths'] = []
+                result['vehicle_detections'] = []
+                result['plate_detections'] = []
+            
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"Error getting detection result by ID {result_id}: {e}")
+            return None
+    
     def get_detection_statistics(self) -> Dict[str, Any]:
         """
         Get detection statistics from database.
