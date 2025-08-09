@@ -23,7 +23,7 @@ from typing import Dict, Any, Optional, List
 
 from v1_3.src.core.utils.logging_config import get_logger
 from v1_3.src.core.config import DETECTION_INTERVAL
-
+from v1_3.src.core.dependency_container import get_service
 logger = get_logger(__name__)
 
 
@@ -312,7 +312,6 @@ class DetectionManager:
         self.logger.info("Detection loop started")
         
         # Get camera manager from dependency container
-        from v1_3.src.core.dependency_container import get_service
         
         while self.is_running:
             try:

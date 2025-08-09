@@ -14,6 +14,7 @@ import os
 import sys
 from pathlib import Path
 from typing import Tuple
+from datetime import datetime
 
 from flask import Flask, render_template, jsonify, request, Response
 from flask_socketio import SocketIO
@@ -78,19 +79,29 @@ def create_app():
         """Health check endpoint."""
         try:
             camera_manager = get_service('camera_manager')
-            health_status = camera_manager.health_check() if camera_manager else {}
+            detection_manager = get_service('detection_manager')
+            
+            camera_health = camera_manager.health_check() if camera_manager else {}
+            detection_health = detection_manager.get_status() if detection_manager else {}
             
             return jsonify({
+                'success': True,
                 'status': 'healthy',
-                'camera': health_status,
-                'timestamp': '2025-08-07T16:00:00Z'
+                'camera': camera_health,
+                'detection': detection_health,
+                'errors': [],
+                'database_errors': [],
+                'timestamp': datetime.now().isoformat()
             })
         except Exception as e:
             logger.error(f"Health check failed: {e}")
             return jsonify({
+                'success': False,
                 'status': 'unhealthy',
                 'error': str(e),
-                'timestamp': '2025-08-07T16:00:00Z'
+                'errors': [str(e)],
+                'database_errors': [],
+                'timestamp': datetime.now().isoformat()
             }), 500
     
     @app.errorhandler(404)

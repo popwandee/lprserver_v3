@@ -7,8 +7,8 @@ This blueprint handles the main dashboard and system overview.
 
 from flask import Blueprint, render_template, current_app
 from flask_socketio import emit
-from core.dependency_container import get_service
-from core.utils.logging_config import get_logger
+from v1_3.src.core.dependency_container import get_service
+from v1_3.src.core.utils.logging_config import get_logger
 
 main_bp = Blueprint('main', __name__)
 logger = get_logger(__name__)

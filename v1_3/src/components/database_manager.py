@@ -371,11 +371,11 @@ class DatabaseManager:
             
         except Exception as e:
             self.logger.error(f"Error getting database status: {e}")
-            return {
+        return {
                 'connected': False,
                 'error': str(e),
                 'last_update': datetime.now().isoformat()
-            }
+        }
     
     def cleanup(self):
         """Clean up database connection and resources."""
@@ -385,8 +385,7 @@ class DatabaseManager:
             if self.connection:
                 self.connection.close()
                 self.connection = None
-            
-            self.logger.info("DatabaseManager cleanup completed")
+                self.logger.info("DatabaseManager cleanup completed")
             
         except Exception as e:
             self.logger.error(f"Error during DatabaseManager cleanup: {e}")

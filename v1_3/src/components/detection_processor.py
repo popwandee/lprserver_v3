@@ -26,7 +26,7 @@ from pathlib import Path
 
 from v1_3.src.core.utils.logging_config import get_logger
 from v1_3.src.core.config import (
-    VEHICLE_DETECTION_MODEL, LICENSE_PLATE_DETECTION_MODEL,
+    VEHICLE_DETECTION_MODEL, LICENSE_PLATE_DETECTION_MODEL,LICENSE_PLATE_OCR_MODEL,
     HEF_MODEL_PATH, MODEL_ZOO_URL, EASYOCR_LANGUAGES,
     IMAGE_SAVE_DIR, DATABASE_PATH
 )
@@ -138,7 +138,7 @@ class DetectionProcessor:
             # Load license plate OCR model (optional)
             if hasattr(globals().get('LICENSE_PLATE_OCR_MODEL'), '__len__'):
                 try:
-                    from v1_3.src.core.config import LICENSE_PLATE_OCR_MODEL
+                    
                     self.logger.info(f"Loading license plate OCR model: {LICENSE_PLATE_OCR_MODEL}")
                     self.lp_ocr_model = dg.load_model(
                         model_name=LICENSE_PLATE_OCR_MODEL,

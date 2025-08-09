@@ -2,86 +2,143 @@
 
 !theme plain
 skinparam classAttributeIconSize 0
-skinparam classFontSize 12
+skinparam classFontSize 11
 skinparam classFontName Arial
+skinparam backgroundColor #FEFEFE
+skinparam classBackgroundColor #F8F9FA
+skinparam classBorderColor #DEE2E6
 
-title AI Camera v1.3 - Class Diagram
+title AI Camera v1.3 - Class Diagram (Updated August 2025)
 
-' Core Components
-package "Core" {
+' Core Framework Package
+package "Core Framework" <<Rectangle>> {
     class DependencyContainer {
-        - _services: Dict[str, Any]
+        - services: Dict[str, ServiceConfig]
+        - instances: Dict[str, Any]
         - _lock: threading.Lock
-        + register_service(name: str, service: Any): void
+        --
+        + register_service(name: str, service_class: Type, **kwargs): void
         + get_service(name: str): Any
+        + create_instance(name: str): Any
         + list_services(): List[str]
         + clear_services(): void
+        + _register_default_services(): void
+        + _create_config(): Dict
+        + _create_logger(): Logger
     }
     
     class ImportHelper {
-        + setup_import_paths(base_path: str): void
-        + import_module(module_path: str): Any
-        + validate_imports(): bool
+        + setup_import_paths(base_path: Optional[str]): void
+        + validate_imports(): List[str]
+        + get_project_root(): str
+        + add_to_path(path: str): void
     }
     
     class LoggingConfig {
         + get_logger(name: str): Logger
-        + setup_logging(): void
-        + configure_file_handler(): void
+        + setup_logging(level: str, log_file: Optional[str]): void
+        + configure_file_handler(logger: Logger, filename: str): void
+        + configure_console_handler(logger: Logger): void
+    }
+    
+    class ConfigManager {
+        - config: Dict[str, Any]
+        --
+        + load_config(config_path: Optional[str]): Dict
+        + get(key: str, default: Any): Any
+        + set(key: str, value: Any): void
+        + save_config(config_path: str): bool
     }
 }
 
-' Camera Components
-package "Components" {
+' Component Layer Package
+package "Component Layer" <<Rectangle>> {
     class CameraHandler {
-        - _instance: CameraHandler
+        - _instance: Optional[CameraHandler]
         - _lock: threading.Lock
-        - picam2: Picamera2
+        - picam2: Optional[Picamera2]
         - initialized: bool
         - streaming: bool
-        - current_config: Dict
+        - current_config: Optional[Dict]
+        - camera_properties: Dict
+        - frame_count: int
+        - startup_time: float
+        --
+        + get_instance(): CameraHandler
         + initialize_camera(): bool
         + start_camera(): bool
         + stop_camera(): bool
-        + capture_frame(): Dict
+        + close_camera(): void
+        + capture_frame(): Optional[np.ndarray]
         + update_configuration(config: Dict): bool
         + get_status(): Dict
+        + get_camera_properties(): Dict
         + cleanup(): void
+        - _setup_camera_config(): Dict
+        - _apply_camera_controls(): bool
     }
     
     class DetectionProcessor {
         - model_path: str
         - confidence_threshold: float
-        - initialized: bool
-        + initialize_model(): bool
+        - detection_interval: float
+        - models_loaded: bool
+        - vehicle_model_available: bool
+        - lp_detection_model_available: bool
+        - lp_ocr_model_available: bool
+        - easyocr_available: bool
+        --
+        + initialize_models(): bool
         + process_frame(frame: np.ndarray): List[Detection]
+        + detect_vehicles(frame: np.ndarray): List[Dict]
+        + detect_license_plates(frame: np.ndarray): List[Dict]
+        + get_status(): Dict
         + get_model_info(): Dict
+        + cleanup(): void
     }
     
     class HealthMonitor {
         - check_interval: float
         - health_status: Dict
+        - monitoring_active: bool
+        --
         + start_monitoring(): void
+        + stop_monitoring(): void
         + check_system_health(): Dict
+        + get_cpu_usage(): float
+        + get_memory_usage(): Dict
+        + get_disk_usage(): Dict
+        + get_camera_health(): Dict
         + get_health_report(): Dict
     }
     
     class DatabaseManager {
-        - connection: Any
+        - db_path: str
+        - connection: Optional[Any]
         - initialized: bool
+        - table_schemas: Dict
+        --
         + initialize_database(): bool
+        + create_tables(): bool
         + save_detection(detection: Dict): bool
-        + get_detections(limit: int): List[Dict]
-        + cleanup(): void
+        + save_image_capture(capture: Dict): bool
+        + get_detections(limit: int, offset: int): List[Dict]
+        + get_detection_count(): int
+        + cleanup_old_records(days: int): int
+        + close_connection(): void
+        + execute_query(query: str, params: tuple): Any
     }
 }
 
-' Services
-package "Services" {
+' Service Layer Package
+package "Service Layer" <<Rectangle>> {
     class CameraManager {
         - camera_handler: CameraHandler
+        - logger: Logger
         - auto_start_enabled: bool
         - startup_time: datetime
+        - config: Dict
+        --
         + initialize(): bool
         + start(): bool
         + stop(): bool
@@ -89,75 +146,264 @@ package "Services" {
         + get_status(): Dict
         + update_configuration(config: Dict): Dict
         + capture_image(): Dict
+        + get_stream_generator(): Generator
+        + set_auto_start(enabled: bool): void
+        + get_uptime(): float
     }
     
     class DetectionManager {
         - detection_processor: DetectionProcessor
         - camera_manager: CameraManager
-        + start_detection(): bool
-        + stop_detection(): bool
-        + process_frame(): Dict
-        + get_detection_status(): Dict
+        - database_manager: DatabaseManager
+        - logger: Logger
+        - service_running: bool
+        - detection_active: bool
+        --
+        + start_detection_service(): bool
+        + stop_detection_service(): bool
+        + process_single_frame(): Dict
+        + start_continuous_detection(): bool
+        + stop_continuous_detection(): bool
+        + get_status(): Dict
+        + get_detection_results(limit: int): List[Dict]
+        + configure_detection(config: Dict): Dict
     }
     
-    class VideoStreaming {
+    class VideoStreamingService {
         - camera_manager: CameraManager
-        - streaming_active: bool
+        - logger: Logger
+        - streaming_clients: Set[str]
+        - stream_quality: str
+        --
         + start_streaming(): bool
         + stop_streaming(): bool
+        + add_client(client_id: str): void
+        + remove_client(client_id: str): void
         + get_stream_status(): Dict
+        + generate_frames(): Generator
+        + set_stream_quality(quality: str): void
     }
     
     class WebSocketSender {
         - socketio: SocketIO
-        + send_status_update(status: Dict): void
+        - logger: Logger
+        - connected_clients: Dict[str, Dict]
+        --
+        + send_camera_status_update(status: Dict): void
+        + send_detection_status_update(status: Dict): void
         + send_detection_result(result: Dict): void
+        + send_health_update(health: Dict): void
         + broadcast_message(event: str, data: Dict): void
+        + add_client(client_id: str, client_info: Dict): void
+        + remove_client(client_id: str): void
+        + get_connected_clients(): List[Dict]
     }
 }
 
-' Web Blueprints
-package "Web Blueprints" {
+' Web Layer Package
+package "Web Layer (Flask Blueprints)" <<Rectangle>> {
     class MainBlueprint {
         + index(): str
         + health(): Dict
+        + get_system_status(): Dict
+        --
+        - _render_dashboard(): str
     }
     
     class CameraBlueprint {
-        + camera_dashboard(): str
-        + get_camera_status(): Dict
-        + start_camera(): Dict
-        + stop_camera(): Dict
-        + update_configuration(): Dict
+        + dashboard(): str
+        + get_status(): Dict
+        + start(): Dict
+        + stop(): Dict
+        + restart(): Dict
+        + update_config(): Dict
+        + capture(): Dict
         + video_feed(): Response
+        --
+        - _validate_config(config: Dict): List[str]
+        - _format_camera_response(data: Any): Dict
     }
     
     class DetectionBlueprint {
-        + detection_dashboard(): str
-        + start_detection(): Dict
-        + stop_detection(): Dict
-        + get_detection_status(): Dict
+        + dashboard(): str
+        + get_status(): Dict
+        + start(): Dict
+        + stop(): Dict
+        + get_results(): Dict
+        + configure(): Dict
+        --
+        - _validate_detection_config(config: Dict): List[str]
+        - _format_detection_response(data: Any): Dict
     }
     
     class HealthBlueprint {
-        + health_dashboard(): str
+        + dashboard(): str
         + get_system_health(): Dict
+        + get_logs(): Dict
+        --
+        - _format_health_response(data: Dict): Dict
+    }
+    
+    class StreamingBlueprint {
+        + video_feed(): Response
+        + get_stream_status(): Dict
+        + start_stream(): Dict
+        + stop_stream(): Dict
+        --
+        - _generate_video_stream(): Generator
+    }
+    
+    class WebSocketBlueprint {
+        + handle_connect(): void
+        + handle_disconnect(): void
+        + handle_camera_control(data: Dict): void
+        + handle_detection_control(data: Dict): void
+        + handle_status_request(): void
+        --
+        - _emit_status_update(): void
+        - _validate_request_data(data: Dict): bool
     }
 }
 
-' Relationships
-DependencyContainer ||--o{ CameraManager : manages
-DependencyContainer ||--o{ DetectionManager : manages
-DependencyContainer ||--o{ VideoStreaming : manages
-DependencyContainer ||--o{ WebSocketSender : manages
+' JavaScript Frontend Classes
+package "Frontend JavaScript" <<Rectangle>> {
+    class AICameraUtils {
+        + formatDateTime(timestamp: string): string
+        + formatDuration(seconds: number): string
+        + formatFileSize(bytes: number): string
+        + updateStatusIndicator(elementId: string, online: boolean, text: string): void
+        + addLogMessage(containerId: string, message: string, type: string): void
+        + apiRequest(url: string, options: object): Promise<any>
+        + showNotification(message: string, type: string): void
+        + debounce(func: Function, wait: number): Function
+    }
+    
+    class WebSocketManager {
+        - socket: Socket
+        - reconnectAttempts: number
+        - maxReconnectAttempts: number
+        --
+        + init(): void
+        + connect(): void
+        + disconnect(): void
+        + emit(event: string, data: any): void
+        + on(event: string, callback: Function): void
+        + isConnected(): boolean
+        - _setupEventHandlers(): void
+        - _handleReconnection(): void
+    }
+    
+    class DashboardManager {
+        - statusUpdateInterval: number
+        --
+        + init(): void
+        + setupWebSocket(): void
+        + setupStatusUpdates(): void
+        + loadInitialStatus(): void
+        + updateSystemStatus(): void
+        + updateCameraStatus(status: object): void
+        + updateDetectionStatus(status: object): void
+        + updateSystemHealth(health: object): void
+        - _formatStatusDisplay(status: object): void
+    }
+    
+    class CameraManager {
+        - configUpdateTimeout: number
+        --
+        + init(): void
+        + setupEventHandlers(): void
+        + handleCameraControl(action: string): void
+        + updateConfiguration(config: object): void
+        + startVideoStream(): void
+        + stopVideoStream(): void
+        + captureImage(): void
+        - _validateConfigInput(config: object): boolean
+        - _updateConfigDisplay(config: object): void
+    }
+    
+    class DetectionManager {
+        - detectionResults: Array<object>
+        - maxResults: number
+        --
+        + init(): void
+        + startDetection(): void
+        + stopDetection(): void
+        + updateDetectionDisplay(results: Array<object>): void
+        + clearResults(): void
+        + exportResults(): void
+        - _formatDetectionResult(result: object): string
+        - _addResultToTable(result: object): void
+    }
+}
 
-CameraManager ||--|| CameraHandler : uses
-DetectionManager ||--|| DetectionProcessor : uses
-DetectionManager ||--|| CameraManager : uses
-VideoStreaming ||--|| CameraManager : uses
+' Dependency Relationships
+DependencyContainer ||--o{ CameraManager : "manages"
+DependencyContainer ||--o{ DetectionManager : "manages"
+DependencyContainer ||--o{ VideoStreamingService : "manages"
+DependencyContainer ||--o{ WebSocketSender : "manages"
+DependencyContainer ||--|| ImportHelper : "uses"
+DependencyContainer ||--|| LoggingConfig : "uses"
+DependencyContainer ||--|| ConfigManager : "uses"
 
-CameraBlueprint ||--|| CameraManager : uses
-DetectionBlueprint ||--|| DetectionManager : uses
-HealthBlueprint ||--|| HealthMonitor : uses
+' Service to Component Dependencies
+CameraManager ||--|| CameraHandler : "uses (DI)"
+DetectionManager ||--|| DetectionProcessor : "uses (DI)"
+DetectionManager ||--|| CameraManager : "uses (DI)"
+DetectionManager ||--|| DatabaseManager : "uses (DI)"
+VideoStreamingService ||--|| CameraManager : "uses (DI)"
+
+' Web to Service Dependencies  
+CameraBlueprint ||--|| CameraManager : "get_service('camera_manager')"
+DetectionBlueprint ||--|| DetectionManager : "get_service('detection_manager')"
+HealthBlueprint ||--|| HealthMonitor : "get_service('health_monitor')"
+StreamingBlueprint ||--|| VideoStreamingService : "get_service('video_streaming')"
+WebSocketBlueprint ||--|| WebSocketSender : "get_service('websocket_sender')"
+
+' Frontend Dependencies
+DashboardManager ||--|| AICameraUtils : "extends"
+DashboardManager ||--|| WebSocketManager : "uses"
+CameraManager ||--|| AICameraUtils : "extends"
+CameraManager ||--|| WebSocketManager : "uses"
+DetectionManager ||--|| AICameraUtils : "extends"
+DetectionManager ||--|| WebSocketManager : "uses"
+
+note right of DependencyContainer
+  **Dependency Injection Container**
+  - Service registration with absolute imports
+  - Automatic dependency resolution
+  - Singleton pattern for hardware resources
+  - Service lifecycle management
+  
+  **Import Pattern:**
+  from v1_3.src.core.dependency_container import get_service
+end note
+
+note right of CameraHandler
+  **Singleton Pattern Implementation**
+  - Thread-safe instance creation
+  - Hardware resource protection
+  - Picamera2 integration
+  - Configuration management
+end note
+
+note bottom of AICameraUtils
+  **Variable Naming Convention**
+  
+  **Frontend (JavaScript - camelCase):**
+  - cameraStatus, frameCount, averageFps
+  - detectionStatus, modelLoaded
+  - systemHealth, cpuUsage
+  
+  **Backend (Python - snake_case):**
+  - camera_status, frame_count, average_fps
+  - detection_status, model_loaded  
+  - system_health, cpu_usage
+  
+  **API Response Format:**
+  - success: boolean
+  - data/status: object
+  - error: string
+  - timestamp: ISO string
+end note
 
 @enduml

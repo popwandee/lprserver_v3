@@ -2,48 +2,109 @@
 
 ## Overview
 
-เอกสาร API สำหรับ AI Camera v1.3 ระบบการจัดการกล้องอัจฉริยะ
+เอกสาร API สำหรับ AI Camera v1.3 ระบบการจัดการกล้องอัจฉริยะด้วย Hailo AI Accelerator
+
+**Last Updated:** August 9, 2025  
+**Version:** 1.3  
+**Architecture:** Flask + Gunicorn + Nginx + WebSocket
 
 ## Base URL
 
 ```
-http://localhost:5000
+Production: http://localhost (via Nginx reverse proxy)
+Development: http://localhost:5000 (direct Gunicorn)
 ```
 
 ## Authentication
-ปัจจุบันระบบไม่ต้องการ authentication
 
-## Response Format
-ทุก API response จะมี format มาตรฐาน:
+ปัจจุบันระบบไม่ต้องการ authentication (Internal network only)
 
+## Standard Response Format
+
+ทุก API response จะใช้ format มาตรฐานตาม `variable_management.md`:
+
+### Success Response
 ```json
 {
     "success": true,
-    "message": "Operation completed successfully",
-    "data": {},
-    "timestamp": "2025-08-08T15:30:00.000Z"
+    "message": "Operation completed successfully", 
+    "data": {
+        // Response data here
+    },
+    "timestamp": "2025-08-09T18:36:57.390144"
 }
 ```
 
-## Endpoints
+### Error Response  
+```json
+{
+    "success": false,
+    "error": "Error description",
+    "error_code": "ERROR_CODE",
+    "timestamp": "2025-08-09T18:36:57.390144"
+}
+```
 
-### 1. Main Dashboard
-**GET** `/`
+### Status Response
+```json
+{
+    "success": true,
+    "status": {
+        "initialized": true,
+        "streaming": true,
+        "frame_count": 1234,
+        "average_fps": 29.5,
+        "uptime": 3600.5
+    },
+    "timestamp": "2025-08-09T18:36:57.390144"
+}
+```
 
-**Description:** หน้า dashboard หลัก
+## Variable Naming Conventions
+
+| Layer | Convention | Example |
+|-------|------------|---------|
+| **Backend (Python)** | `snake_case` | `camera_status`, `frame_count`, `average_fps` |
+| **Frontend (JavaScript)** | `camelCase` | `cameraStatus`, `frameCount`, `averageFps` |
+| **API Endpoints** | `snake_case` | `/camera/status`, `/detection/start` |
+| **HTML Element IDs** | `kebab-case` | `main-camera-status`, `feature-camera-model` |
+
+## API Endpoints
+
+### 🏠 Main Dashboard
+
+#### GET `/`
+หน้า dashboard หลัก
+
+**Response:** HTML Template
+```html
+<!DOCTYPE html>
+<html>
+    <head><title>AI Camera v1.3</title></head>
+    <body><!-- Dashboard content --></body>
+</html>
+```
+
+#### GET `/health`
+ตรวจสอบสถานะระบบ
 
 **Response:**
 ```json
 {
     "success": true,
-    "title": "AI Camera v1.3 Dashboard"
+    "status": "healthy",
+    "service": "aicamera_v1.3",
+    "version": "1.3",
+    "timestamp": "2025-08-09T18:36:57.390144"
 }
 ```
 
-### 2. Camera Status
-**GET** `/camera/status`
+---
 
-**Description:** รับสถานะกล้องปัจจุบัน
+### 📷 Camera Management
+
+#### GET `/camera/status`
+รับสถานะกล้องปัจจุบัน
 
 **Response:**
 ```json
@@ -54,92 +115,116 @@ http://localhost:5000
         "streaming": true,
         "frame_count": 1234,
         "average_fps": 29.5,
-        "uptime": 3600,
+        "uptime": 3600.5,
         "auto_start_enabled": true,
         "config": {
-            "resolution": [1920, 1080],
-            "framerate": 30,
-            "brightness": 0.0,
-            "contrast": 1.0,
-            "saturation": 1.0,
-            "awb_mode": "auto"
+            "buffer_count": 4,
+            "colour_space": "RGB888",
+            "controls": {
+                "FrameDurationLimits": [33333, 33333],
+                "NoiseReductionMode": "Fast"
+            },
+            "main": {
+                "format": "RGB888",
+                "framesize": 2764800,
+                "preserve_ar": true,
+                "size": [1280, 720],
+                "stride": 3840
+            }
+        },
+        "camera_handler": {
+            "initialized": true,
+            "streaming": true,
+            "frame_count": 1234,
+            "average_fps": 29.5,
+            "recording": false,
+            "sensor_modes_count": 4,
+            "current_config": {
+                "main": {
+                    "size": [1280, 720],
+                    "format": "RGB888"
+                },
+                "controls": {
+                    "FrameDurationLimits": [33333, 33333]
+                }
+            },
+            "camera_properties": {
+                "Model": "imx708",
+                "Location": 2,
+                "ColorFilterArrangement": 0,
+                "PixelArraySize": [4608, 2592]
+            }
         }
     },
-    "timestamp": "2025-08-08T15:30:00.000Z"
+    "timestamp": "2025-08-09T18:36:57.390144"
 }
 ```
 
-### 3. Start Camera
-**POST** `/camera/start`
-
-**Description:** เริ่มการทำงานกล้อง
+#### POST `/camera/start`
+เริ่มต้นกล้อง
 
 **Response:**
 ```json
 {
     "success": true,
     "message": "Camera started successfully",
-    "timestamp": "2025-08-08T15:30:00.000Z"
+    "status": {
+        "initialized": true,
+        "streaming": true
+    },
+    "timestamp": "2025-08-09T18:36:57.390144"
 }
 ```
 
-### 4. Stop Camera
-**POST** `/camera/stop`
-
-**Description:** หยุดการทำงานกล้อง
+#### POST `/camera/stop`
+หยุดกล้อง
 
 **Response:**
 ```json
 {
     "success": true,
-    "message": "Camera stopped successfully",
-    "timestamp": "2025-08-08T15:30:00.000Z"
+    "message": "Camera stopped successfully", 
+    "status": {
+        "initialized": true,
+        "streaming": false
+    },
+    "timestamp": "2025-08-09T18:36:57.390144"
 }
 ```
 
-### 5. Restart Camera
-**POST** `/camera/restart`
-
-**Description:** รีสตาร์ทกล้อง
+#### POST `/camera/restart`
+รีสตาร์ทกล้อง
 
 **Response:**
 ```json
 {
     "success": true,
     "message": "Camera restarted successfully",
-    "timestamp": "2025-08-08T15:30:00.000Z"
+    "timestamp": "2025-08-09T18:36:57.390144"
 }
 ```
 
-### 6. Camera Configuration
-**GET** `/camera/config`
-
-**Description:** รับการตั้งค่ากล้องปัจจุบัน
+#### GET `/camera/config`
+รับการตั้งค่ากล้องปัจจุบัน
 
 **Response:**
 ```json
 {
     "success": true,
     "config": {
-        "resolution": [1920, 1080],
+        "resolution": [1280, 720],
         "framerate": 30,
         "brightness": 0.0,
         "contrast": 1.0,
         "saturation": 1.0,
         "awb_mode": "auto"
     },
-    "settings": {
-        "available_resolutions": [[1920, 1080], [1280, 720], [640, 480]],
-        "available_framerates": [15, 30, 60],
-        "available_awb_modes": ["auto", "fluorescent", "incandescent"]
-    },
-    "timestamp": "2025-08-08T15:30:00.000Z"
+    "timestamp": "2025-08-09T18:36:57.390144"
 }
 ```
 
-**POST** `/camera/config`
-
-**Description:** อัพเดตการตั้งค่ากล้อง
+#### POST `/camera/config`
+อัปเดตการตั้งค่ากล้อง
 
 **Request Body:**
 ```json
@@ -157,6 +242,7 @@ http://localhost:5000
 ```json
 {
     "success": true,
+    "message": "Camera configuration updated successfully",
     "config": {
         "resolution": [1920, 1080],
         "framerate": 30,
@@ -165,466 +251,542 @@ http://localhost:5000
         "saturation": 1.0,
         "awb_mode": "auto"
     },
-    "message": "Configuration updated successfully",
-    "timestamp": "2025-08-08T15:30:00.000Z"
+    "timestamp": "2025-08-09T18:36:57.390144"
 }
 ```
 
-### 7. Capture Image
-**POST** `/camera/capture`
-
-**Description:** ถ่ายภาพ
+#### POST `/camera/capture`
+ถ่ายภาพ
 
 **Response:**
 ```json
 {
     "success": true,
     "message": "Image captured successfully",
-    "image_path": "/path/to/image.jpg",
-    "size": [1920, 1080],
-    "timestamp": "2025-08-08T15:30:00.000Z"
+    "data": {
+        "filename": "capture_20250809_183657.jpg",
+        "filepath": "/home/camuser/aicamera/v1_3/src/captured_images/capture_20250809_183657.jpg",
+        "timestamp": "2025-08-09T18:36:57.390144",
+        "size": [1280, 720]
+    },
+    "timestamp": "2025-08-09T18:36:57.390144"
 }
 ```
 
-### 8. Video Stream
-**GET** `/camera/video_feed`
+#### GET `/camera/video_feed`
+สตรีมวิดีโอ (MJPEG)
 
-**Description:** สตรีมวิดีโอแบบ MJPEG
+**Response:** `multipart/x-mixed-replace` stream
+```
+Content-Type: multipart/x-mixed-replace; boundary=frame
 
-**Response:** Multipart MJPEG stream
+--frame
+Content-Type: image/jpeg
 
-### 9. Low Resolution Video Stream
-**GET** `/camera/video_feed_lores`
+[JPEG image data]
+--frame
+Content-Type: image/jpeg
 
-**Description:** สตรีมวิดีโอความละเอียดต่ำ
+[JPEG image data]
+--frame
+...
+```
 
-**Response:** Multipart MJPEG stream
+---
 
-### 10. ML Frame
-**GET** `/camera/ml_frame`
+### 🤖 AI Detection Management
 
-**Description:** รับเฟรมสำหรับ AI processing
+#### GET `/detection/status`
+รับสถานะการตรวจจับ
 
 **Response:**
 ```json
 {
     "success": true,
-    "frame": "base64_encoded_image",
-    "metadata": {
-        "timestamp": 1628434200.123,
-        "format": "RGB888",
-        "size": [1920, 1080]
+    "status": {
+        "service_running": true,
+        "detection_active": false,
+        "detection_processor_status": {
+            "models_loaded": true,
+            "vehicle_model_available": true,
+            "lp_detection_model_available": true,
+            "lp_ocr_model_available": true,
+            "easyocr_available": true
+        },
+        "detection_interval": 0.1,
+        "confidence_threshold": 0.5,
+        "plate_confidence_threshold": 0.7,
+        "total_detections": 156,
+        "last_detection_time": "2025-08-09T18:30:45.123456"
     },
-    "timestamp": "2025-08-08T15:30:00.000Z"
+    "timestamp": "2025-08-09T18:36:57.390144"
 }
 ```
 
-### 11. Camera Health
-**GET** `/camera/health`
+#### POST `/detection/start`
+เริ่มการตรวจจับ
 
-**Description:** ตรวจสอบสุขภาพกล้อง
+**Response:**
+```json
+{
+    "success": true,
+    "message": "Detection started successfully",
+    "status": {
+        "service_running": true,
+        "detection_active": true
+    },
+    "timestamp": "2025-08-09T18:36:57.390144"
+}
+```
+
+#### POST `/detection/stop`
+หยุดการตรวจจับ
+
+**Response:**
+```json
+{
+    "success": true,
+    "message": "Detection stopped successfully",
+    "status": {
+        "service_running": true,
+        "detection_active": false
+    },
+    "timestamp": "2025-08-09T18:36:57.390144"
+}
+```
+
+#### GET `/detection/results`
+รับผลการตรวจจับ
+
+**Query Parameters:**
+- `limit` (optional): จำนวนผลลัพธ์ (default: 50, max: 100)
+- `offset` (optional): เริ่มจากตำแหน่ง (default: 0)
+
+**Response:**
+```json
+{
+    "success": true,
+    "data": {
+        "results": [
+            {
+                "id": 1,
+                "timestamp": "2025-08-09T18:30:45.123456",
+                "detections": [
+                    {
+                        "type": "vehicle",
+                        "confidence": 0.95,
+                        "bbox": [100, 150, 300, 250],
+                        "license_plate": {
+                            "text": "ABC-1234",
+                            "confidence": 0.87,
+                            "bbox": [150, 200, 250, 230]
+                        }
+                    }
+                ],
+                "image_path": "/path/to/detection_image.jpg"
+            }
+        ],
+        "total_count": 156,
+        "limit": 50,
+        "offset": 0
+    },
+    "timestamp": "2025-08-09T18:36:57.390144"
+}
+```
+
+#### POST `/detection/configure`
+ตั้งค่าการตรวจจับ
+
+**Request Body:**
+```json
+{
+    "detection_interval": 0.1,
+    "confidence_threshold": 0.5,
+    "plate_confidence_threshold": 0.7,
+    "save_images": true,
+    "save_to_database": true
+}
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "message": "Detection configuration updated successfully",
+    "config": {
+        "detection_interval": 0.1,
+        "confidence_threshold": 0.5,
+        "plate_confidence_threshold": 0.7,
+        "save_images": true,
+        "save_to_database": true
+    },
+    "timestamp": "2025-08-09T18:36:57.390144"
+}
+```
+
+---
+
+### 🏥 System Health
+
+#### GET `/health/system`
+รับสถานะสุขภาพระบบ
 
 **Response:**
 ```json
 {
     "success": true,
     "health": {
-        "status": "healthy",
-        "camera_initialized": true,
-        "streaming_active": true,
-        "auto_start_enabled": true,
-        "uptime": 3600,
-        "frame_count": 1234,
-        "average_fps": 29.5,
-        "timestamp": "2025-08-08T15:30:00.000Z"
+        "overall_status": "healthy",
+        "components": {
+            "camera": {
+                "status": "healthy",
+                "initialized": true,
+                "streaming": true,
+                "last_check": "2025-08-09T18:36:57.390144"
+            },
+            "detection": {
+                "status": "healthy", 
+                "models_loaded": true,
+                "last_check": "2025-08-09T18:36:57.390144"
+            },
+            "database": {
+                "status": "healthy",
+                "connected": true,
+                "last_check": "2025-08-09T18:36:57.390144"
+            },
+            "system": {
+                "status": "healthy",
+                "cpu_usage": 15.5,
+                "memory_usage": {
+                    "used": 2048,
+                    "total": 8192,
+                    "percentage": 25.0
+                },
+                "disk_usage": {
+                    "used": 50000,
+                    "total": 200000,
+                    "percentage": 25.0
+                },
+                "uptime": 86400.5,
+                "last_check": "2025-08-09T18:36:57.390144"
+            }
+        }
     },
-    "timestamp": "2025-08-08T15:30:00.000Z"
+    "timestamp": "2025-08-09T18:36:57.390144"
 }
 ```
 
-### 12. Debug Information
-**GET** `/camera/debug`
+#### GET `/health/logs`
+รับ system logs
 
-**Description:** ข้อมูล debug สำหรับการแก้ไขปัญหา
+**Query Parameters:**
+- `level` (optional): log level (DEBUG, INFO, WARNING, ERROR)
+- `limit` (optional): จำนวน log entries (default: 100, max: 1000)
 
 **Response:**
 ```json
 {
     "success": true,
-    "debug": {
-        "camera_status": {
-            "initialized": true,
-            "streaming": true
-        },
-        "frame_capture_success": true,
-        "frame_shape": [1080, 1920, 3],
-        "frame_error": null,
-        "camera_initialized": true,
-        "camera_streaming": true,
-        "timestamp": "2025-08-08T15:30:00.000Z"
-    }
+    "data": {
+        "logs": [
+            {
+                "timestamp": "2025-08-09T18:36:57.390144",
+                "level": "INFO",
+                "module": "camera_manager",
+                "message": "Camera started successfully",
+                "details": {}
+            }
+        ],
+        "total_count": 1500,
+        "level_filter": "INFO",
+        "limit": 100
+    },
+    "timestamp": "2025-08-09T18:36:57.390144"
 }
 ```
+
+---
+
+### 📡 Video Streaming
+
+#### GET `/streaming/video_feed`
+รับ video stream (MJPEG)
+
+**Response:** `multipart/x-mixed-replace` stream
+
+#### GET `/streaming/status`
+รับสถานะ streaming
+
+**Response:**
+```json
+{
+    "success": true,
+    "status": {
+        "streaming_active": true,
+        "connected_clients": 2,
+        "stream_quality": "medium",
+        "fps": 30,
+        "resolution": [1280, 720]
+    },
+    "timestamp": "2025-08-09T18:36:57.390144"
+}
+```
+
+---
 
 ## WebSocket Events
 
 ### Connection
 ```javascript
-const socket = io('/camera');
-```
+// Connect to WebSocket
+const socket = io();
 
-### Client to Server Events
+// Connection events
+socket.on('connect', function() {
+    console.log('Connected to WebSocket server');
+});
 
-#### Camera Status Request
-```javascript
-socket.emit('camera_status_request');
-```
-
-#### Camera Control
-```javascript
-socket.emit('camera_control', {
-    command: 'start' | 'stop' | 'restart' | 'capture'
+socket.on('disconnect', function() {
+    console.log('Disconnected from WebSocket server');
 });
 ```
 
-#### Configuration Update
+### Camera Events
+
+#### Client to Server
 ```javascript
+// Request camera status
+socket.emit('camera_status_request', {});
+
+// Camera control
+socket.emit('camera_control', {
+    command: 'start' // 'start', 'stop', 'restart', 'capture'
+});
+
+// Configuration update
 socket.emit('camera_config_update', {
     config: {
         resolution: [1920, 1080],
         framerate: 30,
-        brightness: 0.0,
-        contrast: 1.0,
-        saturation: 1.0,
-        awb_mode: "auto"
+        brightness: 0.0
     }
 });
 ```
 
-### Server to Client Events
-
-#### Camera Status Update
+#### Server to Client
 ```javascript
+// Camera status updates
 socket.on('camera_status_update', function(status) {
-    // status object
+    // status object structure same as GET /camera/status
+    console.log('Camera status:', status);
 });
-```
 
-#### Camera Control Response
-```javascript
+// Camera control response
 socket.on('camera_control_response', function(response) {
-    // response object
+    // response: { command: 'start', success: true, message: '...', error: null }
+    console.log('Camera control result:', response);
 });
-```
 
-#### Configuration Response
-```javascript
+// Configuration response
 socket.on('camera_config_response', function(response) {
-    // response object
+    // response: { success: true, message: '...', config: {...}, error: null }
+    console.log('Configuration update result:', response);
 });
 ```
 
-## Error Codes
+### Detection Events
 
-| Code | Description |
-|------|-------------|
-| CAMERA_NOT_INITIALIZED | กล้องยังไม่ได้เริ่มต้น |
-| CAMERA_NOT_STREAMING | กล้องไม่ได้สตรีม |
-| CONFIGURATION_FAILED | การตั้งค่าไม่สำเร็จ |
-| SERVICE_UNAVAILABLE | บริการไม่พร้อมใช้งาน |
-| INVALID_PARAMETER | พารามิเตอร์ไม่ถูกต้อง |
-| OPERATION_FAILED | การดำเนินการไม่สำเร็จ |
+#### Client to Server
+```javascript
+// Detection control
+socket.emit('detection_control', {
+    command: 'start' // 'start', 'stop'
+});
 
-## Rate Limiting
+// Request detection status
+socket.emit('detection_status_request', {});
+```
 
-ปัจจุบันไม่มี rate limiting
+#### Server to Client
+```javascript
+// Detection status updates
+socket.on('detection_status_update', function(status) {
+    // status object structure same as GET /detection/status
+    console.log('Detection status:', status);
+});
 
-## CORS
+// Detection results (real-time)
+socket.on('detection_result', function(result) {
+    // result: { timestamp: '...', detections: [...], image_path: '...' }
+    console.log('New detection result:', result);
+});
+```
 
-CORS เปิดใช้งานสำหรับ development
+### System Events
 
-## Security Considerations
+#### Server to Client
+```javascript
+// System health updates
+socket.on('system_health_update', function(health) {
+    // health object structure same as GET /health/system
+    console.log('System health:', health);
+});
 
-1. ระบบควรเพิ่ม authentication ในอนาคต
-2. ควรจำกัดการเข้าถึง API จาก IP ที่อนุญาต
-3. ควรเข้ารหัสข้อมูลที่สำคัญ
+// System notifications
+socket.on('system_notification', function(notification) {
+    // notification: { type: 'info'|'warning'|'error', message: '...', timestamp: '...' }
+    console.log('System notification:', notification);
+});
+```
 
 ---
 
-**Version:** 1.3  
-**Last Updated:** 2025-08-08
+## Error Codes
+
+| Code | Description | HTTP Status |
+|------|-------------|-------------|
+| `CAMERA_NOT_INITIALIZED` | Camera not initialized | 500 |
+| `CAMERA_NOT_STREAMING` | Camera not streaming | 500 |
+| `CAMERA_BUSY` | Camera is busy with another operation | 409 |
+| `CONFIGURATION_FAILED` | Configuration update failed | 400 |
+| `DETECTION_NOT_AVAILABLE` | AI detection service not available | 503 |
+| `MODEL_NOT_LOADED` | AI models not loaded | 503 |
+| `DATABASE_ERROR` | Database operation failed | 500 |
+| `INVALID_PARAMETER` | Invalid parameter provided | 400 |
+| `SERVICE_UNAVAILABLE` | Service temporarily unavailable | 503 |
+| `OPERATION_FAILED` | Generic operation failure | 500 |
+
+---
+
+## Rate Limiting
+
+| Endpoint Category | Limit | Window |
+|-------------------|-------|---------|
+| Camera Control | 10 requests | 1 minute |
+| Status Requests | 60 requests | 1 minute |
+| Configuration Updates | 5 requests | 1 minute |
+| Detection Control | 10 requests | 1 minute |
+
+---
+
+## Data Types & Validation
+
+### Camera Configuration
+```typescript
+interface CameraConfig {
+    resolution: [number, number];     // [width, height], valid: [640,480] to [1920,1080]
+    framerate: number;               // 1-60 FPS
+    brightness: number;              // -1.0 to 1.0
+    contrast: number;                // 0.0 to 2.0
+    saturation: number;              // 0.0 to 2.0
+    awb_mode: string;                // 'auto', 'fluorescent', 'incandescent', etc.
+}
 ```
 
-## 5. แนวทางการบริหารจัดการตัวแปร
+### Detection Configuration
+```typescript
+interface DetectionConfig {
+    detection_interval: number;      // 0.01 to 5.0 seconds
+    confidence_threshold: number;    // 0.0 to 1.0
+    plate_confidence_threshold: number; // 0.0 to 1.0
+    save_images: boolean;
+    save_to_database: boolean;
+}
+```
 
-### 5.1 สร้าง Type Definitions (TypeScript-like)
-
-```typescript:v1_3/docs/type_definitions.ts
-// Type definitions for AI Camera v1.3
-// This file serves as a reference for variable types
-
-// Camera Configuration Types
-interface CameraConfig {
-    resolution: [number, number];
-    framerate: number;
-    brightness: number;
-    contrast: number;
-    saturation: number;
-    awb_mode: string;
-    exposure_mode?: string;
-    iso?: number;
+### Detection Result
+```typescript
+interface DetectionResult {
+    id: number;
+    timestamp: string;               // ISO 8601 format
+    detections: Detection[];
+    image_path: string;
 }
 
-// Camera Status Types
-interface CameraStatus {
-    initialized: boolean;
-    streaming: boolean;
-    frame_count: number;
-    average_fps: number;
-    uptime: number;
-    auto_start_enabled: boolean;
-    config?: CameraConfig;
-    camera_handler?: {
-        camera_properties: {
-            Model: string;
-            Sensor: string;
-        };
+interface Detection {
+    type: 'vehicle' | 'license_plate';
+    confidence: number;              // 0.0 to 1.0
+    bbox: [number, number, number, number]; // [x1, y1, x2, y2]
+    license_plate?: {
+        text: string;
+        confidence: number;
+        bbox: [number, number, number, number];
     };
 }
-
-// API Response Types
-interface ApiResponse<T = any> {
-    success: boolean;
-    message?: string;
-    error?: string;
-    error_code?: string;
-    data?: T;
-    timestamp: string;
-}
-
-// WebSocket Event Types
-interface WebSocketEvent {
-    event: string;
-    data: any;
-    timestamp: string;
-}
-
-// Camera Control Commands
-type CameraCommand = 'start' | 'stop' | 'restart' | 'capture';
-
-// White Balance Modes
-type AwbMode = 'auto' | 'fluorescent' | 'incandescent' | 'tungsten' | 'horizon' | 'daylight' | 'cloudy' | 'shade';
-
-// Status Indicators
-type StatusIndicator = 'online' | 'offline' | 'warning';
 ```
 
-### 5.2 สร้าง Validation Schema
+---
 
-```python:v1_3/src/core/validation.py
-#!/usr/bin/env python3
-"""
-Validation schemas for AI Camera v1.3
+## Testing & Development
 
-This module provides validation schemas for all data structures
-used in the application to ensure consistency and reduce errors.
-"""
+### API Testing with curl
 
-from typing import Dict, Any, List, Tuple, Optional
-from dataclasses import dataclass
-import logging
+```bash
+# Health check
+curl -X GET http://localhost/health
 
-logger = logging.getLogger(__name__)
+# Camera status
+curl -X GET http://localhost/camera/status
 
+# Start camera
+curl -X POST http://localhost/camera/start
 
-@dataclass
-class CameraConfigSchema:
-    """Schema for camera configuration validation."""
-    
-    @staticmethod
-    def validate_resolution(resolution: List[int]) -> bool:
-        """Validate resolution format."""
-        if not isinstance(resolution, list) or len(resolution) != 2:
-            return False
-        width, height = resolution
-        return (isinstance(width, int) and isinstance(height, int) and
-                width > 0 and height > 0)
-    
-    @staticmethod
-    def validate_framerate(framerate: int) -> bool:
-        """Validate framerate range."""
-        return isinstance(framerate, int) and 1 <= framerate <= 60
-    
-    @staticmethod
-    def validate_brightness(brightness: float) -> bool:
-        """Validate brightness range."""
-        return isinstance(brightness, (int, float)) and -1.0 <= brightness <= 1.0
-    
-    @staticmethod
-    def validate_contrast(contrast: float) -> bool:
-        """Validate contrast range."""
-        return isinstance(contrast, (int, float)) and 0.0 <= contrast <= 2.0
-    
-    @staticmethod
-    def validate_saturation(saturation: float) -> bool:
-        """Validate saturation range."""
-        return isinstance(saturation, (int, float)) and 0.0 <= saturation <= 2.0
-    
-    @staticmethod
-    def validate_awb_mode(awb_mode: str) -> bool:
-        """Validate white balance mode."""
-        valid_modes = ['auto', 'fluorescent', 'incandescent', 'tungsten', 
-                      'horizon', 'daylight', 'cloudy', 'shade']
-        return isinstance(awb_mode, str) and awb_mode in valid_modes
-    
-    @classmethod
-    def validate_config(cls, config: Dict[str, Any]) -> Tuple[bool, List[str]]:
-        """Validate complete camera configuration."""
-        errors = []
-        
-        if 'resolution' in config:
-            if not cls.validate_resolution(config['resolution']):
-                errors.append('Invalid resolution format')
-        
-        if 'framerate' in config:
-            if not cls.validate_framerate(config['framerate']):
-                errors.append('Framerate must be between 1 and 60')
-        
-        if 'brightness' in config:
-            if not cls.validate_brightness(config['brightness']):
-                errors.append('Brightness must be between -1.0 and 1.0')
-        
-        if 'contrast' in config:
-            if not cls.validate_contrast(config['contrast']):
-                errors.append('Contrast must be between 0.0 and 2.0')
-        
-        if 'saturation' in config:
-            if not cls.validate_saturation(config['saturation']):
-                errors.append('Saturation must be between 0.0 and 2.0')
-        
-        if 'awb_mode' in config:
-            if not cls.validate_awb_mode(config['awb_mode']):
-                errors.append('Invalid white balance mode')
-        
-        return len(errors) == 0, errors
+# Update camera config
+curl -X POST http://localhost/camera/config \
+  -H "Content-Type: application/json" \
+  -d '{"resolution": [1920, 1080], "framerate": 30}'
 
+# Detection status
+curl -X GET http://localhost/detection/status
 
-@dataclass
-class ApiResponseSchema:
-    """Schema for API response validation."""
-    
-    @staticmethod
-    def create_success_response(data: Any = None, message: str = "Success") -> Dict[str, Any]:
-        """Create standardized success response."""
-        from datetime import datetime
-        return {
-            "success": True,
-            "message": message,
-            "data": data,
-            "timestamp": datetime.now().isoformat()
-        }
-    
-    @staticmethod
-    def create_error_response(error: str, error_code: str = None) -> Dict[str, Any]:
-        """Create standardized error response."""
-        from datetime import datetime
-        response = {
-            "success": False,
-            "error": error,
-            "timestamp": datetime.now().isoformat()
-        }
-        if error_code:
-            response["error_code"] = error_code
-        return response
-    
-    @staticmethod
-    def validate_response(response: Dict[str, Any]) -> bool:
-        """Validate API response format."""
-        required_fields = ['success', 'timestamp']
-        return all(field in response for field in required_fields)
-
-
-@dataclass
-class WebSocketEventSchema:
-    """Schema for WebSocket event validation."""
-    
-    @staticmethod
-    def validate_camera_control(data: Dict[str, Any]) -> Tuple[bool, List[str]]:
-        """Validate camera control event data."""
-        errors = []
-        
-        if 'command' not in data:
-            errors.append('Command is required')
-        elif data['command'] not in ['start', 'stop', 'restart', 'capture']:
-            errors.append('Invalid command')
-        
-        return len(errors) == 0, errors
-    
-    @staticmethod
-    def validate_config_update(data: Dict[str, Any]) -> Tuple[bool, List[str]]:
-        """Validate configuration update event data."""
-        errors = []
-        
-        if 'config' not in data:
-            errors.append('Config is required')
-        else:
-            is_valid, config_errors = CameraConfigSchema.validate_config(data['config'])
-            if not is_valid:
-                errors.extend(config_errors)
-        
-        return len(errors) == 0, errors
-
-
-# Global validation functions
-def validate_camera_config(config: Dict[str, Any]) -> Tuple[bool, List[str]]:
-    """Global function to validate camera configuration."""
-    return CameraConfigSchema.validate_config(config)
-
-
-def create_api_response(success: bool, data: Any = None, message: str = None, 
-                       error: str = None, error_code: str = None) -> Dict[str, Any]:
-    """Global function to create standardized API response."""
-    if success:
-        return ApiResponseSchema.create_success_response(data, message)
-    else:
-        return ApiResponseSchema.create_error_response(error, error_code)
-
-
-def validate_websocket_event(event_type: str, data: Dict[str, Any]) -> Tuple[bool, List[str]]:
-    """Global function to validate WebSocket events."""
-    if event_type == 'camera_control':
-        return WebSocketEventSchema.validate_camera_control(data)
-    elif event_type == 'camera_config_update':
-        return WebSocketEventSchema.validate_config_update(data)
-    else:
-        return False, [f'Unknown event type: {event_type}']
+# Get detection results
+curl -X GET "http://localhost/detection/results?limit=10&offset=0"
 ```
 
-## สรุปแนวทางการบริหารจัดการตัวแปร
+### WebSocket Testing with JavaScript
 
-### 1. **มาตรฐานการตั้งชื่อ**
-- Backend: snake_case (Python)
-- Frontend: camelCase (JavaScript)
-- Constants: UPPER_SNAKE_CASE
+```javascript
+// Test WebSocket connection
+const socket = io('http://localhost');
 
-### 2. **Type Safety**
-- ใช้ TypeScript definitions เป็น reference
-- Validation schemas สำหรับทุก data structure
-- Consistent data types ระหว่าง frontend/backend
+socket.on('connect', () => {
+    console.log('Connected');
+    
+    // Test camera status request
+    socket.emit('camera_status_request', {});
+    
+    // Test camera control
+    socket.emit('camera_control', { command: 'start' });
+});
 
-### 3. **Documentation**
-- UML diagrams สำหรับ architecture
-- API documentation ที่ครบถ้วน
-- Variable management standards
+socket.on('camera_status_update', (status) => {
+    console.log('Camera status:', status);
+});
+```
 
-### 4. **Testing**
-- Unit tests สำหรับ validation
-- Integration tests สำหรับ API responses
-- Frontend tests สำหรับ data handling
+---
 
-### 5. **Version Control**
-- Semantic versioning
-- Change logs สำหรับทุก breaking changes
-- Backward compatibility เมื่อเป็นไปได้
+## Changelog
 
-การจัดการตัวแปรแบบนี้จะช่วยลดข้อผิดพลาดและเพิ่มความสม่ำเสมอในการพัฒนาร่วมกัน
+### Version 1.3 (August 2025)
+- ✅ Added comprehensive variable naming conventions
+- ✅ Updated WebSocket event documentation
+- ✅ Added detailed response schemas
+- ✅ Improved error handling documentation
+- ✅ Added rate limiting information
+- ✅ Enhanced detection API endpoints
+- ✅ Added system health monitoring APIs
+- ✅ Improved camera configuration validation
+
+### Version 1.2
+- Basic camera and detection APIs
+- WebSocket support
+- Health monitoring
+
+### Version 1.1
+- Initial API implementation
+- Camera control endpoints
+
+---
+
+**Note:** This documentation reflects the current implementation as of August 2025. For the most up-to-date information, refer to the source code in `/v1_3/src/web/blueprints/` and `variable_management.md`.

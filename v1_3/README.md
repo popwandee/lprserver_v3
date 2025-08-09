@@ -279,6 +279,7 @@ sudo systemctl restart aicamera_v1.3.service
 
 # ดู log
 sudo journalctl -u aicamera_v1.3.service -f
+sudo journalctl -u aicamera_v1.3.service --no-pager | tail -20
 ```
 
 ## ⚙️ การตั้งค่า

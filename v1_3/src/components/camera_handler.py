@@ -147,6 +147,13 @@ class CameraHandler:
         self.recording_encoder = None
         self.recording_file = None
         
+        # Frame counting and FPS calculation
+        self.frame_count = 0
+        self.average_fps = 0.0
+        self._last_frame_time = None
+        self._fps_samples = []
+        self._max_fps_samples = 30  # Keep last 30 samples for average
+        
         # Threading
         self._lock = threading.RLock()
         
@@ -648,7 +655,10 @@ class CameraHandler:
                     'recording': self.recording,
                     'camera_properties': make_json_serializable(self.camera_properties),
                     'sensor_modes_count': len(self.sensor_modes),
-                    'current_config': make_json_serializable(self.current_config)
+                    'current_config': make_json_serializable(self.current_config),
+                    'frame_count': getattr(self, 'frame_count', 0),  # Add frame count
+                    'average_fps': getattr(self, 'average_fps', 0.0),  # Add average FPS
+                    'configuration': self.get_configuration()  # Add configuration
                 }
                 
                 if self.recording:
@@ -671,6 +681,29 @@ class CameraHandler:
                 'streaming': False,
                 'error': str(e)
             }
+    
+    def _update_frame_stats(self):
+        """Update frame count and FPS statistics."""
+        import time
+        
+        current_time = time.time()
+        self.frame_count += 1
+        
+        if self._last_frame_time is not None:
+            frame_interval = current_time - self._last_frame_time
+            if frame_interval > 0:
+                fps = 1.0 / frame_interval
+                self._fps_samples.append(fps)
+                
+                # Keep only recent samples
+                if len(self._fps_samples) > self._max_fps_samples:
+                    self._fps_samples.pop(0)
+                
+                # Calculate average FPS
+                if self._fps_samples:
+                    self.average_fps = sum(self._fps_samples) / len(self._fps_samples)
+        
+        self._last_frame_time = current_time
     
     def get_configuration(self) -> Dict[str, Any]:
         """
