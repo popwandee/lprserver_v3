@@ -27,6 +27,11 @@ DATABASE_PATH = os.path.join(BASE_DIR, 'db', 'lpr_data.db')
 # AI Models Configuration
 VEHICLE_DETECTION_MODEL = os.getenv('VEHICLE_DETECTION_MODEL', None)
 LICENSE_PLATE_DETECTION_MODEL = os.getenv('LICENSE_PLATE_DETECTION_MODEL', None)
+LICENSE_PLATE_OCR_MODEL = os.getenv('LICENSE_PLATE_OCR_MODEL', None)
+
+# Hailo AI Configuration  
+HEF_MODEL_PATH = os.getenv('HEF_MODEL_PATH', 'hailo')
+MODEL_ZOO_URL = os.getenv('MODEL_ZOO_URL', 'https://hailo-model-zoo.s3.eu-west-2.amazonaws.com')
 
 # OCR Configuration
 EASYOCR_LANGUAGES = ['en', 'th']
