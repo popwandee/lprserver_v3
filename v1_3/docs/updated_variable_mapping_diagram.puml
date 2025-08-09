@@ -1,0 +1,212 @@
+@startuml AI_Camera_v1.3_Variable_Mapping_Diagram
+
+!theme plain
+skinparam packageFontSize 12
+skinparam noteFontSize 10
+
+package "Backend Layer (Python - snake_case)" {
+    
+    class "Frame Data Variables" as FrameData {
+        frame_data: Dict = {
+            'frame': numpy.ndarray,
+            'metadata': dict,
+            'timestamp': float
+        }
+        --
+        frame_validation: Dict = {
+            'is_valid': bool,
+            'frame_type': str,
+            'frame_shape': list,
+            'frame_size': int,
+            'validation_errors': list
+        }
+    }
+    
+    class "Camera Status Variables" as CameraStatus {
+        camera_status: Dict = {
+            'initialized': bool,
+            'streaming': bool,
+            'frame_count': int,
+            'average_fps': float,
+            'auto_start_enabled': bool,
+            'auto_streaming_enabled': bool
+        }
+    }
+    
+    class "Detection Status Variables" as DetectionStatus {
+        detection_status: Dict = {
+            'active': bool,
+            'auto_start_enabled': bool,
+            'detection_count': int,
+            'processing_time': float,
+            'last_detection': str
+        }
+    }
+    
+    class "Auto-Startup Config Variables" as AutoConfig {
+        auto_startup_config: Dict = {
+            'auto_start_camera': bool,
+            'auto_start_streaming': bool,
+            'auto_start_detection': bool,
+            'startup_delay': float,
+            'startup_sequence': list
+        }
+    }
+    
+    class "Error Variables" as ErrorVars {
+        frame_errors: Dict = {
+            'invalid_type': str,
+            'empty_frame': str,
+            'missing_frame_key': str,
+            'validation_failed': str
+        }
+        --
+        attribute_errors: Dict = {
+            'missing_attributes': list,
+            'type_errors': list,
+            'access_errors': list
+        }
+    }
+}
+
+package "API Response Layer (JSON)" {
+    
+    class "Standard Response Format" as APIResponse {
+        response_format: Dict = {
+            'success': bool,
+            'status': dict,
+            'message': str,
+            'timestamp': str
+        }
+        --
+        error_response: Dict = {
+            'success': bool,
+            'error': str,
+            'error_code': str,
+            'timestamp': str
+        }
+    }
+    
+    class "WebSocket Events" as WSEvents {
+        camera_status_update: Dict = {
+            'initialized': bool,
+            'streaming': bool,
+            'frame_count': int,
+            'average_fps': float,
+            'auto_start_enabled': bool
+        }
+        --
+        detection_status_update: Dict = {
+            'active': bool,
+            'auto_start_enabled': bool,
+            'detection_count': int,
+            'processing_time': float
+        }
+    }
+}
+
+package "Frontend Layer (JavaScript - camelCase)" {
+    
+    class "Frame Data Variables" as FrontendFrame {
+        frameData: Object = {
+            frame: ImageData,
+            metadata: object,
+            timestamp: number
+        }
+        --
+        frameValidation: Object = {
+            isValid: boolean,
+            frameType: string,
+            frameShape: array,
+            frameSize: number,
+            validationErrors: array
+        }
+    }
+    
+    class "Camera Status Variables" as FrontendCamera {
+        cameraStatus: Object = {
+            initialized: boolean,
+            streaming: boolean,
+            frameCount: number,
+            averageFps: number,
+            autoStartEnabled: boolean,
+            autoStreamingEnabled: boolean
+        }
+    }
+    
+    class "Detection Status Variables" as FrontendDetection {
+        detectionStatus: Object = {
+            active: boolean,
+            autoStartEnabled: boolean,
+            detectionCount: number,
+            processingTime: number,
+            lastDetection: string
+        }
+    }
+    
+    class "Auto-Startup Config Variables" as FrontendAuto {
+        autoStartupConfig: Object = {
+            cameraAutoStart: boolean,
+            streamingAutoStart: boolean,
+            detectionAutoStart: boolean,
+            startupDelay: number,
+            startupSequence: array
+        }
+    }
+    
+    class "Error State Variables" as FrontendErrors {
+        errorStates: Object = {
+            frameValidation: {
+                hasError: boolean,
+                errorType: string,
+                errorMessage: string,
+                lastOccurred: Date
+            },
+            attributeAccess: {
+                hasError: boolean,
+                missingAttribute: string,
+                serviceName: string,
+                errorMessage: string
+            },
+            autoStartup: {
+                hasError: boolean,
+                failedPhase: string,
+                errorMessage: string,
+                retryAttempts: number
+            }
+        }
+    }
+}
+
+' Variable Mapping Relationships
+FrameData --> APIResponse : frame_data → status
+CameraStatus --> APIResponse : camera_status → status
+DetectionStatus --> APIResponse : detection_status → status
+AutoConfig --> APIResponse : config → status
+ErrorVars --> APIResponse : errors → error_response
+
+APIResponse --> FrontendFrame : JSON → frameData
+APIResponse --> FrontendCamera : JSON → cameraStatus  
+APIResponse --> FrontendDetection : JSON → detectionStatus
+APIResponse --> FrontendAuto : JSON → autoStartupConfig
+APIResponse --> FrontendErrors : JSON → errorStates
+
+WSEvents --> FrontendCamera : WebSocket → cameraStatus
+WSEvents --> FrontendDetection : WebSocket → detectionStatus
+
+' Data Flow Notes
+note top of FrameData : "Frame Data Flow:\n1. CameraHandler returns Dict\n2. CameraManager extracts numpy.ndarray\n3. DetectionProcessor validates frame\n4. Results sent via WebSocket/HTTP"
+
+note top of APIResponse : "API Response Transformation:\n1. snake_case (Python) → JSON\n2. Consistent response format\n3. Error handling standards\n4. Timestamp normalization"
+
+note top of FrontendFrame : "Frontend Variable Conversion:\n1. JSON → camelCase (JavaScript)\n2. Type safety validation\n3. UI state management\n4. Error display handling"
+
+' Error Prevention Flow
+note bottom of ErrorVars : "Error Prevention:\n1. Frame type validation\n2. Attribute access safety\n3. Service dependency checks\n4. Configuration validation"
+
+note bottom of FrontendErrors : "Frontend Error Handling:\n1. Error state management\n2. User feedback display\n3. Retry mechanisms\n4. Fallback values"
+
+' Auto-Startup Sequence
+note right of AutoConfig : "Auto-Startup Mapping:\n1. Backend config flags\n2. Service initialization order\n3. Frontend status tracking\n4. Error recovery handling"
+
+@enduml

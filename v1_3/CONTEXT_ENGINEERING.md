@@ -648,9 +648,164 @@ Create frontend JavaScript for AI Camera v1.3:
   * Set use_socketio = true if needed
 ```
 
-## 14. Deployment and Maintenance
+## 14. Auto-Startup Sequence Patterns
 
-### 14.1 Service Restart Procedure
+### 14.1 Configuration Requirements
+```python
+# MANDATORY: Auto-startup configuration in config.py
+AUTO_START_CAMERA = True
+AUTO_START_STREAMING = True
+AUTO_START_DETECTION = True
+STARTUP_DELAY = 5.0  # seconds to wait between services
+```
+
+### 14.2 Service Manager Auto-Start Pattern
+```python
+# MANDATORY: Service managers must support auto-start
+class ServiceManager:
+    def __init__(self):
+        self.auto_start_enabled = AUTO_START_SERVICE
+        self.auto_streaming_enabled = AUTO_START_STREAMING  # For camera
+        
+    def initialize(self):
+        """Initialize service with auto-start support."""
+        if self.auto_start_enabled:
+            self._auto_start_service()
+    
+    def _auto_start_service(self):
+        """Auto-start service implementation."""
+        # Service-specific auto-start logic
+        pass
+```
+
+### 14.3 Sequential Startup Pattern
+```python
+# MANDATORY: Services must start in correct order
+def _initialize_services(logger):
+    """Initialize services in dependency order."""
+    # 1. Camera first (hardware dependency)
+    camera_manager = get_service('camera_manager')
+    if camera_manager:
+        camera_manager.initialize()
+    
+    # 2. Detection second (depends on camera)
+    detection_manager = get_service('detection_manager')
+    if detection_manager:
+        detection_manager.initialize()
+```
+
+## 15. Frame Data Validation Patterns
+
+### 15.1 Frame Data Structure Requirements
+```python
+# MANDATORY: Camera handler must return dict format
+def capture_frame(self) -> Optional[Dict[str, Any]]:
+    """Capture frame with metadata."""
+    return {
+        'frame': np.ndarray,     # REQUIRED: Actual image data
+        'metadata': dict,        # Optional: Frame metadata
+        'timestamp': float       # Optional: Capture timestamp
+    }
+```
+
+### 15.2 Frame Extraction Pattern
+```python
+# MANDATORY: Service layer must extract numpy array
+def capture_frame(self):
+    """Extract numpy array from camera handler response."""
+    frame_data = self.camera_handler.capture_frame()
+    if frame_data and isinstance(frame_data, dict) and 'frame' in frame_data:
+        frame = frame_data['frame']
+        if frame is not None:
+            return frame  # Return numpy array only
+    return None
+```
+
+### 15.3 Frame Validation Pattern
+```python
+# MANDATORY: Detection processor must validate frame types
+def validate_and_enhance_frame(self, frame):
+    """Validate frame with comprehensive type checking."""
+    if frame is None:
+        return None
+    
+    # Handle dict input (fallback safety)
+    if isinstance(frame, dict):
+        if 'frame' in frame:
+            frame = frame['frame']
+        else:
+            self.logger.error("Dict does not contain 'frame' key")
+            return None
+    
+    # Validate numpy array
+    if not isinstance(frame, np.ndarray):
+        self.logger.error(f"Expected numpy array, got {type(frame)}")
+        return None
+    
+    # Validate frame size
+    if frame.size == 0:
+        self.logger.warning("Empty frame array")
+        return None
+    
+    return frame
+```
+
+## 16. Error Prevention Patterns
+
+### 16.1 Safe Attribute Access Pattern
+```python
+# MANDATORY: Use safe attribute access for service properties
+def get_status(self):
+    """Get service status with safe attribute access."""
+    return {
+        'active': self.active,
+        'auto_start': self.auto_start_enabled,  # Use correct attribute name
+        'initialized': getattr(self, 'initialized', False)  # Safe fallback
+    }
+```
+
+### 16.2 Safe Service Dependency Pattern
+```python
+# MANDATORY: Check service availability before method calls
+def _is_camera_ready(self, camera_manager):
+    """Safely check camera readiness."""
+    if not camera_manager:
+        return False
+    
+    try:
+        status = camera_manager.get_status()
+        return (status.get('initialized', False) and 
+                status.get('streaming', False))
+    except Exception as e:
+        self.logger.error(f"Error checking camera status: {e}")
+        return False
+```
+
+### 16.3 Service Configuration Safety Pattern
+```python
+# MANDATORY: Blueprint configuration updates must use correct attributes
+@blueprint_name_bp.route('/configure', methods=['POST'])
+def configure_service():
+    """Configure service with safe attribute access."""
+    try:
+        service = get_service('service_name')
+        if not service:
+            return jsonify({'error': 'Service not available'}), 500
+        
+        data = request.get_json()
+        if 'auto_start' in data:
+            # Use correct attribute name
+            service.auto_start_enabled = bool(data['auto_start'])
+            
+        return jsonify({'success': True})
+    except AttributeError as e:
+        logger.error(f"Attribute error: {e}")
+        return jsonify({'error': 'Invalid configuration'}), 400
+```
+
+## 17. Deployment and Maintenance
+
+### 17.1 Service Restart Procedure
 ```bash
 # After code changes
 sudo systemctl stop aicamera_v1.3.service
@@ -659,17 +814,25 @@ sudo systemctl start aicamera_v1.3.service
 sudo systemctl status aicamera_v1.3.service
 ```
 
-### 14.2 Import Validation
+### 17.2 Import Validation
 ```python
 # Always run after adding new modules
 python3 -c "from v1_3.src.core.utils.import_helper import validate_imports; print('Import validation:', validate_imports())"
 ```
 
-### 14.3 Static Files Update
+### 17.3 Static Files Update
 ```bash
 # After updating CSS/JS files
 sudo systemctl reload nginx
 # Check browser cache - may need hard refresh
+```
+
+### 17.4 Frame Capture Testing
+```bash
+# Test frame capture pipeline after changes
+cd /home/camuser/aicamera
+source setup_env.sh
+python3 v1_3/test_frame_capture.py
 ```
 
 ## 15. Version Control and Documentation

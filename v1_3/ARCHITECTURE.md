@@ -542,7 +542,144 @@ from v1_3.src.core.utils.logging_config import get_logger
 # 4. อัพเดท import validation
 ```
 
-## 10. สรุป
+## 10. Auto-Startup Sequence Architecture
+
+### 10.1 Auto-Startup Configuration
+```python
+# v1_3/src/core/config.py
+AUTO_START_CAMERA = True
+AUTO_START_STREAMING = True  
+AUTO_START_DETECTION = True
+STARTUP_DELAY = 5.0  # seconds
+```
+
+### 10.2 Service Initialization Order
+```python
+# v1_3/src/app.py
+def _initialize_services(logger):
+    """Initialize services in proper order for auto-startup."""
+    # 1. Camera Manager (handles camera + streaming auto-start)
+    camera_manager = get_service('camera_manager')
+    if camera_manager:
+        camera_manager.initialize()  # Auto-starts camera/streaming if configured
+        
+    # 2. Detection Manager (handles detection auto-start)
+    detection_manager = get_service('detection_manager')
+    if detection_manager:
+        detection_manager.initialize()  # Auto-starts detection if configured
+```
+
+### 10.3 Camera Manager Auto-Startup
+```python
+# v1_3/src/services/camera_manager.py
+def initialize(self):
+    """Initialize camera manager with auto-start support."""
+    if self.auto_start_enabled:
+        self._auto_start_camera()
+        
+def _auto_start_camera(self):
+    """Auto-start camera and streaming if configured."""
+    # Start camera
+    if self.start_camera():
+        # Start streaming if configured
+        if self.auto_streaming_enabled:
+            self.start_streaming()
+```
+
+### 10.4 Detection Manager Auto-Startup
+```python
+# v1_3/src/services/detection_manager.py
+def initialize(self):
+    """Initialize detection manager with auto-start support."""
+    if self.auto_start_enabled:
+        self._auto_start_detection()
+        
+def _auto_start_detection(self):
+    """Auto-start detection after camera is ready."""
+    time.sleep(STARTUP_DELAY)  # Wait for camera to be ready
+    camera_manager = get_service('camera_manager')
+    if self._is_camera_ready(camera_manager):
+        self.start_detection()
+```
+
+## 11. Frame Capture Data Flow Architecture
+
+### 11.1 Frame Data Structure
+```python
+# Camera Handler returns dict format
+frame_data = {
+    'frame': np.ndarray,     # Actual image data
+    'metadata': dict,        # Frame metadata
+    'timestamp': float       # Capture timestamp
+}
+
+# Camera Manager extracts numpy array
+frame = frame_data['frame']  # Extract for detection processing
+```
+
+### 11.2 Frame Validation Pipeline
+```python
+# v1_3/src/components/detection_processor.py
+def validate_and_enhance_frame(self, frame):
+    """Validate frame data with type checking."""
+    # Handle dict input (extract frame)
+    if isinstance(frame, dict):
+        if 'frame' in frame:
+            frame = frame['frame']
+        else:
+            return None
+    
+    # Validate numpy array
+    if not isinstance(frame, np.ndarray):
+        return None
+        
+    if frame.size == 0:
+        return None
+```
+
+### 11.3 Detection Pipeline Data Flow
+```
+Camera Handler.capture_frame()
+    ↓ (returns dict with 'frame' key)
+Camera Manager.capture_frame()
+    ↓ (extracts numpy array from dict)
+Detection Manager.process_frame_from_camera()
+    ↓ (receives numpy array)
+Detection Processor.validate_and_enhance_frame()
+    ↓ (validates and processes numpy array)
+AI Model Processing
+    ↓ (detection results)
+Result Storage & WebSocket Broadcast
+```
+
+## 12. Error Prevention Patterns
+
+### 12.1 Attribute Access Safety
+```python
+# Safe camera status checking
+def _is_camera_ready(self, camera_manager):
+    """Safely check if camera is ready for detection."""
+    if not camera_manager:
+        return False
+    
+    status = camera_manager.get_status()
+    return (status.get('initialized', False) and 
+            status.get('streaming', False))
+```
+
+### 12.2 Service Configuration Safety
+```python
+# Safe attribute access for auto-start settings
+def get_status(self):
+    """Get detection manager status safely."""
+    return {
+        'active': self.active,
+        'auto_start': self.auto_start_enabled,  # Use correct attribute name
+        'detection_count': self.detection_count
+    }
+```
+
+## 13. สรุป
 
 AI Camera v1.3 ใช้ Dependency Injection, Flask Blueprints และ **Absolute Imports** เพื่อสร้างระบบที่:
 - **Modular**: แบ่งส่วนการทำงานชัดเจน
@@ -550,5 +687,8 @@ AI Camera v1.3 ใช้ Dependency Injection, Flask Blueprints และ **Abso
 - **Testable**: ทดสอบได้ง่าย
 - **Scalable**: ขยายได้ง่าย
 - **Clear**: Import paths ชัดเจนและเข้าใจง่าย
+- **Auto-Startup**: รองรับการเริ่มงานอัตโนมัติแบบ sequential
+- **Frame-Safe**: ป้องกัน frame data type errors
+- **Attribute-Safe**: ป้องกัน attribute access errors
 
-Architecture นี้ทำให้ระบบมีความยืดหยุ่นและสามารถพัฒนาเพิ่มเติมได้อย่างมีประสิทธิภาพ พร้อมกับความชัดเจนในการจัดการ dependencies และ imports
+Architecture นี้ทำให้ระบบมีความยืดหยุ่นและสามารถพัฒนาเพิ่มเติมได้อย่างมีประสิทธิภาพ พร้อมกับความชัดเจนในการจัดการ dependencies และ imports รวมถึงการจัดการ startup sequence และ error prevention

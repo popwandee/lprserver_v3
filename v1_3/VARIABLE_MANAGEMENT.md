@@ -400,19 +400,265 @@ def test_camera_config_variables():
     assert 0.0 <= test_config['contrast'] <= 2.0
 ```
 
-## 10. Documentation Maintenance
+## 10. Frame Data Variables
 
-### 10.1 Change Log
+### 10.1 Frame Data Structure (Camera Handler Output)
+```json
+{
+    "frame": "numpy.ndarray",
+    "metadata": {
+        "width": 1920,
+        "height": 1080,
+        "channels": 3,
+        "format": "BGR",
+        "timestamp": 1691234567.123
+    },
+    "capture_info": {
+        "exposure_time": 33333,
+        "analog_gain": 1.0,
+        "digital_gain": 1.0
+    }
+}
+```
+
+### 10.2 Frame Processing Variables (Detection Pipeline)
+```python
+# Backend frame processing variables
+frame_validation = {
+    'is_valid': True,
+    'frame_type': 'numpy.ndarray',
+    'frame_shape': [1080, 1920, 3],
+    'frame_size': 6220800,
+    'validation_errors': []
+}
+
+# Detection processing variables
+detection_input = {
+    'original_frame': 'numpy.ndarray',
+    'enhanced_frame': 'numpy.ndarray', 
+    'preprocessing_applied': ['resize', 'normalize'],
+    'model_input_shape': [640, 640, 3]
+}
+```
+
+### 10.3 Auto-Startup Configuration Variables
+```python
+# Backend configuration variables
+auto_startup_config = {
+    'auto_start_camera': True,
+    'auto_start_streaming': True,
+    'auto_start_detection': True,
+    'startup_delay': 5.0,
+    'startup_sequence': ['camera', 'streaming', 'detection']
+}
+
+# Service status variables
+service_status = {
+    'camera_manager': {
+        'initialized': True,
+        'auto_start_enabled': True,
+        'auto_streaming_enabled': True
+    },
+    'detection_manager': {
+        'initialized': True,
+        'auto_start_enabled': True,
+        'active': False
+    }
+}
+```
+
+### 10.4 Frontend Auto-Startup Variables
+```javascript
+// Auto-startup status display
+const autoStartupStatus = {
+    cameraAutoStart: true,
+    streamingAutoStart: true,
+    detectionAutoStart: true,
+    startupDelay: 5.0,
+    currentPhase: 'camera_starting'  // 'camera_starting', 'streaming_starting', 'detection_starting', 'completed'
+};
+
+// Service initialization tracking
+const serviceInitialization = {
+    cameraManager: {
+        initialized: false,
+        autoStartEnabled: true,
+        status: 'initializing'  // 'initializing', 'ready', 'error'
+    },
+    detectionManager: {
+        initialized: false,
+        autoStartEnabled: true,
+        status: 'waiting'  // 'waiting', 'initializing', 'ready', 'error'
+    }
+};
+```
+
+## 11. Error Prevention Variables
+
+### 11.1 Attribute Safety Variables
+```python
+# Backend safe attribute access
+safe_attributes = {
+    'camera_manager': {
+        'required': ['initialized', 'streaming'],
+        'optional': ['auto_start_enabled', 'auto_streaming_enabled']
+    },
+    'detection_manager': {
+        'required': ['active', 'initialized'],
+        'optional': ['auto_start_enabled', 'detection_count']
+    }
+}
+
+# Error tracking variables
+attribute_errors = {
+    'missing_attributes': [],
+    'type_errors': [],
+    'access_errors': []
+}
+```
+
+### 11.2 Frame Validation Error Variables
+```python
+# Frame validation error tracking
+frame_errors = {
+    'invalid_type': 'Expected numpy.ndarray, got dict',
+    'empty_frame': 'Frame size is 0',
+    'missing_frame_key': 'Dict missing frame key',
+    'validation_failed': 'Frame validation failed'
+}
+
+# Error response format
+frame_error_response = {
+    'success': False,
+    'error': 'Frame validation failed',
+    'error_type': 'FRAME_VALIDATION_ERROR',
+    'details': {
+        'expected_type': 'numpy.ndarray',
+        'received_type': 'dict',
+        'frame_size': 0
+    },
+    'timestamp': '2025-08-09T22:00:00.000Z'
+}
+```
+
+### 11.3 Frontend Error Display Variables
+```javascript
+// Error state management
+const errorStates = {
+    frameValidation: {
+        hasError: false,
+        errorType: null,  // 'invalid_type', 'empty_frame', 'missing_key'
+        errorMessage: '',
+        lastOccurred: null
+    },
+    attributeAccess: {
+        hasError: false,
+        missingAttribute: '',
+        serviceName: '',
+        errorMessage: ''
+    },
+    autoStartup: {
+        hasError: false,
+        failedPhase: '',  // 'camera', 'streaming', 'detection'
+        errorMessage: '',
+        retryAttempts: 0
+    }
+};
+```
+
+## 12. Detection Pipeline Variables
+
+### 12.1 Detection Results Variables
+```python
+# Backend detection results
+detection_results = {
+    'vehicle_detections': [
+        {
+            'bbox': [x1, y1, x2, y2],
+            'confidence': 0.95,
+            'class_id': 2,
+            'class_name': 'car'
+        }
+    ],
+    'license_plate_detections': [
+        {
+            'bbox': [x1, y1, x2, y2],
+            'confidence': 0.87,
+            'plate_text': 'ABC-123',
+            'ocr_confidence': 0.92
+        }
+    ],
+    'processing_time': 0.045,
+    'frame_timestamp': '2025-08-09T22:00:00.123Z',
+    'model_versions': {
+        'vehicle_model': 'yolov5s_vehicle_v1',
+        'plate_model': 'yolov5s_plate_v1',
+        'ocr_model': 'easyocr_v1'
+    }
+}
+```
+
+### 12.2 Frontend Detection Display Variables
+```javascript
+// Detection visualization variables
+const detectionDisplay = {
+    vehicleDetections: [
+        {
+            bbox: [100, 150, 300, 400],
+            confidence: 95,
+            className: 'car',
+            displayColor: '#00ff00'
+        }
+    ],
+    licensePlateDetections: [
+        {
+            bbox: [120, 180, 200, 220],
+            confidence: 87,
+            plateText: 'ABC-123',
+            ocrConfidence: 92,
+            displayColor: '#ff0000'
+        }
+    ],
+    processingStats: {
+        processingTime: 45,  // milliseconds
+        averageFps: 22.1,
+        totalDetections: 156,
+        lastUpdate: '2025-08-09T22:00:00.123Z'
+    }
+};
+```
+
+## 13. Documentation Maintenance
+
+### 13.1 Change Log
 - 2025-08-08: Initial variable management standards
 - 2025-08-08: Added WebSocket event variables
 - 2025-08-08: Added validation rules
+- 2025-08-09: Added frame data structure variables
+- 2025-08-09: Added auto-startup configuration variables
+- 2025-08-09: Added error prevention variables
+- 2025-08-09: Added detection pipeline variables
 
-### 10.2 Review Process
+### 13.2 Review Process
 1. All variable changes must be documented
 2. Frontend and backend teams must review changes
 3. Update UML diagrams when architecture changes
 4. Test all variable interactions before deployment
+5. Validate frame data structures after camera changes
+6. Test auto-startup sequence after service modifications
+
+### 13.3 Frame Data Testing Requirements
+```python
+# Required frame data tests
+frame_tests = [
+    'test_camera_handler_returns_dict',
+    'test_camera_manager_extracts_numpy_array',
+    'test_detection_processor_validates_frame_type',
+    'test_frame_validation_handles_dict_input',
+    'test_frame_validation_rejects_invalid_types'
+]
+```
 
 ---
 
-**Note:** เอกสารนี้ควรได้รับการอัพเดตเมื่อมีการเปลี่ยนแปลงโครงสร้างหรือตัวแปรใหม่ เพื่อรักษามาตรฐานการพัฒนาร่วมกัน
+**Note:** เอกสารนี้ควรได้รับการอัพเดตเมื่อมีการเปลี่ยนแปลงโครงสร้างหรือตัวแปรใหม่ เพื่อรักษามาตรฐานการพัฒนาร่วมกัน รวมถึงการเปลี่ยนแปลงในโครงสร้างข้อมูล frame และ auto-startup sequence
