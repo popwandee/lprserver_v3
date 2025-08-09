@@ -386,8 +386,8 @@ def detection_config():
             
             # Update auto-start setting
             if 'auto_start' in data:
-                detection_manager.auto_start = bool(data['auto_start'])
-                logger.info(f"Auto-start set to {detection_manager.auto_start}")
+                detection_manager.auto_start_enabled = bool(data['auto_start'])
+                logger.info(f"Auto-start set to {detection_manager.auto_start_enabled}")
             
             return jsonify({
                 'success': True,

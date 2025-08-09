@@ -249,8 +249,25 @@ aicamera/                           # root of project
 ├── venv_hailo/                    # virtual environment for this project
 ├── gunicorn_config.py             # gunicorn configuration script
 ├── setup_env.sh                   # set up Hailo environment
-└── requirements.txt               # dependencies
+└── requirements.txt               # dependencies 
 ```
+### Working Directory
+v1_3/
+├── docs/
+│     └── class_diagram.puml      # Class Diagram
+│     └── component_diagram.puml      # Component Diagram
+│     └── variable_conflict_prevention_guide.mk      # Guildline to prevent variable conflict
+│     └── variable_mapping_diagram.puml      # variable mapping backend and frontend
+├── scripts/
+├── src/                #Core Components Structure
+├── tmp/                # Tempolary script and Testing File
+├── __init__.py
+├── .evn.production    # Sensitive Environment configuration
+├── ARCHITECTURE.md                  # Configuration management
+├── CONTEXT_ENGINEERING.md          # Context to communicate with AI
+├── README.md                       # About the version
+├── requirements.txt                    # Version Dependencies
+└── VARIABLE_MANAGEMENT.md      # Rules to manage variable
 
 ### 4.2 Core Components Structure
 

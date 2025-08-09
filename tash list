@@ -1,5 +1,0 @@
-[33mf5cf5f4[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m basic camera module complete
-[33m9ca9a49[m feat: Complete AI Camera v1.3 setup with Flask, Gunicorn, Nginx, and systemd
-[33mccd937b[m checkpoint before checking out cursor/reorder-startup-add-shutdown-menu-and-test-7b27
-[33m9bf490a[m Merge pull request #1 from popwandee/cursor/fix-bugs-in-v2-22b2
-[33m7aa033d[m Merge branch 'main' into cursor/fix-bugs-in-v2-22b2

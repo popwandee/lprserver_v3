@@ -19,30 +19,61 @@ AI Camera v1.3 ใช้:
 
 ### 1.2 Directory Structure
 ```
-/home/camuser/aicamera/v1_3/
+aicamera/                           # root of project
+├── assets/                         # image and video for test detection inference
+├── doc/                           # document for development
+├── log/                           # system log
+├── postprocessors/                # example of postprocess
+├── resources/                     # Hailo Execute File .hef
+├── systemd_service/               # systemd service files
+├── tests/                         # ML, Camera, Models Detection testing scripts
+├── v1_3/                          # working directory for this version
+├── venv_hailo/                    # virtual environment for this project
+├── gunicorn_config.py             # gunicorn configuration script
+├── setup_env.sh                   # set up Hailo environment
+└── requirements.txt               # dependencies
+
+### Working Directory
+v1_3/
+├── docs/
+│     └── class_diagram.puml      # Class Diagram
+│     └── component_diagram.puml      # Component Diagram
+│     └── variable_conflict_prevention_guide.mk      # Guildline to prevent variable conflict
+│     └── variable_mapping_diagram.puml      # variable mapping backend and frontend
+├── scripts/
+├── src/                #Core Components Structure
+├── tmp/                # Tempolary script and Testing File
+├── __init__.py
+├── .evn.production    # Sensitive Environment configuration
+├── ARCHITECTURE.md                  # Configuration management
+├── CONTEXT_ENGINEERING.md          # Context to communicate with AI
+├── README.md                       # About the version
+├── requirements.txt                    # Version Dependencies
+└── VARIABLE_MANAGEMENT.md      # Rules to manage variable
+
+/home/camuser/aicamera/v1_3/src/
 ├── src/
-│   ├── app.py                 # Flask application entry point
-│   ├── wsgi.py                # WSGI entry point
-│   ├── core/                  # Core framework
-│   │   ├── dependency_container.py
-│   │   ├── config.py
-│   │   └── utils/
-│   │       ├── import_helper.py
-│   │       └── logging_config.py
-│   ├── components/            # Hardware/Low-level components
-│   │   ├── camera_handler.py
-│   │   ├── detection_processor.py
-│   │   └── database_manager.py
-│   ├── services/              # Business logic services
-│   │   ├── camera_manager.py
-│   │   ├── detection_manager.py
-│   │   └── video_streaming.py
-│   └── web/                   # Web interface layer
-│       ├── blueprints/        # Flask Blueprints
-│       ├── templates/         # Jinja2 templates
-│       └── static/            # CSS, JS, Images
-├── gunicorn_config.py         # Gunicorn configuration
-└── systemd_service/           # Systemd service files
+   ├── app.py                 # Flask application entry point
+   ├── wsgi.py                # WSGI entry point
+   ├── core/                  # Core framework
+   │   ├── dependency_container.py
+   │   ├── config.py
+   │   └── utils/
+   │       ├── import_helper.py
+   │       └── logging_config.py
+   ├── components/            # Hardware/Low-level components
+   │   ├── camera_handler.py
+   │   ├── detection_processor.py
+   │   └── database_manager.py
+   ├── services/              # Business logic services
+   │   ├── camera_manager.py
+   │   ├── detection_manager.py
+   │   └── video_streaming.py
+   └── web/                   # Web interface layer
+       ├── blueprints/        # Flask Blueprints
+       ├── templates/         # Jinja2 templates
+       └── static/            # CSS, JS, Images
+
 ```
 
 ## 2. Critical Requirements for AI Code Generation

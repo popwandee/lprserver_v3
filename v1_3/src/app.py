@@ -27,6 +27,72 @@ setup_import_paths()
 from v1_3.src.core.utils.logging_config import setup_logging, get_logger
 from v1_3.src.core.dependency_container import get_container, get_service
 from v1_3.src.web.blueprints import register_blueprints
+from v1_3.src.core.config import AUTO_START_CAMERA, AUTO_START_DETECTION, STARTUP_DELAY
+
+
+def _initialize_services(logger):
+    """
+    Initialize services in the correct order with auto-startup sequence.
+    
+    Sequence:
+    1. Initialize camera manager (auto-starts camera if enabled)
+    2. Initialize detection manager (auto-starts detection if enabled)
+    
+    Args:
+        logger: Logger instance
+    """
+    logger.info("🚀 Starting service initialization sequence...")
+    
+    # Step 1: Initialize Camera Manager (will auto-start camera and streaming)
+    try:
+        logger.info("📸 Step 1: Initializing Camera Manager...")
+        camera_manager = get_service('camera_manager')
+        if camera_manager:
+            success = camera_manager.initialize()
+            if success:
+                logger.info("✅ Camera Manager initialized successfully")
+                if AUTO_START_CAMERA:
+                    logger.info("🎥 Camera auto-start enabled - camera should be running")
+            else:
+                logger.error("❌ Camera Manager initialization failed")
+                return False
+        else:
+            logger.error("❌ Camera Manager service not available")
+            return False
+    except Exception as e:
+        logger.error(f"❌ Error initializing Camera Manager: {e}")
+        return False
+    
+    # Step 2: Initialize Detection Manager (will auto-start detection if enabled)
+    try:
+        logger.info("🤖 Step 2: Initializing Detection Manager...")
+        detection_manager = get_service('detection_manager')
+        if detection_manager:
+            success = detection_manager.initialize()
+            if success:
+                logger.info("✅ Detection Manager initialized successfully")
+                if AUTO_START_DETECTION:
+                    logger.info("🔍 Detection auto-start enabled - detection should be running")
+            else:
+                logger.error("❌ Detection Manager initialization failed")
+                # Don't return False here - camera can work without detection
+        else:
+            logger.warning("⚠️  Detection Manager service not available")
+    except Exception as e:
+        logger.error(f"❌ Error initializing Detection Manager: {e}")
+        # Don't return False here - camera can work without detection
+    
+    # Step 3: Initialize other services (health monitor, etc.)
+    try:
+        logger.info("🏥 Step 3: Initializing other services...")
+        health_monitor = get_service('health_monitor')
+        if health_monitor:
+            logger.info("✅ Health Monitor available")
+    except Exception as e:
+        logger.warning(f"⚠️  Other services initialization: {e}")
+    
+    logger.info("🎉 Service initialization sequence completed!")
+    return True
 
 
 def create_app():
@@ -65,14 +131,11 @@ def create_app():
     # Register blueprints using existing structure
     register_blueprints(app, socketio)
     
-    # Initialize camera service
+    # Initialize services with auto-startup sequence
     try:
-        camera_manager = get_service('camera_manager')
-        if camera_manager:
-            camera_manager.initialize()
-            logger.info("Camera manager initialized")
+        _initialize_services(logger)
     except Exception as e:
-        logger.error(f"Failed to initialize camera manager: {e}")
+        logger.error(f"Failed to initialize services: {e}")
     
     @app.route('/health')
     def health():

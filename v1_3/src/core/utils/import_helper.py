@@ -30,8 +30,10 @@ def setup_import_paths(base_path: Optional[str] = None) -> None:
         # Get the project root directory (aicamera/)
         current_file = Path(__file__)
         project_root = current_file.parent.parent.parent.parent  # Go up from utils/core/src/v1_3
+        logger.info(f"Auto-detected project root: {project_root.absolute()}")
     else:
         project_root = Path(base_path)
+        logger.info(f"Using provided project root: {project_root.absolute()}")
     
     # Add project root to sys.path for absolute imports
     project_root_str = str(project_root.absolute())
