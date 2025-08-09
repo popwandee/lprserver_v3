@@ -269,6 +269,31 @@ class CameraManager:
             self.logger.error(f"Error getting available settings: {e}")
             return {}
     
+    def capture_frame(self):
+        """
+        Capture a single frame from the camera for detection processing.
+        
+        Returns:
+            numpy.ndarray or None: Camera frame as numpy array, None if capture failed
+        """
+        try:
+            if not self.camera_handler or not self.camera_handler.initialized:
+                self.logger.warning("Cannot capture frame - camera not initialized")
+                return None
+            
+            # Capture frame from camera handler
+            frame_data = self.camera_handler.capture_frame()
+            if frame_data is not None:
+                self.logger.debug("Frame captured successfully for detection")
+                return frame_data
+            else:
+                self.logger.debug("No frame available from camera")
+                return None
+                
+        except Exception as e:
+            self.logger.error(f"Error capturing frame: {e}")
+            return None
+    
     def get_configuration(self):
         """
         Get current camera configuration.
