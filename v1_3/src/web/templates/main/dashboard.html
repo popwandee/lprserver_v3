@@ -1,323 +1,416 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Camera v1.3 - Dashboard</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        .header {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        .header h1 {
-            color: #2c3e50;
-            margin: 0;
-        }
-        .status-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-        .status-card {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .status-card h3 {
-            color: #2c3e50;
-            margin-top: 0;
-            border-bottom: 2px solid #3498db;
-            padding-bottom: 10px;
-        }
-        .status-item {
-            display: flex;
-            justify-content: space-between;
-            margin: 10px 0;
-            padding: 5px 0;
-        }
-        .status-label {
-            font-weight: bold;
-            color: #555;
-        }
-        .status-value {
-            color: #2c3e50;
-        }
-        .status-ok {
-            color: #27ae60;
-        }
-        .status-error {
-            color: #e74c3c;
-        }
-        .status-warning {
-            color: #f39c12;
-        }
-        .control-panel {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        .control-panel h3 {
-            color: #2c3e50;
-            margin-top: 0;
-            border-bottom: 2px solid #3498db;
-            padding-bottom: 10px;
-        }
-        .button-group {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
-        }
-        .btn-primary {
-            background: #3498db;
-            color: white;
-        }
-        .btn-success {
-            background: #27ae60;
-            color: white;
-        }
-        .btn-warning {
-            background: #f39c12;
-            color: white;
-        }
-        .btn-danger {
-            background: #e74c3c;
-            color: white;
-        }
-        .btn:hover {
-            opacity: 0.8;
-        }
-        .video-container {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        .video-feed {
-            max-width: 100%;
-            height: auto;
-            border-radius: 5px;
-        }
-        .loading {
-            color: #666;
-            font-style: italic;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>AI Camera v1.3 Dashboard</h1>
-            <p>Real-time monitoring and control system</p>
+{% extends "base.html" %}
+
+{% set active_page = "main" %}
+
+{% block title %}System Dashboard{% endblock %}
+
+{% block additional_css %}
+<style>
+    .status-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .status-item {
+        display: flex;
+        justify-content: space-between;
+        margin: 10px 0;
+        padding: 5px 0;
+    }
+    
+    .status-label {
+        font-weight: bold;
+        color: #555;
+    }
+    
+    .status-value {
+        color: #2c3e50;
+    }
+    
+    .status-ok {
+        color: #27ae60;
+    }
+    
+    .status-error {
+        color: #e74c3c;
+    }
+    
+    .status-warning {
+        color: #f39c12;
+    }
+    
+    .control-panel {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .button-group {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    
+    .video-container {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+    
+    .video-feed {
+        max-width: 100%;
+        height: auto;
+        border-radius: 5px;
+    }
+    
+    .loading {
+        color: #666;
+        font-style: italic;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 text-center">
+        <h1>AI Camera v1.3 Dashboard</h1>
+        <p class="text-muted">Real-time monitoring and control system</p>
+    </div>
+</div>
+
+<div class="status-grid">
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">System Status</h5>
         </div>
-
-        <div class="status-grid">
-            <div class="status-card">
-                <h3>System Status</h3>
-                <div class="status-item">
-                    <span class="status-label">Overall Health:</span>
-                    <span class="status-value status-ok">Healthy</span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label">Uptime:</span>
-                    <span class="status-value">2 hours 15 minutes</span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label">Version:</span>
-                    <span class="status-value">1.3</span>
-                </div>
+        <div class="card-body">
+            <div class="status-item">
+                <span class="status-label">Overall Health:</span>
+                <span class="status-value status-ok">Healthy</span>
             </div>
-
-            <div class="status-card">
-                <h3>Camera Status</h3>
-                <div class="status-item">
-                    <span class="status-label">Camera:</span>
-                    <span class="status-value status-ok">Active</span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label">Resolution:</span>
-                    <span class="status-value">1280x960</span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label">FPS:</span>
-                    <span class="status-value">30</span>
-                </div>
+            <div class="status-item">
+                <span class="status-label">Uptime:</span>
+                <span class="status-value" id="system-uptime">Loading...</span>
             </div>
-
-            <div class="status-card">
-                <h3>Detection Status</h3>
-                <div class="status-item">
-                    <span class="status-label">Detection Engine:</span>
-                    <span class="status-value status-ok">Running</span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label">Active Model:</span>
-                    <span class="status-value">COCO</span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label">Detections:</span>
-                    <span class="status-value">0</span>
-                </div>
+            <div class="status-item">
+                <span class="status-label">Version:</span>
+                <span class="status-value">1.3</span>
             </div>
-
-            <div class="status-card">
-                <h3>System Resources</h3>
-                <div class="status-item">
-                    <span class="status-label">CPU Usage:</span>
-                    <span class="status-value">15%</span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label">Memory Usage:</span>
-                    <span class="status-value">45%</span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label">Disk Usage:</span>
-                    <span class="status-value">30%</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="control-panel">
-            <h3>Control Panel</h3>
-            <div class="button-group">
-                <button class="btn btn-primary" onclick="startCamera()">Start Camera</button>
-                <button class="btn btn-warning" onclick="stopCamera()">Stop Camera</button>
-                <button class="btn btn-success" onclick="startDetection()">Start Detection</button>
-                <button class="btn btn-danger" onclick="stopDetection()">Stop Detection</button>
-                <button class="btn btn-primary" onclick="refreshStatus()">Refresh Status</button>
-                <button class="btn btn-warning" onclick="restartSystem()">Restart System</button>
-            </div>
-        </div>
-
-        <div class="video-container">
-            <h3>Live Video Feed</h3>
-            <img src="/streaming/video_feed" alt="Live Video Feed" class="video-feed" id="videoFeed">
-            <p class="loading">Loading video feed...</p>
         </div>
     </div>
 
-    <script>
-        // Simple JavaScript for basic functionality
-        function startCamera() {
-            fetch('/camera/start', {method: 'POST'})
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('Camera started successfully');
-                        refreshStatus();
-                    } else {
-                        alert('Failed to start camera: ' + data.error);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error starting camera');
-                });
-        }
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Camera Status</h5>
+        </div>
+        <div class="card-body">
+            <div class="status-item">
+                <span class="status-label">Camera:</span>
+                <span class="status-value" id="camera-status-main">Loading...</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Resolution:</span>
+                <span class="status-value" id="camera-resolution-main">Loading...</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">FPS:</span>
+                <span class="status-value" id="camera-fps-main">Loading...</span>
+            </div>
+        </div>
+    </div>
 
-        function stopCamera() {
-            fetch('/camera/stop', {method: 'POST'})
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('Camera stopped successfully');
-                        refreshStatus();
-                    } else {
-                        alert('Failed to stop camera: ' + data.error);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error stopping camera');
-                });
-        }
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Detection Status</h5>
+        </div>
+        <div class="card-body">
+            <div class="status-item">
+                <span class="status-label">Detection Engine:</span>
+                <span class="status-value" id="detection-engine-status">Loading...</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Models Loaded:</span>
+                <span class="status-value" id="models-loaded-status">Loading...</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Total Detections:</span>
+                <span class="status-value" id="total-detections">Loading...</span>
+            </div>
+        </div>
+    </div>
 
-        function startDetection() {
-            fetch('/detection/start', {method: 'POST'})
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('Detection started successfully');
-                        refreshStatus();
-                    } else {
-                        alert('Failed to start detection: ' + data.error);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error starting detection');
-                });
-        }
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">System Resources</h5>
+        </div>
+        <div class="card-body">
+            <div class="status-item">
+                <span class="status-label">CPU Usage:</span>
+                <span class="status-value" id="cpu-usage">Loading...</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Memory Usage:</span>
+                <span class="status-value" id="memory-usage">Loading...</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Disk Usage:</span>
+                <span class="status-value" id="disk-usage">Loading...</span>
+            </div>
+        </div>
+    </div>
+</div>
 
-        function stopDetection() {
-            fetch('/detection/stop', {method: 'POST'})
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('Detection stopped successfully');
-                        refreshStatus();
-                    } else {
-                        alert('Failed to stop detection: ' + data.error);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error stopping detection');
-                });
-        }
+<div class="control-panel">
+    <h3><i class="fas fa-cog"></i> Control Panel</h3>
+    <div class="button-group">
+        <button class="btn btn-success" onclick="startCamera()">
+            <i class="fas fa-play"></i> Start Camera
+        </button>
+        <button class="btn btn-warning" onclick="stopCamera()">
+            <i class="fas fa-stop"></i> Stop Camera
+        </button>
+        <button class="btn btn-primary" onclick="startDetection()">
+            <i class="fas fa-brain"></i> Start Detection
+        </button>
+        <button class="btn btn-danger" onclick="stopDetection()">
+            <i class="fas fa-pause"></i> Stop Detection
+        </button>
+        <button class="btn btn-info" onclick="refreshStatus()">
+            <i class="fas fa-sync"></i> Refresh Status
+        </button>
+        <button class="btn btn-secondary" onclick="restartSystem()">
+            <i class="fas fa-redo"></i> Restart System
+        </button>
+    </div>
+</div>
 
-        function refreshStatus() {
-            location.reload();
-        }
+<div class="video-container">
+    <h3><i class="fas fa-video"></i> Live Video Feed</h3>
+    <img src="/camera/video_feed" alt="Live Video Feed" class="video-feed" id="videoFeed">
+    <p class="loading">Loading video feed...</p>
+</div>
+{% endblock %}
 
-        function restartSystem() {
-            if (confirm('Are you sure you want to restart the system?')) {
-                fetch('/restart', {method: 'POST'})
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            alert('System restart initiated');
-                        } else {
-                            alert('Failed to restart system: ' + data.error);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Error restarting system');
-                    });
+{% block additional_js %}
+<script>
+// Main dashboard JavaScript functionality
+const MainDashboard = {
+    init: function() {
+        this.updateStatus();
+        this.startAutoRefresh();
+        console.log('Main Dashboard initialized');
+    },
+
+    updateStatus: function() {
+        // Update camera status
+        AICameraUtils.apiRequest('/camera/status')
+            .then(data => {
+                if (data.success) {
+                    this.updateCameraStatus(data.status);
+                }
+            })
+            .catch(error => {
+                console.error('Failed to fetch camera status:', error);
+            });
+
+        // Update detection status
+        AICameraUtils.apiRequest('/detection/status')
+            .then(data => {
+                if (data.success) {
+                    this.updateDetectionStatus(data.status);
+                }
+            })
+            .catch(error => {
+                console.error('Failed to fetch detection status:', error);
+            });
+
+        // Update system health
+        AICameraUtils.apiRequest('/health')
+            .then(data => {
+                if (data.success) {
+                    this.updateSystemHealth(data);
+                }
+            })
+            .catch(error => {
+                console.error('Failed to fetch system health:', error);
+            });
+    },
+
+    updateCameraStatus: function(status) {
+        const statusElement = document.getElementById('camera-status-main');
+        const resolutionElement = document.getElementById('camera-resolution-main');
+        const fpsElement = document.getElementById('camera-fps-main');
+
+        if (statusElement) {
+            if (status.streaming) {
+                statusElement.textContent = 'Active';
+                statusElement.className = 'status-value status-ok';
+            } else if (status.initialized) {
+                statusElement.textContent = 'Ready';
+                statusElement.className = 'status-value status-warning';
+            } else {
+                statusElement.textContent = 'Inactive';
+                statusElement.className = 'status-value status-error';
             }
         }
 
+        if (resolutionElement && status.config && status.config.resolution) {
+            resolutionElement.textContent = `${status.config.resolution[0]}x${status.config.resolution[1]}`;
+        }
+
+        if (fpsElement && status.config && status.config.framerate) {
+            fpsElement.textContent = status.config.framerate;
+        }
+    },
+
+    updateDetectionStatus: function(status) {
+        const engineElement = document.getElementById('detection-engine-status');
+        const modelsElement = document.getElementById('models-loaded-status');
+
+        if (engineElement) {
+            if (status.service_running) {
+                engineElement.textContent = 'Running';
+                engineElement.className = 'status-value status-ok';
+            } else {
+                engineElement.textContent = 'Stopped';
+                engineElement.className = 'status-value status-error';
+            }
+        }
+
+        if (modelsElement) {
+            const processorStatus = status.detection_processor_status || {};
+            if (processorStatus.models_loaded) {
+                modelsElement.textContent = 'Loaded';
+                modelsElement.className = 'status-value status-ok';
+            } else {
+                modelsElement.textContent = 'Not Loaded';
+                modelsElement.className = 'status-value status-error';
+            }
+        }
+    },
+
+    updateSystemHealth: function(healthData) {
+        // Update system resources if available
+        if (healthData.system_resources) {
+            const resources = healthData.system_resources;
+            
+            const cpuElement = document.getElementById('cpu-usage');
+            if (cpuElement && resources.cpu_percent !== undefined) {
+                cpuElement.textContent = `${resources.cpu_percent}%`;
+            }
+
+            const memoryElement = document.getElementById('memory-usage');
+            if (memoryElement && resources.memory_percent !== undefined) {
+                memoryElement.textContent = `${resources.memory_percent}%`;
+            }
+
+            const diskElement = document.getElementById('disk-usage');
+            if (diskElement && resources.disk_percent !== undefined) {
+                diskElement.textContent = `${resources.disk_percent}%`;
+            }
+        }
+    },
+
+    startAutoRefresh: function() {
         // Auto-refresh status every 30 seconds
-        setInterval(refreshStatus, 30000);
-    </script>
-</body>
-</html>
+        setInterval(() => {
+            this.updateStatus();
+        }, 30000);
+    }
+};
+
+// Control functions
+function startCamera() {
+    AICameraUtils.apiRequest('/camera/start', {method: 'POST'})
+        .then(data => {
+            if (data.success) {
+                AICameraUtils.showToast('Camera started successfully', 'success');
+                MainDashboard.updateStatus();
+            } else {
+                throw new Error(data.error || 'Failed to start camera');
+            }
+        })
+        .catch(error => {
+            AICameraUtils.showToast('Failed to start camera: ' + error.message, 'error');
+        });
+}
+
+function stopCamera() {
+    AICameraUtils.apiRequest('/camera/stop', {method: 'POST'})
+        .then(data => {
+            if (data.success) {
+                AICameraUtils.showToast('Camera stopped successfully', 'success');
+                MainDashboard.updateStatus();
+            } else {
+                throw new Error(data.error || 'Failed to stop camera');
+            }
+        })
+        .catch(error => {
+            AICameraUtils.showToast('Failed to stop camera: ' + error.message, 'error');
+        });
+}
+
+function startDetection() {
+    AICameraUtils.apiRequest('/detection/start', {method: 'POST'})
+        .then(data => {
+            if (data.success) {
+                AICameraUtils.showToast('Detection started successfully', 'success');
+                MainDashboard.updateStatus();
+            } else {
+                throw new Error(data.error || 'Failed to start detection');
+            }
+        })
+        .catch(error => {
+            AICameraUtils.showToast('Failed to start detection: ' + error.message, 'error');
+        });
+}
+
+function stopDetection() {
+    AICameraUtils.apiRequest('/detection/stop', {method: 'POST'})
+        .then(data => {
+            if (data.success) {
+                AICameraUtils.showToast('Detection stopped successfully', 'success');
+                MainDashboard.updateStatus();
+            } else {
+                throw new Error(data.error || 'Failed to stop detection');
+            }
+        })
+        .catch(error => {
+            AICameraUtils.showToast('Failed to stop detection: ' + error.message, 'error');
+        });
+}
+
+function refreshStatus() {
+    MainDashboard.updateStatus();
+    AICameraUtils.showToast('Status refreshed', 'info');
+}
+
+function restartSystem() {
+    if (confirm('Are you sure you want to restart the system?')) {
+        AICameraUtils.apiRequest('/restart', {method: 'POST'})
+            .then(data => {
+                if (data.success) {
+                    AICameraUtils.showToast('System restart initiated', 'info');
+                } else {
+                    throw new Error(data.error || 'Failed to restart system');
+                }
+            })
+            .catch(error => {
+                AICameraUtils.showToast('Failed to restart system: ' + error.message, 'error');
+            });
+    }
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    MainDashboard.init();
+    console.log('Main Dashboard JavaScript loaded');
+});
+</script>
+{% endblock %}

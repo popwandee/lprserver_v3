@@ -1,0 +1,161 @@
+@startuml AI_Camera_v1.3_Updated_Component_Diagram
+
+!theme plain
+skinparam componentStyle uml2
+skinparam packageFontSize 12
+skinparam componentFontSize 10
+
+package "Hardware Layer" {
+    [Raspberry Pi Camera] as Camera
+    [Hailo AI Accelerator] as Hailo
+}
+
+package "Component Layer" {
+    component "CameraHandler" as CH {
+        port "capture_frame()" as CH_capture
+        port "initialize_camera()" as CH_init
+        port "start_streaming()" as CH_stream
+        note bottom : Returns Dict with\n'frame': numpy.ndarray\n'metadata': dict\n'timestamp': float
+    }
+    
+    component "DetectionProcessor" as DP {
+        port "validate_and_enhance_frame()" as DP_validate
+        port "detect_vehicles()" as DP_vehicle
+        port "detect_license_plates()" as DP_plate
+        port "process_ocr()" as DP_ocr
+        note bottom : Handles Dict input\nValidates numpy.ndarray\nType-safe processing
+    }
+}
+
+package "Service Layer" {
+    component "CameraManager" as CM {
+        port "capture_frame()" as CM_capture
+        port "initialize()" as CM_init
+        port "_auto_start_camera()" as CM_auto
+        note bottom : Extracts numpy.ndarray\nfrom Dict response\nAuto-startup support
+    }
+    
+    component "DetectionManager" as DM {
+        port "process_frame_from_camera()" as DM_process
+        port "initialize()" as DM_init
+        port "_auto_start_detection()" as DM_auto
+        port "_is_camera_ready()" as DM_ready
+        note bottom : Safe attribute access\nauto_start_enabled\nCamera dependency check
+    }
+}
+
+package "Web Layer" {
+    component "Flask Application" as App {
+        port "_initialize_services()" as App_init
+        note bottom : Sequential service\ninitialization\nAuto-startup orchestration
+    }
+    
+    component "Camera Blueprint" as CB {
+        port "get_camera_status()" as CB_status
+        port "start_camera()" as CB_start
+        port "capture_frame()" as CB_capture
+    }
+    
+    component "Detection Blueprint" as DB {
+        port "get_detection_status()" as DB_status
+        port "start_detection()" as DB_start
+        port "configure_detection()" as DB_config
+        note bottom : Safe configuration\nupdates with correct\nattribute names
+    }
+    
+    component "WebSocket Handler" as WS {
+        port "camera_events" as WS_camera
+        port "detection_events" as WS_detection
+    }
+}
+
+package "Core Framework" {
+    component "DependencyContainer" as DC {
+        port "get_service()" as DC_get
+        port "register_service()" as DC_reg
+        note bottom : Manages all service\ninstances and dependencies
+    }
+    
+    component "Configuration" as Config {
+        port "AUTO_START_*" as Config_auto
+        port "MODEL_PATHS" as Config_models
+        port "BASE_DIR" as Config_base
+        note bottom : Auto-startup settings\nModel configurations\nPath management
+    }
+    
+    component "Import Helper" as IH {
+        port "setup_import_paths()" as IH_setup
+        port "validate_imports()" as IH_validate
+        note bottom : Absolute import\npath management
+    }
+}
+
+' Hardware Connections
+Camera --> CH_init
+Camera --> CH_capture
+Camera --> CH_stream
+Hailo --> DP_vehicle
+Hailo --> DP_plate
+Hailo --> DP_ocr
+
+' Component to Service Connections
+CH_capture --> CM_capture : Dict{"frame": np.ndarray}
+CH_init --> CM_init
+DP_validate --> DM_process : numpy.ndarray
+DP_vehicle --> DM_process
+DP_plate --> DM_process
+DP_ocr --> DM_process
+
+' Service Layer Internal
+CM_capture --> DM_process : numpy.ndarray
+CM_init --> CM_auto
+DM_init --> DM_auto
+DM_ready --> DM_process
+
+' Service to Web Connections
+CM --> CB : via DI Container
+DM --> DB : via DI Container
+CB --> WS_camera
+DB --> WS_detection
+
+' Core Framework Connections
+DC_get --> CM
+DC_get --> DM
+DC_get --> CH
+DC_get --> DP
+Config_auto --> CM
+Config_auto --> DM
+Config_models --> DP
+Config_base --> Config
+IH_setup --> DC
+
+' Application Flow
+App_init --> CM : 1. Initialize Camera Manager
+CM_auto --> CM : 2. Auto-start camera if configured
+App_init --> DM : 3. Initialize Detection Manager  
+DM_auto --> DM : 4. Auto-start detection if configured
+
+' Frame Data Flow
+note "Frame Data Pipeline" as FrameFlow
+FrameFlow : 1. CameraHandler.capture_frame() → Dict
+FrameFlow : 2. CameraManager.capture_frame() → numpy.ndarray
+FrameFlow : 3. DetectionProcessor.validate_and_enhance_frame() → validated numpy.ndarray
+FrameFlow : 4. AI Model Processing → detection results
+FrameFlow : 5. WebSocket broadcast → frontend updates
+
+' Auto-Startup Sequence
+note "Auto-Startup Sequence" as AutoStart
+AutoStart : 1. Flask App starts
+AutoStart : 2. _initialize_services() called
+AutoStart : 3. Camera Manager initialized → auto-starts camera/streaming
+AutoStart : 4. Detection Manager initialized → waits STARTUP_DELAY
+AutoStart : 5. Detection auto-starts if camera ready
+
+' Error Prevention
+note "Error Prevention Patterns" as ErrorPrev
+ErrorPrev : 1. Frame type validation (Dict → numpy.ndarray)
+ErrorPrev : 2. Safe attribute access (auto_start_enabled)
+ErrorPrev : 3. Service dependency checking (_is_camera_ready)
+ErrorPrev : 4. Configuration safety (correct attribute names)
+
+@enduml

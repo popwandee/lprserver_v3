@@ -27,6 +27,7 @@ from datetime import datetime
 
 from v1_3.src.core.utils.logging_config import get_logger
 from v1_3.src.components.camera_handler import make_json_serializable
+from v1_3.src.core.config import AUTO_START_CAMERA, AUTO_START_STREAMING, STARTUP_DELAY
 
 logger = get_logger(__name__)
 
@@ -48,7 +49,8 @@ class CameraManager:
     def __init__(self, camera_handler, logger=None):
         self.camera_handler = camera_handler
         self.logger = logger or get_logger(__name__)
-        self.auto_start_enabled = True  # NEW: Enable auto-start by default
+        self.auto_start_enabled = AUTO_START_CAMERA  # Auto-start from config
+        self.auto_streaming_enabled = AUTO_START_STREAMING  # Auto-streaming from config
         self.startup_time = None
         
     def initialize(self):
@@ -67,7 +69,7 @@ class CameraManager:
                 if success:
                     self.logger.info("Camera handler initialized successfully")
                     
-                    # NEW: Auto-start camera if enabled
+                    # Auto-start camera if enabled
                     if self.auto_start_enabled:
                         self.logger.info("Auto-start enabled - starting camera automatically")
                         return self._auto_start_camera()
@@ -87,25 +89,36 @@ class CameraManager:
     
     def _auto_start_camera(self):
         """
-        Auto-start camera functionality.
+        Auto-start camera functionality with streaming.
         
         Returns:
             bool: True if auto-start successful, False otherwise
         """
         try:
-            self.logger.info("Starting auto-start sequence...")
+            self.logger.info("🚀 Starting auto-start sequence...")
             
             # Start camera using existing start method
             if self.start():
-                self.logger.info("Camera auto-started successfully")
+                self.logger.info("✅ Camera auto-started successfully")
                 self.startup_time = datetime.now()
+                
+                # Auto-start streaming if enabled
+                if self.auto_streaming_enabled:
+                    self.logger.info("🎥 Auto-streaming enabled - camera should be streaming now")
+                    
+                    # Verify streaming status
+                    if self.camera_handler and self.camera_handler.streaming:
+                        self.logger.info("✅ Camera streaming confirmed active")
+                    else:
+                        self.logger.warning("⚠️  Camera not streaming after auto-start")
+                
                 return True
             else:
-                self.logger.error("Failed to auto-start camera")
+                self.logger.error("❌ Failed to auto-start camera")
                 return False
                 
         except Exception as e:
-            self.logger.error(f"Error in auto-start: {e}")
+            self.logger.error(f"❌ Error in auto-start: {e}")
             return False
     
     def start(self):
@@ -280,14 +293,19 @@ class CameraManager:
             if not self.camera_handler or not self.camera_handler.initialized:
                 self.logger.warning("Cannot capture frame - camera not initialized")
                 return None
-            
-            # Capture frame from camera handler
+           
+            # Capture frame from camera handler (returns dict with 'frame' key)
             frame_data = self.camera_handler.capture_frame()
-            if frame_data is not None:
-                self.logger.debug("Frame captured successfully for detection")
-                return frame_data
+            if frame_data is not None and isinstance(frame_data, dict) and 'frame' in frame_data:
+                frame = frame_data['frame']
+                if frame is not None:
+                    self.logger.debug("Frame captured successfully for detection")
+                    return frame  # Return the actual numpy array
+                else:
+                    self.logger.debug("Frame is None in frame_data")
+                    return None
             else:
-                self.logger.debug("No frame available from camera")
+                self.logger.debug("No frame available from camera or invalid frame_data format")
                 return None
                 
         except Exception as e:

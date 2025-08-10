@@ -5,10 +5,10 @@ Video Streaming Service for AI Camera v1.3
 This is a stub service that will be implemented later.
 """
 
-import logging
 from typing import Dict, Any
 
-logger = logging.getLogger(__name__)
+from v1_3.src.core.utils.logging_config import get_logger
+logger = get_logger(__name__)
 
 
 class VideoStreamingService:
@@ -16,7 +16,7 @@ class VideoStreamingService:
     
     def __init__(self, camera_manager=None, logger=None):
         self.camera_manager = camera_manager
-        self.logger = logger or logging.getLogger(__name__)
+        self.logger = logger or get_logger(__name__)
         self.logger.info("VideoStreamingService initialized (stub)")
     
     def start(self) -> bool:

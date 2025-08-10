@@ -12,6 +12,7 @@
 - [การแก้ไขปัญหา](#การแก้ไขปัญหา)
 - [การพัฒนา](#การพัฒนา)
 - [API Reference](#api-reference)
+- [การอัปเดต](#การอัปเดต)
 
 ## 🎯 ภาพรวมระบบ
 
@@ -22,27 +23,33 @@ AI Camera v1.3 เป็นระบบกล้องอัจฉริยะ�
 - การแสดงผลผ่านเว็บอินเตอร์เฟส
 
 ### คุณสมบัติหลัก
+
+#### ระบบพื้นฐาน
 - ✅ ระบบเว็บที่เสถียร (Flask + Gunicorn + Nginx)
 - ✅ การจัดการ service แบบ systemd
 - ✅ Virtual environment management
 - ✅ Health monitoring
 - ✅ WebSocket support
 - ✅ Modular architecture
-- ✅ **Absolute Imports System (NEW)**
-  - ✅ Consistent import paths across the project
-  - ✅ Import validation and error handling
-  - ✅ Clear dependency management
-  - ✅ Easy refactoring and module relocation
-- ✅ **Camera System v1.3 (Updated)**
-  - ✅ Picamera2 integration with thread-safe access
-  - ✅ Camera Handler component with Singleton pattern
-  - ✅ Camera Manager service for video streaming
-  - ✅ ML pipeline preparation and frame callbacks
-  - ✅ Resource cleanup and proper shutdown handling
-  - ✅ Status monitoring and health checks
-  - ✅ Dependency injection compatible architecture
+
+#### Absolute Imports System (NEW)
+- ✅ Consistent import paths across the project
+- ✅ Import validation and error handling
+- ✅ Clear dependency management
+- ✅ Easy refactoring and module relocation
+
+#### Camera System v1.3 (Updated)
+- ✅ Picamera2 integration with thread-safe access
+- ✅ Camera Handler component with Singleton pattern
+- ✅ Camera Manager service for video streaming
+- ✅ ML pipeline preparation and frame callbacks
+- ✅ Resource cleanup and proper shutdown handling
+- ✅ Status monitoring and health checks
+- ✅ Dependency injection compatible architecture
 
 ## 🏗️ สถาปัตยกรรม
+
+### System Architecture Overview
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -57,13 +64,13 @@ AI Camera v1.3 เป็นระบบกล้องอัจฉริยะ�
                        └─────────────────┘
 ```
 
-### 🎥 Camera System v1.3 Architecture
+### Camera System v1.3 Architecture
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Flask Web UI  │──▶│  Camera Manager │───▶│ Camera Handler  │
 │  (Blueprints)   │    │   (Service)     │    │  (Component)    │
-│ Absulute Imports│    │Absulute Imports │    │Absulute Imports │
+│ Absolute Imports│    │ Absolute Imports│    │ Absolute Imports│
 └─────────────────┘    └─────────────────┘    └─────────────────┘
         │                       │                       │
         ▼                       ▼                       ▼
@@ -73,7 +80,7 @@ AI Camera v1.3 เป็นระบบกล้องอัจฉริยะ�
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-**Design Patterns:**
+### Design Patterns
 - **Dependency Injection**: ระบบ DI Container จัดการ dependencies
 - **Singleton Pattern**: Camera Handler ใช้ singleton เพื่อป้องกันการใช้กล้องซ้ำซ้อน
 - **Flask Blueprints**: แบ่งส่วน Web UI ตาม functional areas
@@ -81,6 +88,7 @@ AI Camera v1.3 เป็นระบบกล้องอัจฉริยะ�
 - **Absolute Imports**: ใช้ import paths ที่ชัดเจนและสม่ำเสมอ
 
 ### โครงสร้างไฟล์
+
 ```
 /home/camuser/aicamera/
 ├── v1_3/                          # โปรเจคหลัก
@@ -88,59 +96,54 @@ AI Camera v1.3 เป็นระบบกล้องอัจฉริยะ�
 │   │   ├── app.py                 # Flask application
 │   │   ├── wsgi.py                # WSGI entry point
 │   │   ├── web/                   # Web interface
-│   │   │   ├── init.py
-│   │   │   ├── blueprints/ # Flask Blueprints with absolute imports
-│   │   │   │   ├── init.py # Blueprint registration
-│   │   │   │   ├── main.py # Main dashboard
-│   │   │   │   ├── camera.py # Camera control
-│   │   │   │   ├── detection.py # AI detection
-│   │   │   │   ├── streaming.py # Video streaming
-│   │   │   │   ├── health.py # System health
-│   │   │   │   └── websocket.py # WebSocket communication
+│   │   │   ├── blueprints/        # Flask Blueprints with absolute imports
+│   │   │   │   ├── __init__.py    # Blueprint registration
+│   │   │   │   ├── main.py        # Main dashboard
+│   │   │   │   ├── camera.py      # Camera control
+│   │   │   │   ├── detection.py   # AI detection
+│   │   │   │   ├── streaming.py   # Video streaming
+│   │   │   │   ├── health.py      # System health
+│   │   │   │   └── websocket.py   # WebSocket communication
 │   │   │   ├── templates/         # HTML templates
-│   │   │   │    ├─ index.html     # index
-│   │   │   │    ├─ camera          # Camera Streaming
-│   │   │   │    │  └─ dashboard.html  # Camera Dashboard Streaming and config
-│   │   │   │    ├─ detection          # Detection result UI
-│   │   │   │    │  └─ dashboard.html  # Detection Dashboard
-│   │   │   │    ├─ error          # error landing page
-│   │   │   │    │  ├─ 404.html    # error 404 File not Found
-│   │   │   │    │  └─ 500.html    # error 500 Bad Gateway
-│   │   │   │    ├─ health          # System Health Monitor and logs
-│   │   │   │    │  └─ dashboard.html  # Health status and logs Dashboard
-│   │   │   │    └─ main          # Main Dashboard
-│   │   │   │        └─ dashboard.html  # Main Dashboard
+│   │   │   │   ├── index.html     # index
+│   │   │   │   ├── camera/        # Camera Streaming
+│   │   │   │   │   └── dashboard.html
+│   │   │   │   ├── detection/     # Detection result UI
+│   │   │   │   │   └── dashboard.html
+│   │   │   │   ├── error/         # error landing page
+│   │   │   │   │   ├── 404.html   # error 404 File not Found
+│   │   │   │   │   └── 500.html   # error 500 Bad Gateway
+│   │   │   │   ├── health/        # System Health Monitor and logs
+│   │   │   │   │   └── dashboard.html
+│   │   │   │   └── main/          # Main Dashboard
+│   │   │   │       └── dashboard.html
 │   │   │   └── static/            # CSS, JS, Images
 │   │   ├── components/            # Low-level components
-│   │   │   ├── init.py
 │   │   │   ├── camera_handler.py  # Camera control (Picamera2 + thread-safe)
 │   │   │   ├── detection_processor.py # AI detection (Hailo models)
 │   │   │   ├── database_manager.py # Database operations
 │   │   │   └── health_monitor.py  # System health monitoring
 │   │   ├── services/              # High-level business logic
-│   │   │   ├── init.py
 │   │   │   ├── camera_manager.py  # Camera service (streaming + ML pipeline)
 │   │   │   ├── detection_manager.py # Detection workflow management
 │   │   │   ├── video_streaming.py # Video streaming service
 │   │   │   └── websocket_sender.py # WebSocket communication
 │   │   ├── core/                  # Core framework
-│   │   │   ├── init.py
 │   │   │   ├── dependency_container.py # DI: Dependency injection
 │   │   │   ├── config.py          # Configuration management
-│   │   │   └─── utils/             # Core utilities
-│   │   │       ├── init.py
-│   │   │       ├── import_helper.py # NEW: Absolute import management
+│   │   │   └── utils/             # Core utilities
+│   │   │       ├── import_helper.py # Absolute import management
 │   │   │       └── logging_config.py # Logging configuration
 │   │   ├── database/              # Database layer
 │   │   │   └── database_manager.py
 │   │   ├── captured_images/       # Captured images storage
 │   │   └── logs/                  # Application logs
 │   ├── scripts/                   # Utility scripts
-│   │   └── migrate_absolute_imports.py # NEW: Migration script
+│   │   └── migrate_absolute_imports.py # Migration script
 │   ├── requirements.txt           # Python dependencies
 │   ├── ARCHITECTURE.md            # Architecture documentation
 │   └── README.md                  # This file
-├── gunicorn_config.py             # Gunicorn configuration  (Unix socket)
+├── gunicorn_config.py             # Gunicorn configuration (Unix socket)
 ├── systemd_service/               # Systemd service files
 │   └── aicamera_v1.3.service
 ├── setup_env.sh                   # Environment setup script
@@ -191,23 +194,22 @@ sudo systemctl reload nginx
 ```bash
 sudo systemctl start aicamera_v1.3.service
 ```
-7. ตรวจสอบสถานะ service
+
+7. **ตรวจสอบสถานะ**
 ```bash
 sudo systemctl status aicamera_v1.3.service
-```
-8. ดู log
-```bash
 sudo journalctl -u aicamera_v1.3.service -f
 ```
-## 🧪 Camera System Testing Status
 
-### ✅ สถานะการทดสอบ August 8, 2025
+## 🧪 สถานะการทดสอบ
+
+### ✅ Camera System Testing Status (August 8, 2025)
 
 **Components Implemented:**
 - ✅ Camera Handler (v1.3) - Picamera2 integration with thread-safe access
 - ✅ Camera Manager (v1.3) - Service layer for video streaming and ML pipeline
 - ✅ Dependency Injection Container - Service management and DI pattern
-- ✅ **Configuration System (Updated)** - Using `/src/core/config.py` without dotenv dependency
+- ✅ Configuration System (Updated) - Using `/src/core/config.py` without dotenv dependency
 - ✅ Logging System - Structured logging with file rotation support
 
 **Key Features Verified:**
@@ -235,7 +237,7 @@ python3 test_camera_system.py
 python3 -c "from v1_3.src.core.utils.import_helper import validate_imports; print('Import validation:', validate_imports())"
 ```
 
-**Architecture Compliance: 100%** 
+**Architecture Compliance: 100%**
 - Dependency Injection ✅
 - Thread Safety ✅ 
 - Resource Cleanup ✅
@@ -246,20 +248,6 @@ python3 -c "from v1_3.src.core.utils.import_helper import validate_imports; prin
 - Configuration Management ✅
 - Absolute Imports ✅
 - Import Validation ✅
-
-**📋 Configuration System Update:**
-- ✅ **Unified Config**: Uses single `/src/core/config.py` file 
-- ✅ **No dotenv dependency**: Removed external dependency conflicts
-- ✅ **Environment variables**: Full OS environment variable support
-- ✅ **Default values**: Sensible defaults for all configuration options
-- ✅ **Directory creation**: Auto-creates required directories
-- ✅ **Dependency injection**: Proper integration with DI container
-- ✅ **Consistent Paths**: All modules use `v1_3.src.*` import paths
-- ✅ **Import Helper**: Centralized import path management
-- ✅ **Validation**: Automatic import validation on startup
-- ✅ **Migration Script**: Automated conversion from relative to absolute imports
-- ✅ **Clear Dependencies**: Easy to understand module relationships
-- ✅ **Refactor Friendly**: Easy to move and reorganize modules
 
 ## 💻 การใช้งาน
 
@@ -291,6 +279,7 @@ sudo systemctl restart aicamera_v1.3.service
 
 # ดู log
 sudo journalctl -u aicamera_v1.3.service -f
+sudo journalctl -u aicamera_v1.3.service --no-pager | tail -20
 ```
 
 ## ⚙️ การตั้งค่า
@@ -357,9 +346,6 @@ which gunicorn
 **อาการ**: `ModuleNotFoundError: No module named 'v1_3'`
 
 **การแก้ไข**:
-- ตรวจสอบว่า directory ชื่อ `v1_3` ไม่ใช่ `v1.3`
-- ตรวจสอบ `__init__.py` files ในทุก directory
-
 ```bash
 # ตรวจสอบ import paths
 python3 -c "from v1_3.src.core.utils.import_helper import validate_imports; print(validate_imports())"
@@ -371,11 +357,12 @@ python scripts/migrate_absolute_imports.py
 # ตรวจสอบ PYTHONPATH
 echo $PYTHONPATH
 ```
+
 #### 3. Template Not Found
 **อาการ**: `jinja2.exceptions.TemplateNotFound: index.html`
 
 **การแก้ไข**:
-- ตรวจสอบ path ใน `app.py`:
+ตรวจสอบ path ใน `app.py`:
 ```python
 app = Flask(__name__, 
            template_folder='web/templates',
@@ -390,8 +377,6 @@ app = Flask(__name__,
 # ตรวจสอบสิทธิ์
 sudo chown -R camuser:camuser /home/camuser/aicamera
 sudo chmod -R 755 /home/camuser/aicamera
-
-# ลบ security restrictions ใน systemd service
 ```
 
 #### 5. Nginx 500 Error
@@ -424,17 +409,17 @@ python3 -m venv venv_hailo
 source venv_hailo/bin/activate
 pip install -r v1_3/requirements.txt
 ```
-#### 7. gunicorn ไม่สามารถเริ่มต้นได้ status=3/NOTIMPLEMENTED 
-**อาการ**:  service aicamera_v1.3 มีปัญหา Main process exited, code=exited, status=3/NOTIMPLEMENTED ซึ่งหมายความว่า gunicorn ไม่สามารถเริ่มต้นได้
-**สาเหตุของ status=3/NOTIMPLEMENTED**
--Import Error ใน wsgi.py: ไฟล์ wsgi.py ใช้ relative imports (from core.utils.import_helper) แต่ควรใช้ absolute imports
--Gunicorn Config Conflict: มีการกำหนด app ใน config แต่ systemd service ก็ส่ง app path มาด้วย
--Import Path Issues: การ setup import paths ไม่ถูกต้อง
+
+#### 7. Gunicorn Status=3/NOTIMPLEMENTED
+**อาการ**: Main process exited, code=exited, status=3/NOTIMPLEMENTED
+
+**สาเหตุ**:
+- Import Error ใน wsgi.py: ไฟล์ wsgi.py ใช้ relative imports แต่ควรใช้ absolute imports
+- Gunicorn Config Conflict: มีการกำหนด app ใน config แต่ systemd service ก็ส่ง app path มาด้วย
+- Import Path Issues: การ setup import paths ไม่ถูกต้อง
+
 **การแก้ไข**:
 ```bash
-# ตรวจสอบ แก้ไข wsgi.py เพื่อใช้ Absolute Imports
-# แก้ไข gunicorn_config.py REMOVED: app = "v1_3.src.wsgi:app"  # This conflicts with command line
-# ทดสอบการแก้ไข
 # 1. หยุด service
 sudo systemctl stop aicamera_v1.3.service
 
@@ -452,21 +437,11 @@ sudo systemctl start aicamera_v1.3.service
 
 # 5. ตรวจสอบสถานะ
 sudo systemctl status aicamera_v1.3.service
-
-# 6. ดู log
-sudo journalctl -u aicamera_v1.3.service -f
-# ทดสอบ import validation
-cd /home/camuser/aicamera
-source setup_env.sh
-python3 -c "from v1_3.src.core.utils.import_helper import validate_imports; print('Import validation:', validate_imports())"
-# ตรวจสอบ gunicorn logs
-tail -f /home/camuser/aicamera/log/gunicorn_error.log
-tail -f /home/camuser/aicamera/log/gunicorn_access.log
 ```
 
 ### การ Debug
 
-#### 1. ตรวจสอบ Log Files
+#### ตรวจสอบ Log Files
 ```bash
 # Systemd logs
 sudo journalctl -u aicamera_v1.3.service -f
@@ -480,7 +455,7 @@ sudo tail -f /var/log/nginx/aicamera_error.log
 sudo tail -f /var/log/nginx/aicamera_access.log
 ```
 
-#### 2. ตรวจสอบ Process
+#### ตรวจสอบ Process และ Configuration
 ```bash
 # ตรวจสอบ process ที่ทำงาน
 ps aux | grep gunicorn
@@ -489,10 +464,7 @@ ps aux | grep nginx
 # ตรวจสอบ port และ socket
 netstat -tlnp | grep :80
 ls -la /tmp/aicamera.sock
-```
 
-#### 3. ตรวจสอบ Configuration
-```bash
 # ตรวจสอบ nginx config
 sudo nginx -t
 
@@ -510,7 +482,7 @@ python3 -c "from v1_3.src.core.utils.import_helper import validate_imports; prin
 
 ### การเพิ่ม Component ใหม่
 
-1. **สร้างไฟล์ใน `components/`** ใช้ absolute imports**
+1. **สร้างไฟล์ใน `components/`** ใช้ absolute imports:
 ```python
 # v1_3/src/components/new_component.py
 from v1_3.src.core.utils.logging_config import get_logger
@@ -526,7 +498,7 @@ class NewComponent:
         pass
 ```
 
-2. **เพิ่มใน DI Container ใช้ absolute imports**
+2. **เพิ่มใน DI Container** ใช้ absolute imports:
 ```python
 # v1_3/src/core/dependency_container.py
 def _register_default_services(self):
@@ -538,7 +510,7 @@ def _register_default_services(self):
         self.logger.warning("NewComponent not available")
 ```
 
-3. **เพิ่มใน Blueprint ใช้ absolute imports**
+3. **เพิ่มใน Blueprint** ใช้ absolute imports:
 ```python
 # v1_3/src/web/blueprints/new_feature.py
 from flask import Blueprint, jsonify
@@ -553,7 +525,7 @@ def perform_action():
     return jsonify({'result': result})
 ```
 
-4. **ลงทะเบียน Blueprint ใช้ absolute imports**
+4. **ลงทะเบียน Blueprint** ใช้ absolute imports:
 ```python
 # v1_3/src/web/blueprints/__init__.py
 from v1_3.src.web.blueprints.new_feature import new_feature_bp
@@ -677,70 +649,65 @@ pip install -r v1_3/requirements.txt --upgrade
 # Restart service
 sudo systemctl restart aicamera_v1.3.service
 
-# ตรวจสอบว่ามี process ใดใช้กล้องอยู่หรือไม่
-sudo fuser /dev/media* 2>/dev/null || echo "No processes using media devices"
-
 # ตรวจสอบสถานะการทำงาน
 sudo journalctl -u aicamera_v1.3.service --no-pager | tail -20
 ```
 
 ### การเปลี่ยนจาก TCP/IP Stack เป็น Unix Socket
-1. ปรับปรุง Gunicorn Config (ขั้นตอนแรก) gunicorn_config.py
-แก้ไขไฟล์ gunicorn_config.py เปลี่ยน bind = "0.0.0.0:8080" เป็น bind = "unix:/tmp/aicamera.sock"
-```bash
+
+#### ข้อดีของ Unix Socket
+1. **ประสิทธิภาพดีกว่า**: ไม่ต้องผ่าน TCP/IP stack
+2. **ความปลอดภัย**: ไม่เปิด port ภายนอก
+3. **การจัดการที่ดีกว่า**: Socket file จะถูกลบเมื่อ process หยุดทำงาน
+4. **Resource ใช้น้อยกว่า**: ไม่ต้องใช้ network resources
+
+#### ขั้นตอนการเปลี่ยน
+
+1. **ปรับปรุง Gunicorn Config**:
+```python
+# gunicorn_config.py
 bind = "unix:/tmp/aicamera.sock"  # เปลี่ยนจาก "0.0.0.0:8080"
 ```
-2. ปรับปรุง Nginx Config (ขั้นตอนที่สอง) nginx.conf
-แก้ไขไฟล์ v1_2/nginx.conf เปลี่ยนทุก proxy_pass http://127.0.0.1:8000 เป็น proxy_pass http://unix:/tmp/aicamera.sock
-```bash
+
+2. **ปรับปรุง Nginx Config**:
+```nginx
+# nginx.conf
 proxy_pass http://unix:/tmp/aicamera.sock;  # เปลี่ยนจาก http://127.0.0.1:8000
 ```
-### ทดสอบการทำงาน
-1.ทดสอบ gunicorn ด้วยคำสั่ง
+
+3. **ทดสอบการทำงาน**:
 ```bash
+# ทดสอบ gunicorn
 cd /home/camuser/aicamera
 source setup_env.sh
 gunicorn --config gunicorn_config.py v1_3.src.wsgi:app
-```
-2.ทดสอบ nginx config:
-```bash
+
+# ทดสอบ nginx config
 sudo nginx -t
-```
-3.Reload systemd และ restart service
-```bash
+
+# Reload systemd และ restart service
 sudo systemctl daemon-reload
 sudo systemctl restart aicamera_v1.3
 sudo systemctl restart nginx
-```
-4. ตรวจสอบสถานะ service
-```bash
+
+# ตรวจสอบสถานะ
 sudo systemctl status aicamera_v1.3
 sudo systemctl status nginx
-```
-5.ตรวจสอบ socket file
-```bash
-ls -la /tmp/aicamera.sock
-```
-6. **ทดสอบการเข้าถึงเว็บไซต์ที่ port 80**
-http://aicamera1
 
-7. **ทดสอบ import validation (NEW)**
-```bash
+# ตรวจสอบ socket file
+ls -la /tmp/aicamera.sock
+
+# ทดสอบการเข้าถึงเว็บไซต์
+# http://aicamera1
+
+# ทดสอบ import validation
 python3 -c "from v1_3.src.core.utils.import_helper import validate_imports; print('Import validation:', validate_imports())"
 ```
 
-#### ข้อดีของการใช้ Unix Socket
-1.ประสิทธิภาพดีกว่า: ไม่ต้องผ่าน TCP/IP stack
-2.ความปลอดภัย: ไม่เปิด port ภายนอก
-3.การจัดการที่ดีกว่า: Socket file จะถูกลบเมื่อ process หยุดทำงาน
-4.Resource ใช้น้อยกว่า: ไม่ต้องใช้ network resources
-
-
-#### ข้อดีของ Absolute Imports 
+### ข้อดีของ Absolute Imports
 1. **ความชัดเจน**: Import paths ชัดเจนและเข้าใจง่าย
 2. **ความสม่ำเสมอ**: ใช้รูปแบบเดียวกันทั้งโปรเจค
-3. **การบำรุงรักษา**: ง่าย
-
+3. **การบำรุงรักษา**: ง่ายต่อการ refactor และย้ายไฟล์
 
 ## 📞 การสนับสนุน
 
@@ -757,6 +724,7 @@ python3 -c "from v1_3.src.core.utils.import_helper import validate_imports; prin
 **อัปเดตล่าสุด**: August 8, 2025  
 **ผู้พัฒนา**: AI Camera Team
 
-# แผนการพัฒนาขั้นต่อไป 
-## สั่งให้กล้องทำงาน streaming อัตโนมัติ
-## ตรวจสอบดำเนินการปิดและคืนทรัพยากรกล้องอย่างปลอดภัย
+## 🚀 แผนการพัฒนาขั้นต่อไป
+
+- สั่งให้กล้องทำงาน streaming อัตโนมัติ
+- ตรวจสอบดำเนินการปิดและคืนทรัพยากรกล้องอย่างปลอดภัย

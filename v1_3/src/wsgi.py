@@ -8,22 +8,22 @@ It can be used with Gunicorn or other WSGI servers.
 
 import os
 import sys
-import logging
 
 # Import import helper first to setup paths
 from v1_3.src.core.utils.import_helper import setup_import_paths, validate_imports
 setup_import_paths()
 
-from v1_3.src.core.utils.logging_config import setup_logging
+from v1_3.src.core.utils.logging_config import setup_logging, get_logger
+
 # Add the src directory to the Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# Setup logging first
+logger = setup_logging(level="INFO")
 
 # Import the application
 from v1_3.src.app import create_app
 app, socketio = create_app()
-
-# Setup logging
-logger = setup_logging()
 
 # Validate imports
 import_errors = validate_imports()

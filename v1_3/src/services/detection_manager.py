@@ -22,7 +22,8 @@ from datetime import datetime
 from typing import Dict, Any, Optional, List
 
 from v1_3.src.core.utils.logging_config import get_logger
-from v1_3.src.core.config import DETECTION_INTERVAL
+from v1_3.src.core.config import DETECTION_INTERVAL, AUTO_START_DETECTION, STARTUP_DELAY
+from v1_3.src.core.dependency_container import get_service
 
 logger = get_logger(__name__)
 
@@ -80,8 +81,7 @@ class DetectionManager:
         
         # Configuration
         self.detection_interval = DETECTION_INTERVAL
-        self.auto_start = False  # Can be enabled for continuous detection
-        
+        self.auto_start_enabled = AUTO_START_DETECTION  # Auto-start detection from config
         self.logger.info("DetectionManager initialized")
     
     def initialize(self) -> bool:
@@ -108,7 +108,13 @@ class DetectionManager:
                         else:
                             self.logger.warning("Database initialization failed")
                     
-                    return True
+                    # Auto-start detection if enabled
+                    if self.auto_start_enabled:
+                        self.logger.info("🤖 Auto-start detection enabled - starting detection automatically")
+                        return self._auto_start_detection()
+                    else:
+                        self.logger.info("Auto-start detection disabled - ready for manual start")
+                        return True
                 else:
                     self.logger.error("Failed to load detection models")
                     return False
@@ -118,6 +124,63 @@ class DetectionManager:
                 
         except Exception as e:
             self.logger.error(f"Error initializing detection manager: {e}")
+            return False
+    
+    def _auto_start_detection(self) -> bool:
+        """
+        Auto-start detection functionality.
+        
+        Returns:
+            bool: True if auto-start successful, False otherwise
+        """
+        try:
+            self.logger.info("🚀 Starting detection auto-start sequence...")
+            
+            # Wait for startup delay to ensure camera is fully ready
+            self.logger.info(f"⏱️  Waiting {STARTUP_DELAY} seconds for camera to be ready...")
+            time.sleep(STARTUP_DELAY)
+            
+            # Verify camera is streaming before starting detection
+            camera_manager = get_service('camera_manager')
+            if camera_manager:
+                camera_status = camera_manager.get_status()
+                if camera_status.get('streaming', False):
+                    self.logger.info("✅ Camera confirmed streaming - starting detection")
+                    
+                    # Start detection using existing method
+                    if self.start_detection():
+                        self.logger.info("✅ Detection auto-started successfully")
+                        return True
+                    else:
+                        self.logger.error("❌ Failed to auto-start detection")
+                        return False
+                else:
+                    self.logger.warning("⚠️  Camera not streaming - detection auto-start delayed")
+                    # Could implement retry logic here if needed
+                    return False
+            else:
+                self.logger.error("❌ Camera manager not available")
+                return False
+                
+        except Exception as e:
+            self.logger.error(f"❌ Error during detection auto-start: {e}")
+            return False
+    
+    def _is_camera_ready(self, camera_manager) -> bool:
+        """
+        Check if camera is ready for detection.
+        
+        Args:
+            camera_manager: CameraManager instance
+            
+        Returns:
+            bool: True if camera is ready, False otherwise
+        """
+        try:
+            status = camera_manager.get_status()
+            return status.get('initialized', False) and status.get('streaming', False)
+        except Exception as e:
+            self.logger.debug(f"Error checking camera status: {e}")
             return False
     
     def start_detection(self) -> bool:
@@ -311,15 +374,12 @@ class DetectionManager:
         """
         self.logger.info("Detection loop started")
         
-        # Get camera manager from dependency container
-        from v1_3.src.core.dependency_container import get_service
-        
+        # Get camera manager from dependency container    
         while self.is_running:
             try:
                 # Get camera manager
                 camera_manager = get_service('camera_manager')
-                
-                if camera_manager and camera_manager.is_active():
+                if camera_manager and self._is_camera_ready(camera_manager):
                     # Process frame from camera
                     result = self.process_frame_from_camera(camera_manager)
                     
@@ -366,7 +426,7 @@ class DetectionManager:
             'service_running': self.is_running,
             'detection_processor_status': processor_status,
             'detection_interval': self.detection_interval,
-            'auto_start': self.auto_start,
+            'auto_start': self.auto_start_enabled,
             'statistics': self.detection_stats.copy(),
             'queue_size': self.detection_queue.qsize() if self.detection_queue else 0,
             'thread_alive': self.detection_thread.is_alive() if self.detection_thread else False,

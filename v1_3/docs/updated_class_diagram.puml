@@ -1,0 +1,191 @@
+@startuml AI_Camera_v1.3_Updated_Class_Diagram
+
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam classFontSize 10
+skinparam packageFontSize 12
+
+package "Core Framework" {
+    class Config {
+        +AUTO_START_CAMERA: bool
+        +AUTO_START_STREAMING: bool  
+        +AUTO_START_DETECTION: bool
+        +STARTUP_DELAY: float
+        +BASE_DIR: Path
+        +VEHICLE_DETECTION_MODEL: str
+        +LICENSE_PLATE_DETECTION_MODEL: str
+        +LICENSE_PLATE_OCR_MODEL: str
+        +CONFIDENCE_THRESHOLD: float
+        +PLATE_CONFIDENCE_THRESHOLD: float
+        --
+        +load_dotenv()
+        +setup_logging_directory()
+    }
+
+    class DependencyContainer {
+        -services: Dict[str, Any]
+        -instances: Dict[str, Any]
+        --
+        +register_service(name, service_class, **kwargs)
+        +get_service(name) -> Any
+        +_register_default_services()
+        +_create_logger() -> Logger
+        +_create_config() -> Dict
+    }
+
+    class ImportHelper {
+        +setup_import_paths(base_path: Optional[str])
+        +validate_imports() -> List[str]
+        --
+        -_add_to_path(path: Path)
+        -_check_module_import(module: str) -> bool
+    }
+}
+
+package "Components Layer" {
+    class CameraHandler {
+        -picam2: Picamera2
+        -streaming: bool
+        -initialized: bool
+        -current_config: CameraConfiguration
+        --
+        +initialize_camera() -> bool
+        +capture_frame() -> Optional[Dict[str, Any]]
+        +start_streaming() -> bool
+        +stop_streaming() -> bool
+        +get_status() -> Dict[str, Any]
+        +configure_camera(config: Dict) -> bool
+        --
+        Note: Returns Dict with 'frame' key containing numpy.ndarray
+    }
+
+    class DetectionProcessor {
+        -vehicle_model: Any
+        -lp_detection_model: Any
+        -lp_ocr_model: Any
+        -confidence_threshold: float
+        -plate_confidence_threshold: float
+        -models_loaded: bool
+        --
+        +load_models() -> bool
+        +validate_and_enhance_frame(frame) -> Optional[np.ndarray]
+        +detect_vehicles(frame: np.ndarray) -> List[Dict]
+        +detect_license_plates(frame: np.ndarray) -> List[Dict]
+        +process_ocr(frame: np.ndarray) -> str
+        --
+        Note: Handles Dict input with frame extraction
+        Note: Validates numpy.ndarray type safety
+    }
+}
+
+package "Services Layer" {
+    class CameraManager {
+        -camera_handler: CameraHandler
+        -auto_start_enabled: bool
+        -auto_streaming_enabled: bool
+        -initialized: bool
+        --
+        +initialize() -> bool
+        +capture_frame() -> Optional[np.ndarray]
+        +start_camera() -> bool
+        +start_streaming() -> bool
+        +stop_camera() -> bool
+        +stop_streaming() -> bool
+        +get_status() -> Dict[str, Any]
+        +_auto_start_camera()
+        --
+        Note: Extracts numpy.ndarray from Dict response
+        Note: Auto-startup sequence support
+    }
+
+    class DetectionManager {
+        -detection_processor: DetectionProcessor
+        -auto_start_enabled: bool
+        -active: bool
+        -detection_thread: Thread
+        -detection_interval: float
+        --
+        +initialize() -> bool
+        +start_detection() -> bool
+        +stop_detection() -> bool
+        +process_frame_from_camera(camera_manager) -> Optional[Dict]
+        +get_status() -> Dict[str, Any]
+        +_auto_start_detection()
+        +_is_camera_ready(camera_manager) -> bool
+        +_detection_loop()
+        --
+        Note: Safe attribute access (auto_start_enabled)
+        Note: Camera dependency validation
+    }
+}
+
+package "Web Layer" {
+    class FlaskApp {
+        -app: Flask
+        -socketio: SocketIO
+        --
+        +create_app() -> Flask
+        +_initialize_services(logger)
+        +register_blueprints(app, socketio)
+        +register_websocket_handlers(socketio)
+        --
+        Note: Sequential service initialization
+        Note: Auto-startup orchestration
+    }
+
+    class CameraBlueprint {
+        --
+        +get_camera_status() -> Response
+        +start_camera() -> Response
+        +stop_camera() -> Response
+        +capture_frame() -> Response
+        +get_stream() -> Response
+        +register_camera_events(socketio)
+        --
+        Note: WebSocket event handling
+    }
+
+    class DetectionBlueprint {
+        --
+        +get_detection_status() -> Response
+        +start_detection() -> Response
+        +stop_detection() -> Response
+        +process_frame() -> Response
+        +configure_detection() -> Response
+        +register_detection_events(socketio)
+        --
+        Note: Safe configuration updates
+    }
+}
+
+' Relationships
+CameraManager --> CameraHandler : uses
+DetectionManager --> DetectionProcessor : uses
+DetectionManager --> CameraManager : depends on (frame capture)
+DependencyContainer --> CameraManager : manages
+DependencyContainer --> DetectionManager : manages
+DependencyContainer --> CameraHandler : manages
+DependencyContainer --> DetectionProcessor : manages
+FlaskApp --> DependencyContainer : uses
+CameraBlueprint --> DependencyContainer : uses
+DetectionBlueprint --> DependencyContainer : uses
+FlaskApp --> CameraBlueprint : registers
+FlaskApp --> DetectionBlueprint : registers
+CameraManager --> Config : reads auto-start settings
+DetectionManager --> Config : reads auto-start settings
+DetectionProcessor --> Config : reads model settings
+
+' Frame Data Flow
+note top of CameraHandler : "Frame Data Flow:\n1. capture_frame() returns Dict\n2. Dict contains 'frame': numpy.ndarray\n3. Includes metadata and timestamp"
+
+note top of CameraManager : "Frame Processing:\n1. Extracts numpy.ndarray from Dict\n2. Returns clean numpy array\n3. Type-safe for detection"
+
+note top of DetectionProcessor : "Frame Validation:\n1. Handles Dict input (fallback)\n2. Validates numpy.ndarray type\n3. Checks frame.size > 0"
+
+' Auto-Startup Sequence
+note bottom of FlaskApp : "Auto-Startup Sequence:\n1. Initialize Camera Manager\n2. Camera auto-starts if configured\n3. Streaming auto-starts if configured\n4. Initialize Detection Manager\n5. Detection auto-starts if configured"
+
+' Error Prevention
+note bottom of DetectionManager : "Error Prevention:\n1. Safe attribute access patterns\n2. Service dependency validation\n3. Camera readiness checking"
+
+@enduml

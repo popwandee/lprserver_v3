@@ -7,10 +7,10 @@ This is a stub blueprint that will be implemented later.
 
 from flask import Blueprint
 from flask_socketio import emit
-import logging
+from v1_3.src.core.utils.logging_config import get_logger
 
 streaming_bp = Blueprint('streaming', __name__, url_prefix='/streaming')
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def register_streaming_events(socketio):

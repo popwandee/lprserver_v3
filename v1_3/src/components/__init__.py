@@ -29,7 +29,6 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from detection_processor import DetectionProcessor
-
 from camera_handler import CameraHandler
 from health_monitor import HealthMonitor
 from database_manager import DatabaseManager

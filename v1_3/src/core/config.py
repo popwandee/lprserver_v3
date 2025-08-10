@@ -13,31 +13,32 @@ import os
 from pathlib import Path
 
 # Flask Configuration
-FLASK_HOST = os.getenv('FLASK_HOST', '0.0.0.0')
-FLASK_PORT = int(os.getenv('FLASK_PORT', 5000))
+FLASK_HOST =  '0.0.0.0'
+FLASK_PORT = int(5000)
 SECRET_KEY = os.getenv('SECRET_KEY', 'default-secret-key-change-in-production')
-DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+DEBUG = "DEBUG"
 
-# Base directory for the project
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Base directory for the project - should be /home/camuser/aicamera/
+current_file = Path(__file__)
+BASE_DIR = str(current_file.parent.parent.parent.parent.absolute())  # Go up from core/src/v1_3/aicamera
 
 # Database configuration
 DATABASE_PATH = os.path.join(BASE_DIR, 'db', 'lpr_data.db')
-
+WEBSOCKET_LOG_FILE = os.path.join(BASE_DIR, "log", "websocket.log")
+DETECTION_LOG_FILE = os.path.join(BASE_DIR, "log", "detection.log")
 # AI Models Configuration
-VEHICLE_DETECTION_MODEL = os.getenv('VEHICLE_DETECTION_MODEL', None)
-LICENSE_PLATE_DETECTION_MODEL = os.getenv('LICENSE_PLATE_DETECTION_MODEL', None)
-LICENSE_PLATE_OCR_MODEL = os.getenv('LICENSE_PLATE_OCR_MODEL', None)
-
-# Hailo AI Configuration  
-HEF_MODEL_PATH = os.getenv('HEF_MODEL_PATH', 'hailo')
-MODEL_ZOO_URL = os.getenv('MODEL_ZOO_URL', 'https://hailo-model-zoo.s3.eu-west-2.amazonaws.com')
+HEF_MODEL_PATH = "@local"
+MODEL_ZOO_URL = "resources" 
+VEHICLE_DETECTION_MODEL = "yolov8n_relu6_car--640x640_quant_hailort_hailo8_1"
+LICENSE_PLATE_DETECTION_MODEL ="yolov8n_relu6_lp--640x640_quant_hailort_hailo8_1"
+LICENSE_PLATE_OCR_MODEL = "yolov8n_relu6_lp_ocr--256x128_quant_hailort_hailo8_1"
+OCR_MODEL ="easyOCR_raw_image" 
 
 # OCR Configuration
 EASYOCR_LANGUAGES = ['en', 'th']
 
 # Image Storage
-IMAGE_SAVE_DIR = os.getenv('IMAGE_SAVE_DIR', os.path.join(BASE_DIR, 'captured_images'))
+IMAGE_SAVE_DIR =  os.path.join(BASE_DIR, 'captured_images')
 
 # WebSocket server configuration
 WEBSOCKET_SERVER_URL = os.getenv("WEBSOCKET_SERVER_URL")
@@ -52,7 +53,9 @@ DEFAULT_SHARPNESS = 1.0   # 0.0 to 4.0
 DEFAULT_AWB_MODE = 0      # 0=auto, 1=fluorescent, etc.
 
 # Detection Settings
-DETECTION_INTERVAL = float(os.getenv('DETECTION_INTERVAL', 0.1))
+DETECTION_INTERVAL = float( 0.1)
+CONFIDENCE_THRESHOLD = float( 0.5)
+PLATE_CONFIDENCE_THRESHOLD = float( 0.3)
 
 # Threading intervals (in seconds)
 SENDER_INTERVAL = 60.0    # How often the sender thread checks for new detections (1 minute)
@@ -60,7 +63,23 @@ SENDER_INTERVAL = 60.0    # How often the sender thread checks for new detection
 # Health monitoring interval (in seconds, 3600 seconds = 1 hour)
 HEALTH_CHECK_INTERVAL = 3600
 
-# Create directories if they don't exist
+# Auto-startup configuration
+AUTO_START_CAMERA = True      # Auto start camera on system startup
+AUTO_START_STREAMING = True   # Auto start streaming when camera starts
+AUTO_START_DETECTION = True   # Auto start detection when streaming starts
+STARTUP_DELAY = 5.0          # Delay in seconds between startup steps
+
+# Create directories if they don't exist - all in BASE_DIR (aicamera/)
 Path(IMAGE_SAVE_DIR).mkdir(parents=True, exist_ok=True)
 if DATABASE_PATH:
     Path(DATABASE_PATH).parent.mkdir(parents=True, exist_ok=True)
+# Create log directory
+Path(BASE_DIR, 'log').mkdir(parents=True, exist_ok=True)
+
+# Debug: Print BASE_DIR for verification
+from v1_3.src.core.utils.logging_config import get_logger
+logger = get_logger(__name__)
+logger.info(f"Config BASE_DIR set to: {BASE_DIR}")
+logger.info(f"IMAGE_SAVE_DIR: {IMAGE_SAVE_DIR}")
+logger.info(f"DATABASE_PATH: {DATABASE_PATH}")
+logger.info(f"LOG directory: {os.path.join(BASE_DIR, 'log')}")

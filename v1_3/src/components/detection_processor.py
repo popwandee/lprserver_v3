@@ -26,9 +26,9 @@ from pathlib import Path
 
 from v1_3.src.core.utils.logging_config import get_logger
 from v1_3.src.core.config import (
-    VEHICLE_DETECTION_MODEL, LICENSE_PLATE_DETECTION_MODEL,
+    VEHICLE_DETECTION_MODEL, LICENSE_PLATE_DETECTION_MODEL, LICENSE_PLATE_OCR_MODEL,
     HEF_MODEL_PATH, MODEL_ZOO_URL, EASYOCR_LANGUAGES,
-    IMAGE_SAVE_DIR, DATABASE_PATH
+    IMAGE_SAVE_DIR, DATABASE_PATH, CONFIDENCE_THRESHOLD, PLATE_CONFIDENCE_THRESHOLD
 )
 
 logger = get_logger(__name__)
@@ -74,9 +74,8 @@ class DetectionProcessor:
         
         # Configuration
         self.detection_resolution = (640, 640)
-        self.confidence_threshold = 0.5
-        self.plate_confidence_threshold = 0.3
-        
+        self.confidence_threshold = CONFIDENCE_THRESHOLD
+        self.plate_confidence_threshold = PLATE_CONFIDENCE_THRESHOLD
         self.logger.info("DetectionProcessor initialized")
     
     def load_models(self) -> bool:
@@ -101,6 +100,7 @@ class DetectionProcessor:
             # Import degirum for Hailo model loading
             try:
                 import degirum as dg
+                self.logger.info("✅ Degirum available for Hailo AI model loading")
             except ImportError:
                 self.logger.error("degirum not available - cannot load Hailo models")
                 return False
@@ -115,7 +115,7 @@ class DetectionProcessor:
                     inference_host_address=HEF_MODEL_PATH,
                     zoo_url=MODEL_ZOO_URL
                 )
-                self.logger.info("✅ Vehicle detection model loaded")
+                self.logger.info("✅ Vehicle detection model loaded successfully")
                 models_loaded += 1
             except Exception as e:
                 self.logger.error(f"Failed to load vehicle detection model: {e}")
@@ -127,25 +127,27 @@ class DetectionProcessor:
                 self.lp_detection_model = dg.load_model(
                     model_name=LICENSE_PLATE_DETECTION_MODEL,
                     inference_host_address=HEF_MODEL_PATH,
-                    zoo_url=MODEL_ZOO_URL
+                    zoo_url=MODEL_ZOO_URL,
+                    overlay_color=[(255, 255, 0), (0, 255, 0)]
                 )
-                self.logger.info("✅ License plate detection model loaded")
+                self.logger.info("✅ License plate detection model loaded successfully")
                 models_loaded += 1
             except Exception as e:
                 self.logger.error(f"Failed to load license plate detection model: {e}")
                 return False
             
             # Load license plate OCR model (optional)
-            if hasattr(globals().get('LICENSE_PLATE_OCR_MODEL'), '__len__'):
+            if LICENSE_PLATE_OCR_MODEL:
                 try:
-                    from v1_3.src.core.config import LICENSE_PLATE_OCR_MODEL
                     self.logger.info(f"Loading license plate OCR model: {LICENSE_PLATE_OCR_MODEL}")
                     self.lp_ocr_model = dg.load_model(
                         model_name=LICENSE_PLATE_OCR_MODEL,
                         inference_host_address=HEF_MODEL_PATH,
-                        zoo_url=MODEL_ZOO_URL
+                        zoo_url=MODEL_ZOO_URL,
+                        output_use_regular_nms=False,
+                        output_confidence_threshold=0.1
                     )
-                    self.logger.info("✅ License plate OCR model loaded")
+                    self.logger.info("✅ License plate OCR model loaded successfully")
                     models_loaded += 1
                 except Exception as e:
                     self.logger.warning(f"Failed to load OCR model (optional): {e}")
@@ -174,12 +176,35 @@ class DetectionProcessor:
         
         Args:
             frame: Input image frame as numpy array
-            
+
         Returns:
             Optional[np.ndarray]: Enhanced frame or None if validation fails
         """
-        if frame is None or frame.size == 0:
-            self.logger.warning("Invalid frame: empty or None")
+        if frame is None:
+            self.logger.warning("Invalid frame: frame is None")
+            return None
+        
+        # Check if frame is a dict (should be numpy array)
+        if isinstance(frame, dict):
+            self.logger.error("Invalid frame: received dict instead of numpy array")
+            if 'frame' in frame:
+                self.logger.info("Extracting frame from dict")
+                frame = frame['frame']
+                if frame is None:
+                    self.logger.warning("Extracted frame is None")
+                    return None
+            else:
+                self.logger.error("Dict does not contain 'frame' key")
+                return None
+        
+        # Check if frame is numpy array
+        if not isinstance(frame, np.ndarray):
+            self.logger.error(f"Invalid frame: expected numpy array, got {type(frame)}")
+            return None
+        
+        # Check frame size
+        if frame.size == 0:
+            self.logger.warning("Invalid frame: empty array")
             return None
         
         try:
