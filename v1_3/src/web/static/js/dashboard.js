@@ -117,7 +117,7 @@ const DashboardManager = {
             });
 
         // Update system health
-        AICameraUtils.apiRequest('/health')
+        AICameraUtils.apiRequest('/health/system')
             .then(data => {
                 if (data && data.success) {
                     this.updateSystemHealth(data);
@@ -126,7 +126,7 @@ const DashboardManager = {
             .catch(error => {
                 console.warn('Health status not available:', error.message);
                 // Set default healthy status
-                this.updateSystemHealth({errors: [], database_errors: []});
+                this.updateSystemHealth({data: {overall_status: 'unknown', components: {}}});
                 AICameraUtils.addLogMessage('main-system-log', 'Failed to get system health: ' + error.message, 'error');
             });
     },
@@ -269,20 +269,39 @@ const DashboardManager = {
      * Update system health display
      */
     updateSystemHealth: function(healthData) {
-        // System status is generally healthy if no critical errors
-        const systemHealthy = !healthData.errors || healthData.errors.length === 0;
-        AICameraUtils.updateStatusIndicator('main-system-status', systemHealthy, 
-            systemHealthy ? 'Healthy' : 'Issues');
+        console.log('Updating system health with data:', healthData);
+        
+        // Extract health data from new format
+        const health = healthData.data || healthData;
+        const overallStatus = health.overall_status || 'unknown';
+        const components = health.components || {};
+        
+        // Determine system health based on overall status
+        const systemHealthy = overallStatus === 'healthy';
+        const systemStatusText = overallStatus.charAt(0).toUpperCase() + overallStatus.slice(1);
+        
+        AICameraUtils.updateStatusIndicator('main-system-status', systemHealthy, systemStatusText);
 
-        // Database status - assume connected if no database errors
-        const databaseHealthy = !healthData.database_errors || healthData.database_errors.length === 0;
-        AICameraUtils.updateStatusIndicator('main-database-status', databaseHealthy, 
-            databaseHealthy ? 'Connected' : 'Issues');
+        // Database status from components
+        const databaseComponent = components.database || {};
+        const databaseHealthy = databaseComponent.status === 'healthy';
+        const databaseStatusText = databaseComponent.status ? 
+            databaseComponent.status.charAt(0).toUpperCase() + databaseComponent.status.slice(1) : 
+            'Unknown';
+            
+        AICameraUtils.updateStatusIndicator('main-database-status', databaseHealthy, databaseStatusText);
         
         // Update detailed database status
         const databaseDetailElement = document.getElementById('main-database-detail-status');
         if (databaseDetailElement) {
-            databaseDetailElement.textContent = databaseHealthy ? 'Connected' : 'Issues';
+            databaseDetailElement.textContent = databaseStatusText;
+        }
+        
+        // Log system health status
+        if (overallStatus === 'healthy') {
+            AICameraUtils.addLogMessage('main-system-log', 'System health: ' + systemStatusText, 'success');
+        } else {
+            AICameraUtils.addLogMessage('main-system-log', 'System health: ' + systemStatusText, 'warning');
         }
     },
 

@@ -25,7 +25,7 @@ from flask_socketio import SocketIO
 # Import blueprints using absolute paths
 from v1_3.src.web.blueprints.main import main_bp, register_main_events
 from v1_3.src.web.blueprints.camera import camera_bp, register_camera_events
-from v1_3.src.web.blueprints.health import health_bp
+from v1_3.src.web.blueprints.health import health_bp, register_health_events
 from v1_3.src.web.blueprints.streaming import streaming_bp
 from v1_3.src.web.blueprints.detection import detection_bp, register_detection_events
 from v1_3.src.web.blueprints.detection_results import detection_results_bp
@@ -55,5 +55,5 @@ def register_blueprints(app: Flask, socketio: SocketIO):
     register_detection_events(socketio)
     
     # Register other WebSocket events here
-    # register_health_events(socketio)
+    register_health_events(socketio)
     # register_streaming_events(socketio)

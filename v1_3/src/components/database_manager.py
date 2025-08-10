@@ -120,6 +120,19 @@ class DatabaseManager:
                 )
             """)
             
+            # Health checks table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS health_checks (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT NOT NULL,
+                    component TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    message TEXT,
+                    details TEXT,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
             self.connection.commit()
             self.logger.info("Database tables created successfully")
             
@@ -559,6 +572,82 @@ class DatabaseManager:
                 'last_update': datetime.now().isoformat()
         }
 
+    
+    def insert_health_check_result(self, timestamp: str, component: str, status: str, message: str, details: str = None) -> Optional[int]:
+        """
+        Insert health check result into database.
+        
+        Args:
+            timestamp: Timestamp of the health check
+            component: Component being checked
+            status: Status result ('PASS', 'FAIL', 'WARNING')
+            message: Status message
+            details: Additional details as JSON string
+            
+        Returns:
+            Optional[int]: ID of inserted record, None if failed
+        """
+        try:
+            if not self.connection:
+                self.logger.warning("Database connection not available")
+                return None
+            
+            cursor = self.connection.cursor()
+            cursor.execute("""
+                INSERT INTO health_checks (timestamp, component, status, message, details)
+                VALUES (?, ?, ?, ?, ?)
+            """, (timestamp, component, status, message, details))
+            
+            self.connection.commit()
+            record_id = cursor.lastrowid
+            
+            self.logger.debug(f"Health check result logged: {component} - {status}")
+            return record_id
+            
+        except Exception as e:
+            self.logger.error(f"Error inserting health check result: {e}")
+            return None
+    
+    def get_latest_health_checks(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        Get latest health check results.
+        
+        Args:
+            limit: Number of recent checks to retrieve
+            
+        Returns:
+            List[Dict[str, Any]]: List of health check results
+        """
+        try:
+            if not self.connection:
+                return []
+            
+            cursor = self.connection.cursor()
+            cursor.execute("""
+                SELECT timestamp, component, status, message, details
+                FROM health_checks
+                ORDER BY timestamp DESC
+                LIMIT ?
+            """, (limit,))
+            
+            rows = cursor.fetchall()
+            results = []
+            
+            for row in rows:
+                result = {
+                    'timestamp': row[0],
+                    'component': row[1],
+                    'status': row[2],
+                    'message': row[3],
+                    'details': row[4]
+                }
+                results.append(result)
+            
+            return results
+            
+        except Exception as e:
+            self.logger.error(f"Error getting latest health checks: {e}")
+            return []
     
     def cleanup(self):
         """Clean up database connection and resources."""

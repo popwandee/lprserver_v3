@@ -550,7 +550,9 @@ from v1_3.src.core.utils.logging_config import get_logger
 AUTO_START_CAMERA = True
 AUTO_START_STREAMING = True  
 AUTO_START_DETECTION = True
+AUTO_START_HEALTH_MONITOR = True  # Auto start health monitoring when detection starts
 STARTUP_DELAY = 5.0  # seconds
+HEALTH_MONITOR_STARTUP_DELAY = 10.0  # Delay before starting health monitoring
 ```
 
 ### 10.2 Service Initialization Order
@@ -567,6 +569,13 @@ def _initialize_services(logger):
     detection_manager = get_service('detection_manager')
     if detection_manager:
         detection_manager.initialize()  # Auto-starts detection if configured
+        
+    # 3. Health Monitor and Service (auto-starts monitoring when camera and detection are ready)
+    health_monitor = get_service('health_monitor')
+    health_service = get_service('health_service')
+    if health_monitor and health_service:
+        health_monitor.initialize()
+        health_service.initialize()  # Auto-starts monitoring when components are ready
 ```
 
 ### 10.3 Camera Manager Auto-Startup
@@ -600,6 +609,34 @@ def _auto_start_detection(self):
     camera_manager = get_service('camera_manager')
     if self._is_camera_ready(camera_manager):
         self.start_detection()
+```
+
+### 10.5 Health Monitor Auto-Startup
+```python
+# v1_3/src/services/health_service.py
+def initialize(self):
+    """Initialize health service with auto-start support."""
+    # Initialize health monitor component
+    if self.health_monitor.initialize():
+        # Set up auto-start monitoring if enabled
+        if AUTO_START_HEALTH_MONITOR:
+            self._setup_auto_start_monitoring()
+            
+def _setup_auto_start_monitoring(self):
+    """Set up auto-start monitoring when camera and detection are ready."""
+    def auto_start_monitor():
+        # Wait initial delay
+        time.sleep(HEALTH_MONITOR_STARTUP_DELAY)
+        
+        # Check if components are ready
+        while not self._should_start_monitoring():
+            time.sleep(30)  # Check every 30 seconds
+            
+        # Start monitoring when ready
+        self.start_monitoring(interval=60)
+    
+    # Start monitoring thread
+    threading.Thread(target=auto_start_monitor, daemon=True).start()
 ```
 
 ## 11. Frame Capture Data Flow Architecture
@@ -687,7 +724,7 @@ AI Camera v1.3 ใช้ Dependency Injection, Flask Blueprints และ **Abso
 - **Testable**: ทดสอบได้ง่าย
 - **Scalable**: ขยายได้ง่าย
 - **Clear**: Import paths ชัดเจนและเข้าใจง่าย
-- **Auto-Startup**: รองรับการเริ่มงานอัตโนมัติแบบ sequential
+- **Auto-Startup**: รองรับการเริ่มงานอัตโนมัติแบบ sequential (camera → detection → health monitor)
 - **Frame-Safe**: ป้องกัน frame data type errors
 - **Attribute-Safe**: ป้องกัน attribute access errors
 
