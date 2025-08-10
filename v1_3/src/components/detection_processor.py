@@ -12,7 +12,7 @@ This component provides AI detection operations using Hailo AI models:
 
 Author: AI Camera Team  
 Version: 1.3
-Date: December 2024
+Date: August 2025
 """
 
 import os
