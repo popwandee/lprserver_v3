@@ -14,6 +14,7 @@ Features:
 Author: AI Camera Team
 Version: 1.3
 Date: August 2025
+
 """
 
 import sqlite3

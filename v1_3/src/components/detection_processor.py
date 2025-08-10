@@ -174,8 +174,8 @@ class DetectionProcessor:
         
         Args:
             frame: Input image frame as numpy array
-        
-    Returns:
+            
+        Returns:
             Optional[np.ndarray]: Enhanced frame or None if validation fails
         """
         if frame is None or frame.size == 0:
