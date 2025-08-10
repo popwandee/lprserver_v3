@@ -24,6 +24,7 @@ from typing import Dict, Any, Optional, List
 from v1_3.src.core.utils.logging_config import get_logger
 from v1_3.src.core.config import DETECTION_INTERVAL, AUTO_START_DETECTION, STARTUP_DELAY
 from v1_3.src.core.dependency_container import get_service
+
 logger = get_logger(__name__)
 
 
@@ -81,7 +82,6 @@ class DetectionManager:
         # Configuration
         self.detection_interval = DETECTION_INTERVAL
         self.auto_start_enabled = AUTO_START_DETECTION  # Auto-start detection from config
-        
         self.logger.info("DetectionManager initialized")
     
     def initialize(self) -> bool:
@@ -374,13 +374,11 @@ class DetectionManager:
         """
         self.logger.info("Detection loop started")
         
-        # Get camera manager from dependency container
-        
+        # Get camera manager from dependency container    
         while self.is_running:
             try:
                 # Get camera manager
                 camera_manager = get_service('camera_manager')
-                
                 if camera_manager and self._is_camera_ready(camera_manager):
                     # Process frame from camera
                     result = self.process_frame_from_camera(camera_manager)

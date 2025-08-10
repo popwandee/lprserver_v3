@@ -57,4 +57,3 @@ def register_blueprints(app: Flask, socketio: SocketIO):
     # Register other WebSocket events here
     # register_health_events(socketio)
     # register_streaming_events(socketio)
-

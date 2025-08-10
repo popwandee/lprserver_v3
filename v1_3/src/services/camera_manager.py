@@ -293,7 +293,7 @@ class CameraManager:
             if not self.camera_handler or not self.camera_handler.initialized:
                 self.logger.warning("Cannot capture frame - camera not initialized")
                 return None
-            
+           
             # Capture frame from camera handler (returns dict with 'frame' key)
             frame_data = self.camera_handler.capture_frame()
             if frame_data is not None and isinstance(frame_data, dict) and 'frame' in frame_data:

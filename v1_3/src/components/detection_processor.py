@@ -76,7 +76,6 @@ class DetectionProcessor:
         self.detection_resolution = (640, 640)
         self.confidence_threshold = CONFIDENCE_THRESHOLD
         self.plate_confidence_threshold = PLATE_CONFIDENCE_THRESHOLD
-        
         self.logger.info("DetectionProcessor initialized")
     
     def load_models(self) -> bool:
@@ -177,7 +176,7 @@ class DetectionProcessor:
         
         Args:
             frame: Input image frame as numpy array
-        
+
         Returns:
             Optional[np.ndarray]: Enhanced frame or None if validation fails
         """
