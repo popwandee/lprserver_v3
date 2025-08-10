@@ -36,7 +36,9 @@ def validate_imports() -> List[str]:
         'v1_3.src.core.config',
         'v1_3.src.core.dependency_container',
         'v1_3.src.components.camera_handler',
+        'v1_3.src.components.health_monitor',
         'v1_3.src.services.camera_manager',
+        'v1_3.src.services.health_service',
         # ... more modules
     ]
 ```
@@ -47,6 +49,8 @@ def validate_imports() -> List[str]:
 # ตัวอย่างการใช้ absolute imports
 from v1_3.src.core.dependency_container import get_service
 from v1_3.src.components.camera_handler import CameraHandler
+from v1_3.src.components.health_monitor import HealthMonitor
+from v1_3.src.services.health_service import HealthService
 
 # Import validation on startup
 import_errors = validate_imports()
@@ -101,6 +105,14 @@ class DependencyContainer:
         except ImportError:
             self.logger.warning("CameraHandler not available")
         
+        # Register health monitoring components
+        try:
+            from v1_3.src.components.health_monitor import HealthMonitor
+            self.register_service('health_monitor', HealthMonitor, 
+                                singleton=True, dependencies={'logger': 'logger'})
+        except ImportError:
+            self.logger.warning("HealthMonitor not available")
+        
         # Register service layer components
         try:
             from v1_3.src.services.camera_manager import CameraManager, create_camera_manager
@@ -110,6 +122,15 @@ class DependencyContainer:
                                 dependencies={'camera_handler': 'camera_handler', 'logger': 'logger'})
         except ImportError as e:
             self.logger.warning(f"CameraManager service not available: {e}")
+        
+        try:
+            from v1_3.src.services.health_service import HealthService, create_health_service
+            self.register_service('health_service', HealthService, 
+                                singleton=True, 
+                                factory=create_health_service,
+                                dependencies={'health_monitor': 'health_monitor', 'logger': 'logger'})
+        except ImportError as e:
+            self.logger.warning(f"HealthService not available: {e}")
 ```
 
 ### 2.3 Service Registration
@@ -124,6 +145,10 @@ container.register_service('detection_manager', DetectionManager,
                          dependencies={'detection_processor': 'detection_processor',
                                      'database_manager': 'database_manager',
                                      'logger': 'logger'})
+
+container.register_service('health_service', HealthService,
+                         dependencies={'health_monitor': 'health_monitor',
+                                     'logger': 'logger'})
 ```
 
 ### 2.4 การใช้งานใน Components
@@ -135,10 +160,12 @@ from v1_3.src.core.dependency_container import get_service
 def some_function():
     camera_manager = get_service('camera_manager')
     detection_manager = get_service('detection_manager')
+    health_service = get_service('health_service')
     
     # ใช้งาน services
     camera_manager.start()
     results = detection_manager.detect_objects('coco')
+    health_status = health_service.get_system_health()
 ```
 
 ## 3. Flask Blueprints Pattern
@@ -174,7 +201,7 @@ from flask_socketio import SocketIO
 # Import blueprints using absolute paths
 from v1_3.src.web.blueprints.main import main_bp
 from v1_3.src.web.blueprints.camera import camera_bp, register_camera_events
-from v1_3.src.web.blueprints.health import health_bp
+from v1_3.src.web.blueprints.health import health_bp, register_health_events
 from v1_3.src.web.blueprints.streaming import streaming_bp
 from v1_3.src.web.blueprints.detection import detection_bp
 from v1_3.src.web.blueprints.websocket import websocket_bp
@@ -191,13 +218,14 @@ def register_blueprints(app: Flask, socketio: SocketIO):
     
     # Register WebSocket events
     register_camera_events(socketio)
+    register_health_events(socketio)
 ```
 
-### 3.4 Camera Blueprint Example
+### 3.4 Health Blueprint Example
 
 ```python
-# v1_3/src/web/blueprints/camera.py
-from flask import Blueprint, render_template, jsonify, request, Response
+# v1_3/src/web/blueprints/health.py
+from flask import Blueprint, render_template, jsonify, request
 from flask_socketio import emit, join_room, leave_room
 
 # Use absolute imports
@@ -205,31 +233,46 @@ from v1_3.src.core.dependency_container import get_service
 from v1_3.src.core.utils.logging_config import get_logger
 
 # Create blueprint
-camera_bp = Blueprint('camera', __name__, url_prefix='/camera')
+health_bp = Blueprint('health', __name__, url_prefix='/health')
 
 logger = get_logger(__name__)
 
-@camera_bp.route('/status')
-def get_camera_status():
-    """Get current camera status."""
-    try:
-        camera_manager = get_service('camera_manager')
-        if not camera_manager:
-            return jsonify({'error': 'Camera manager not available'}), 500
-        
-        status = camera_manager.get_status()
-        return jsonify({
-            'success': True,
-            'status': status,
-            'timestamp': datetime.now().isoformat()
-        })
-    except Exception as e:
-        logger.error(f"Error getting camera status: {e}")
-        return jsonify({
-            'success': False,
-            'error': str(e),
-            'timestamp': datetime.now().isoformat()
-        }), 500
+@health_bp.route('/')
+def health_dashboard():
+    """Render health monitoring dashboard."""
+    return render_template('health/dashboard.html')
+
+@health_bp.route('/system')
+def get_system_health():
+    """Get comprehensive system health status."""
+    health_service = get_service('health_service')
+    health_data = health_service.get_system_health()
+    return jsonify(health_data)
+
+@health_bp.route('/logs')
+def get_health_logs():
+    """Get health check logs with pagination."""
+    health_service = get_service('health_service')
+    logs_data = health_service.get_health_logs(
+        level=level,
+        limit=limit,
+        page=page
+    )
+    return jsonify(logs_data)
+
+@health_bp.route('/monitor/start', methods=['POST'])
+def start_monitoring():
+    """Start continuous health monitoring."""
+    health_service = get_service('health_service')
+    success = health_service.start_monitoring(interval=interval)
+    return jsonify({'success': success})
+
+@health_bp.route('/monitor/stop', methods=['POST'])
+def stop_monitoring():
+    """Stop continuous health monitoring."""
+    health_service = get_service('health_service')
+    health_service.stop_monitoring()
+    return jsonify({'success': True})
 ```
 
 ## 4. System Architecture
@@ -256,7 +299,7 @@ v1_3/
 ├── docs/
 │     └── class_diagram.puml      # Class Diagram
 │     └── component_diagram.puml      # Component Diagram
-│     └── variable_conflict_prevention_guide.mk      # Guildline to prevent variable conflict
+│     └── variable_conflict_prevention_guide.md      # Guildline to prevent variable conflict
 │     └── variable_mapping_diagram.puml      # variable mapping backend and frontend
 ├── scripts/
 ├── src/                #Core Components Structure
@@ -291,6 +334,7 @@ v1_3/src/
 │   ├── __init__.py
 │   ├── camera_manager.py          # Camera Management, Camera business logic
 │   ├── detection_manager.py       # Detection Management, Detection workflow
+│   ├── health_service.py          # Health monitoring business logic
 │   ├── video_streaming.py         # Video Streaming service
 │   └── websocket_sender.py        # WebSocket Communication
 └── web/                           # Web interface layer
@@ -348,36 +392,391 @@ class CameraManager:
         return self.camera_handler.get_status()
 ```
 
-## 5. WebSocket Integration
+```python
+# v1_3/src/services/health_service.py
+from v1_3.src.components.health_monitor import HealthMonitor
+from v1_3.src.core.utils.logging_config import get_logger
 
-### 5.1 Blueprint WebSocket Events
+class HealthService:
+    def __init__(self, health_monitor: HealthMonitor, logger):
+        self.health_monitor = health_monitor
+        self.logger = logger
+    
+    def get_system_health(self) -> Dict[str, Any]:
+        """Get comprehensive system health status."""
+        return self.health_monitor.run_all_checks()
+    
+    def start_monitoring(self, interval: int = None) -> bool:
+        """Start continuous health monitoring."""
+        return self.health_monitor.start_monitoring(interval)
+    
+    def stop_monitoring(self):
+        """Stop continuous health monitoring."""
+        self.health_monitor.stop_monitoring()
+```
+
+## 5. Health Monitoring Architecture
+
+### 5.1 Health Monitoring System Overview
+
+ระบบ Health Monitoring ของ AI Camera v1.3 ประกอบด้วย 3 ชั้นหลัก:
+
+1. **HealthMonitor Component** - Low-level health checks
+2. **HealthService** - Business logic layer
+3. **Health Blueprint** - Web interface layer
+
+### 5.2 HealthMonitor Component (Low-level)
 
 ```python
-# v1_3/src/web/blueprints/camera.py
-def register_camera_events(socketio):
-    @socketio.on('camera_status_request')
-    def handle_camera_status_request():
-        camera_manager = get_service('camera_manager')
-        status = camera_manager.get_status()
-        emit('camera_status_update', status)
+# v1_3/src/components/health_monitor.py
+class HealthMonitor:
+    """
+    Health Monitor Component for system health monitoring.
     
-    @socketio.on('camera_control')
-    def handle_camera_control(data):
-        command = data.get('command')
-        camera_manager = get_service('camera_manager')
-        
-        if command == 'start':
-            success = camera_manager.start()
-        elif command == 'stop':
-            success = camera_manager.stop()
-        
-        emit('camera_control_response', {
-            'command': command,
-            'success': success
+    Monitors:
+    - Camera status and streaming
+    - Disk space availability
+    - CPU and RAM usage
+    - Detection model availability
+    - EasyOCR initialization
+    - Database connectivity
+    - Network connectivity
+    """
+    
+    def __init__(self, logger=None):
+        self.logger = logger or get_logger(__name__)
+        self.db_manager = None
+        self.camera_manager = None
+        self.detection_manager = None
+        self.running = False
+        self.stop_event = Event()
+        self.monitor_thread = None
+    
+    def initialize(self) -> bool:
+        """Initialize Health Monitor with database connection."""
+        # Initialize database manager
+        # Create health_checks table
+        # Get other services from DI container
+    
+    def check_camera(self) -> bool:
+        """Check if camera is initialized and streaming."""
+        # Check camera manager status
+        # Validate initialization and streaming
+    
+    def check_disk_space(self, path: str = None, required_gb: float = 1.0) -> bool:
+        """Check available disk space."""
+        # Use shutil.disk_usage
+        # Validate free space
+    
+    def check_cpu_ram(self) -> bool:
+        """Check CPU and RAM usage."""
+        # Use psutil for system metrics
+        # Check usage thresholds
+    
+    def check_model_loading(self) -> bool:
+        """Check if detection models are available."""
+        # Check via detection service API
+        # Fallback to direct degirum check
+    
+    def check_easyocr_init(self) -> bool:
+        """Check if EasyOCR can be imported and initialized."""
+        # Import easyocr
+        # Initialize with supported languages
+    
+    def check_database_connection(self) -> bool:
+        """Check database connectivity."""
+        # Test database connection
+        # Execute simple query
+    
+    def check_network_connectivity(self) -> bool:
+        """Check network connectivity to external services."""
+        # Test Google DNS
+        # Test localhost WebSocket server
+    
+    def run_all_checks(self) -> Dict[str, Any]:
+        """Run all health checks and return comprehensive status."""
+        # Execute all checks
+        # Determine overall status
+        # Return detailed results
+    
+    def start_monitoring(self, interval: int = None) -> bool:
+        """Start continuous health monitoring."""
+        # Start background monitoring thread
+        # Run checks at specified interval
+    
+    def stop_monitoring(self):
+        """Stop continuous health monitoring."""
+        # Stop monitoring thread
+        # Cleanup resources
+```
+
+### 5.3 HealthService (Business Logic Layer)
+
+```python
+# v1_3/src/services/health_service.py
+class HealthService:
+    """
+    Health Service for managing system health monitoring.
+    
+    Provides:
+    - Health status aggregation
+    - System resource monitoring
+    - Health check scheduling
+    - Status reporting for web interface
+    - Auto-startup monitoring coordination
+    """
+    
+    def __init__(self, health_monitor=None, logger=None):
+        self.logger = logger or get_logger(__name__)
+        self.health_monitor = health_monitor
+        self.last_system_status = None
+        self.last_check_time = None
+    
+    def initialize(self) -> bool:
+        """Initialize Health Service with dependencies."""
+        # Get health monitor from DI container
+        # Initialize health monitor
+        # Set up auto-start monitoring if enabled
+    
+    def get_system_health(self) -> Dict[str, Any]:
+        """Get comprehensive system health status."""
+        # Run health checks
+        # Get system resource information
+        # Build component status
+        # Add error details
+        # Return comprehensive response
+    
+    def _build_component_status(self, health_result: Dict[str, Any]) -> Dict[str, Any]:
+        """Build component status from health check results."""
+        # Camera status with real-time data
+        # Detection status using detection module patterns
+        # Database status with connection test
+        # System status with resource metrics
+    
+    def _get_system_info(self) -> Dict[str, Any]:
+        """Get current system resource information."""
+        # CPU usage and count
+        # Memory usage statistics
+        # Disk usage statistics
+        # System uptime
+    
+    def get_health_logs(self, level: str = None, limit: int = 50, page: int = 1) -> Dict[str, Any]:
+        """Get health check logs from database with pagination."""
+        # Get logs from health monitor
+        # Apply level filtering
+        # Implement pagination
+        # Format response
+    
+    def start_monitoring(self, interval: int = None) -> bool:
+        """Start continuous health monitoring."""
+        # Delegate to health monitor
+    
+    def stop_monitoring(self):
+        """Stop continuous health monitoring."""
+        # Delegate to health monitor
+    
+    def _setup_auto_start_monitoring(self):
+        """Set up auto-start monitoring when camera and detection are ready."""
+        # Start background thread
+        # Check component readiness
+        # Start monitoring when ready
+    
+    def _should_start_monitoring(self) -> bool:
+        """Check if health monitoring should start automatically."""
+        # Check camera readiness
+        # Check detection readiness
+        # Return combined status
+    
+    def _is_detection_processor_ready(self, detection_status: Dict[str, Any]) -> bool:
+        """Check if detection processor is ready using detection module patterns."""
+        # Check processor status
+        # Validate model availability
+        # Return readiness status
+```
+
+### 5.4 Health Blueprint (Web Interface Layer)
+
+```python
+# v1_3/src/web/blueprints/health.py
+@health_bp.route('/')
+def health_dashboard():
+    """Render health monitoring dashboard."""
+    return render_template('health/dashboard.html')
+
+@health_bp.route('/system')
+def get_system_health():
+    """Get comprehensive system health status."""
+    health_service = get_service('health_service')
+    health_data = health_service.get_system_health()
+    return jsonify(health_data)
+
+@health_bp.route('/logs')
+def get_health_logs():
+    """Get health check logs with pagination."""
+    health_service = get_service('health_service')
+    logs_data = health_service.get_health_logs(
+        level=level,
+        limit=limit,
+        page=page
+    )
+    return jsonify(logs_data)
+
+@health_bp.route('/monitor/start', methods=['POST'])
+def start_monitoring():
+    """Start continuous health monitoring."""
+    health_service = get_service('health_service')
+    success = health_service.start_monitoring(interval=interval)
+    return jsonify({'success': success})
+
+@health_bp.route('/monitor/stop', methods=['POST'])
+def stop_monitoring():
+    """Stop continuous health monitoring."""
+    health_service = get_service('health_service')
+    health_service.stop_monitoring()
+    return jsonify({'success': True})
+```
+
+### 5.5 Health Monitoring Data Flow
+
+```
+User Request → Health Blueprint → HealthService → HealthMonitor → System Components
+     ↓              ↓                ↓              ↓                ↓
+Web Interface → Business Logic → Health Checks → Hardware/APIs → Status Data
+     ↓              ↓                ↓              ↓                ↓
+Dashboard ← JSON Response ← Aggregated Data ← Raw Checks ← Component Status
+```
+
+### 5.6 Health Status Response Structure
+
+```json
+{
+    "success": true,
+    "data": {
+        "overall_status": "healthy|unhealthy|critical|unknown",
+        "components": {
+            "camera": {
+                "status": "healthy|unhealthy|critical|unknown",
+                "initialized": true,
+                "streaming": true,
+                "frame_count": 1234,
+                "average_fps": 29.5,
+                "uptime": 3600,
+                "auto_start_enabled": true,
+                "last_check": "2025-08-10T11:30:00.000Z"
+            },
+            "detection": {
+                "status": "healthy|unhealthy|critical|unknown",
+                "models_loaded": true,
+                "easyocr_available": true,
+                "detection_active": true,
+                "service_running": true,
+                "thread_alive": true,
+                "auto_start": true,
+                "last_check": "2025-08-10T11:30:00.000Z"
+            },
+            "database": {
+                "status": "healthy|unhealthy|critical|unknown",
+                "connected": true,
+                "database_path": "/path/to/database.db",
+                "last_check": "2025-08-10T11:30:00.000Z"
+            },
+            "system": {
+                "status": "healthy|unhealthy|critical|unknown",
+                "last_check": "2025-08-10T11:30:00.000Z"
+            }
+        },
+        "system": {
+            "cpu_usage": 25.5,
+            "cpu_count": 4,
+            "memory_usage": {
+                "used": 6.2,
+                "total": 15.84,
+                "percentage": 39.1
+            },
+            "disk_usage": {
+                "used": 20.64,
+                "total": 57.44,
+                "percentage": 35.9
+            },
+            "uptime": 86400
+        },
+        "error_details": {
+            "component_name": {
+                "status": "unhealthy",
+                "issues": ["Issue description"]
+            }
+        },
+        "last_check": "2025-08-10T11:30:00.000Z"
+    },
+    "timestamp": "2025-08-10T11:30:00.000Z"
+}
+```
+
+## 6. WebSocket Integration
+
+### 6.1 Blueprint WebSocket Events
+
+```python
+# v1_3/src/web/blueprints/health.py
+def register_health_events(socketio):
+    @socketio.on('health_status_request')
+    def handle_health_status_request():
+        health_service = get_service('health_service')
+        health_data = health_service.get_system_health()
+        emit('health_status_update', health_data)
+    
+    @socketio.on('health_logs_request')
+    def handle_health_logs_request(data):
+        health_service = get_service('health_service')
+        logs_data = health_service.get_health_logs(
+            level=data.get('level'),
+            limit=data.get('limit', 50),
+            page=data.get('page', 1)
+        )
+        emit('health_logs_update', logs_data)
+    
+    @socketio.on('health_monitor_start')
+    def handle_health_monitor_start(data):
+        health_service = get_service('health_service')
+        success = health_service.start_monitoring(interval=data.get('interval'))
+        emit('health_monitor_response', {
+            'success': success,
+            'message': 'Health monitoring started successfully' if success else 'Failed to start monitoring'
+        })
+    
+    @socketio.on('health_monitor_stop')
+    def handle_health_monitor_stop():
+        health_service = get_service('health_service')
+        health_service.stop_monitoring()
+        emit('health_monitor_response', {
+            'success': True,
+            'message': 'Health monitoring stopped successfully'
+        })
+    
+    @socketio.on('health_check_run')
+    def handle_health_check_run():
+        health_service = get_service('health_service')
+        health_data = health_service.get_system_health()
+        emit('health_check_response', health_data)
+    
+    @socketio.on('join_health_room')
+    def handle_join_health_room():
+        join_room('health_monitoring')
+        emit('health_room_joined', {
+            'success': True,
+            'message': 'Joined health monitoring room'
+        })
+    
+    @socketio.on('leave_health_room')
+    def handle_leave_health_room():
+        leave_room('health_monitoring')
+        emit('health_room_left', {
+            'success': True,
+            'message': 'Left health monitoring room'
         })
 ```
 
-### 5.2 การลงทะเบียน WebSocket Events
+### 6.2 การลงทะเบียน WebSocket Events
 
 ```python
 # v1_3/src/app.py
@@ -397,9 +796,9 @@ def register_websocket_handlers(socketio):
     register_main_events(socketio)
 ```
 
-## 6. การใช้งานในทางปฏิบัติ
+## 7. การใช้งานในทางปฏิบัติ
 
-### 6.1 การเพิ่ม Component ใหม่
+### 7.1 การเพิ่ม Component ใหม่
 
 1. **สร้าง Component Class ใช้ absolute imports**:
 ```python
@@ -453,7 +852,7 @@ def register_blueprints(app: Flask, socketio: SocketIO):
     app.register_blueprint(new_feature_bp)
 ```
 
-### 6.2 การ Testing
+### 7.2 การ Testing
 
 ```python
 # test_example.py
@@ -470,33 +869,55 @@ def test_camera_manager():
     mock_camera_handler.initialize_camera.assert_called_once()
 ```
 
-## 7. ประโยชน์ของ Architecture นี้
+```python
+# test_health_service.py
+def test_health_service():
+    # Mock dependencies
+    mock_health_monitor = Mock()
+    mock_logger = Mock()
+    
+    # Create service with mocked dependencies
+    health_service = HealthService(mock_health_monitor, mock_logger)
+    
+    # Test functionality
+    health_service.get_system_health()
+    mock_health_monitor.run_all_checks.assert_called_once()
+```
 
-### 7.1 Modularity
+## 8. ประโยชน์ของ Architecture นี้
+
+### 8.1 Modularity
 - แต่ละ Component มีหน้าที่ชัดเจน
 - สามารถพัฒนาและทดสอบแยกกันได้
 - ง่ายต่อการเพิ่มหรือลบฟีเจอร์
 - **Absolute imports ทำให้ dependencies ชัดเจน**
 
-### 7.2 Maintainability
+### 8.2 Maintainability
 - Code มีโครงสร้างชัดเจน
 - Dependencies ถูกจัดการอย่างเป็นระบบ
 - ง่ายต่อการ Debug และ Troubleshoot
 - **Import paths ชัดเจนและเข้าใจง่าย**
 
-### 7.3 Scalability
+### 8.3 Scalability
 - สามารถเพิ่ม Components ใหม่ได้ง่าย
 - Blueprints ช่วยจัดการ Routes ได้ดี
 - DI ช่วยจัดการ Dependencies ได้อย่างมีประสิทธิภาพ
 - **Absolute imports รองรับการขยายระบบได้ดี**
 
-### 7.4 Testability
+### 8.4 Testability
 - Components สามารถ Mock ได้ง่าย
 - Unit Testing ทำได้สะดวก
 - Integration Testing มีโครงสร้างชัดเจน
 - **Import validation ช่วยตรวจสอบ dependencies**
 
-## 8. Best Practices
+### 8.5 Health Monitoring Benefits
+- **Comprehensive Monitoring**: ครอบคลุมทุก component หลัก
+- **Real-time Status**: สถานะแบบ real-time ผ่าน WebSocket
+- **Auto-startup Coordination**: ประสานงานกับ auto-startup sequence
+- **Detailed Logging**: บันทึก logs อย่างละเอียดในฐานข้อมูล
+- **Error Prevention**: ป้องกันข้อผิดพลาดด้วย validation patterns
+
+## 9. Best Practices
 
 1. **ใช้ Absolute Imports** สำหรับทุก module
 2. **ใช้ DI Container** สำหรับการจัดการ Dependencies ทั้งหมด
@@ -507,10 +928,11 @@ def test_camera_manager():
 7. **ใช้ Logging** อย่างเหมาะสม
 8. **จัดการ Error** อย่างเป็นระบบ
 9. **Validate Imports** ในการ startup
+10. **Health Monitoring Integration** สำหรับทุก component ใหม่
 
-## 9. Migration Guide
+## 10. Migration Guide
 
-### 9.1 การแปลงจาก Relative Imports เป็น Absolute Imports
+### 10.1 การแปลงจาก Relative Imports เป็น Absolute Imports
 
 ```bash
 # รัน migration script
@@ -518,7 +940,7 @@ cd v1_3
 python scripts/migrate_absolute_imports.py
 ```
 
-### 9.2 การตรวจสอบ Imports
+### 10.2 การตรวจสอบ Imports
 
 ```python
 # ตรวจสอบ imports ใน startup
@@ -530,7 +952,7 @@ if import_errors:
         print(f"Import error: {error}")
 ```
 
-### 9.3 การเพิ่ม Module ใหม่
+### 10.3 การเพิ่ม Module ใหม่
 
 ```python
 # 1. สร้างไฟล์ใหม่
@@ -542,9 +964,9 @@ from v1_3.src.core.utils.logging_config import get_logger
 # 4. อัพเดท import validation
 ```
 
-## 10. Auto-Startup Sequence Architecture
+## 11. Auto-Startup Sequence Architecture
 
-### 10.1 Auto-Startup Configuration
+### 11.1 Auto-Startup Configuration
 ```python
 # v1_3/src/core/config.py
 AUTO_START_CAMERA = True
@@ -555,7 +977,7 @@ STARTUP_DELAY = 5.0  # seconds
 HEALTH_MONITOR_STARTUP_DELAY = 10.0  # Delay before starting health monitoring
 ```
 
-### 10.2 Service Initialization Order
+### 11.2 Service Initialization Order
 ```python
 # v1_3/src/app.py
 def _initialize_services(logger):
@@ -578,7 +1000,7 @@ def _initialize_services(logger):
         health_service.initialize()  # Auto-starts monitoring when components are ready
 ```
 
-### 10.3 Camera Manager Auto-Startup
+### 11.3 Camera Manager Auto-Startup
 ```python
 # v1_3/src/services/camera_manager.py
 def initialize(self):
@@ -595,7 +1017,7 @@ def _auto_start_camera(self):
             self.start_streaming()
 ```
 
-### 10.4 Detection Manager Auto-Startup
+### 11.4 Detection Manager Auto-Startup
 ```python
 # v1_3/src/services/detection_manager.py
 def initialize(self):
@@ -611,7 +1033,7 @@ def _auto_start_detection(self):
         self.start_detection()
 ```
 
-### 10.5 Health Monitor Auto-Startup
+### 11.5 Health Monitor Auto-Startup
 ```python
 # v1_3/src/services/health_service.py
 def initialize(self):
@@ -639,9 +1061,9 @@ def _setup_auto_start_monitoring(self):
     threading.Thread(target=auto_start_monitor, daemon=True).start()
 ```
 
-## 11. Frame Capture Data Flow Architecture
+## 12. Frame Capture Data Flow Architecture
 
-### 11.1 Frame Data Structure
+### 12.1 Frame Data Structure
 ```python
 # Camera Handler returns dict format
 frame_data = {
@@ -654,7 +1076,7 @@ frame_data = {
 frame = frame_data['frame']  # Extract for detection processing
 ```
 
-### 11.2 Frame Validation Pipeline
+### 12.2 Frame Validation Pipeline
 ```python
 # v1_3/src/components/detection_processor.py
 def validate_and_enhance_frame(self, frame):
@@ -674,7 +1096,7 @@ def validate_and_enhance_frame(self, frame):
         return None
 ```
 
-### 11.3 Detection Pipeline Data Flow
+### 12.3 Detection Pipeline Data Flow
 ```
 Camera Handler.capture_frame()
     ↓ (returns dict with 'frame' key)
@@ -689,9 +1111,9 @@ AI Model Processing
 Result Storage & WebSocket Broadcast
 ```
 
-## 12. Error Prevention Patterns
+## 13. Error Prevention Patterns
 
-### 12.1 Attribute Access Safety
+### 13.1 Attribute Access Safety
 ```python
 # Safe camera status checking
 def _is_camera_ready(self, camera_manager):
@@ -704,7 +1126,7 @@ def _is_camera_ready(self, camera_manager):
             status.get('streaming', False))
 ```
 
-### 12.2 Service Configuration Safety
+### 13.2 Service Configuration Safety
 ```python
 # Safe attribute access for auto-start settings
 def get_status(self):
@@ -716,7 +1138,57 @@ def get_status(self):
     }
 ```
 
-## 13. สรุป
+## 14. Health Monitoring Integration Patterns
+
+### 14.1 Component Health Check Integration
+```python
+# Every component should provide health check methods
+class NewComponent:
+    def get_health_status(self) -> Dict[str, Any]:
+        """Get component health status for health monitoring."""
+        return {
+            'status': 'healthy' if self.initialized else 'unhealthy',
+            'initialized': self.initialized,
+            'last_check': datetime.now().isoformat(),
+            'details': {
+                'component_specific_metric': self.some_metric
+            }
+        }
+```
+
+### 14.2 Service Health Check Integration
+```python
+# Every service should integrate with health monitoring
+class NewService:
+    def get_health_status(self) -> Dict[str, Any]:
+        """Get service health status for health monitoring."""
+        component_status = self.component.get_health_status() if self.component else {}
+        return {
+            'status': 'healthy' if self.active else 'unhealthy',
+            'service_running': self.active,
+            'component_status': component_status,
+            'last_check': datetime.now().isoformat()
+        }
+```
+
+### 14.3 Health Check Registration
+```python
+# Register health checks in health monitor
+def register_health_checks(self):
+    """Register all health checks."""
+    self.health_checks = {
+        'camera': self.check_camera,
+        'disk_space': self.check_disk_space,
+        'cpu_ram': self.check_cpu_ram,
+        'models': self.check_model_loading,
+        'easyocr': self.check_easyocr_init,
+        'database': self.check_database_connection,
+        'network': self.check_network_connectivity,
+        'new_component': self.check_new_component  # Add new component checks
+    }
+```
+
+## 15. สรุป
 
 AI Camera v1.3 ใช้ Dependency Injection, Flask Blueprints และ **Absolute Imports** เพื่อสร้างระบบที่:
 - **Modular**: แบ่งส่วนการทำงานชัดเจน
@@ -727,5 +1199,6 @@ AI Camera v1.3 ใช้ Dependency Injection, Flask Blueprints และ **Abso
 - **Auto-Startup**: รองรับการเริ่มงานอัตโนมัติแบบ sequential (camera → detection → health monitor)
 - **Frame-Safe**: ป้องกัน frame data type errors
 - **Attribute-Safe**: ป้องกัน attribute access errors
+- **Health-Monitored**: ระบบ health monitoring ที่ครอบคลุมและอัตโนมัติ
 
-Architecture นี้ทำให้ระบบมีความยืดหยุ่นและสามารถพัฒนาเพิ่มเติมได้อย่างมีประสิทธิภาพ พร้อมกับความชัดเจนในการจัดการ dependencies และ imports รวมถึงการจัดการ startup sequence และ error prevention
+Architecture นี้ทำให้ระบบมีความยืดหยุ่นและสามารถพัฒนาเพิ่มเติมได้อย่างมีประสิทธิภาพ พร้อมกับความชัดเจนในการจัดการ dependencies และ imports รวมถึงการจัดการ startup sequence, error prevention และ comprehensive health monitoring system

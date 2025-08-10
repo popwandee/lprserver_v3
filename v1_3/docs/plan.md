@@ -183,4 +183,5 @@ systemd → gunicorn → nginx → camera start → detection start → health m
 modify camera to display meta data instead of frame count or avg fps
 add websocket
 
-create web server to manage with cursor background
+create LPR web server to manage with cursor background
+Create AICAMERA Standalone for demo

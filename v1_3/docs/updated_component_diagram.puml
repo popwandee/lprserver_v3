@@ -1,161 +1,229 @@
-@startuml AI_Camera_v1.3_Updated_Component_Diagram
+@startuml AI_Camera_v1_3_Updated_Component_Diagram
 
 !theme plain
-skinparam componentStyle uml2
-skinparam packageFontSize 12
-skinparam componentFontSize 10
+skinparam componentStyle rectangle
+skinparam componentFontSize 11
+skinparam componentFontName Arial
 
-package "Hardware Layer" {
-    [Raspberry Pi Camera] as Camera
-    [Hailo AI Accelerator] as Hailo
+title AI Camera v1.3 - Updated Component Diagram with Health Monitoring (August 2025)
+
+package "Frontend Layer" {
+    package "Web UI Templates" {
+        [index.html] as index_template
+        [camera/dashboard.html] as camera_template
+        [detection/dashboard.html] as detection_template
+        [health/dashboard.html] as health_template
+    }
+    
+    package "JavaScript Modules" {
+        [base.js] as base_js
+        [dashboard.js] as dashboard_js
+        [camera.js] as camera_js
+        [detection.js] as detection_js
+        [health.js] as health_js
+    }
+    
+    package "CSS Styles" {
+        [base.css] as base_css
+        [dashboard.css] as dashboard_css
+        [health.css] as health_css
+    }
+    
+    [WebSocket Client] as ws_client
 }
 
-package "Component Layer" {
-    component "CameraHandler" as CH {
-        port "capture_frame()" as CH_capture
-        port "initialize_camera()" as CH_init
-        port "start_streaming()" as CH_stream
-        note bottom : Returns Dict with\n'frame': numpy.ndarray\n'metadata': dict\n'timestamp': float
-    }
-    
-    component "DetectionProcessor" as DP {
-        port "validate_and_enhance_frame()" as DP_validate
-        port "detect_vehicles()" as DP_vehicle
-        port "detect_license_plates()" as DP_plate
-        port "process_ocr()" as DP_ocr
-        note bottom : Handles Dict input\nValidates numpy.ndarray\nType-safe processing
-    }
+package "Web Layer (Flask Blueprints)" {
+    [Flask App] as flask_app
+    [Main Blueprint] as main_bp
+    [Camera Blueprint] as camera_bp
+    [Detection Blueprint] as detection_bp
+    [Health Blueprint] as health_bp
+    [Streaming Blueprint] as streaming_bp
+    [WebSocket Blueprint] as ws_bp
 }
 
-package "Service Layer" {
-    component "CameraManager" as CM {
-        port "capture_frame()" as CM_capture
-        port "initialize()" as CM_init
-        port "_auto_start_camera()" as CM_auto
-        note bottom : Extracts numpy.ndarray\nfrom Dict response\nAuto-startup support
-    }
-    
-    component "DetectionManager" as DM {
-        port "process_frame_from_camera()" as DM_process
-        port "initialize()" as DM_init
-        port "_auto_start_detection()" as DM_auto
-        port "_is_camera_ready()" as DM_ready
-        note bottom : Safe attribute access\nauto_start_enabled\nCamera dependency check
-    }
+package "Service Layer (Business Logic)" {
+    [Camera Manager] as camera_mgr
+    [Detection Manager] as detection_mgr
+    [Health Service] as health_service
+    [Video Streaming Service] as video_stream
+    [WebSocket Sender] as ws_sender
 }
 
-package "Web Layer" {
-    component "Flask Application" as App {
-        port "_initialize_services()" as App_init
-        note bottom : Sequential service\ninitialization\nAuto-startup orchestration
-    }
-    
-    component "Camera Blueprint" as CB {
-        port "get_camera_status()" as CB_status
-        port "start_camera()" as CB_start
-        port "capture_frame()" as CB_capture
-    }
-    
-    component "Detection Blueprint" as DB {
-        port "get_detection_status()" as DB_status
-        port "start_detection()" as DB_start
-        port "configure_detection()" as DB_config
-        note bottom : Safe configuration\nupdates with correct\nattribute names
-    }
-    
-    component "WebSocket Handler" as WS {
-        port "camera_events" as WS_camera
-        port "detection_events" as WS_detection
-    }
+package "Component Layer (Hardware Interface)" {
+    [Camera Handler] as camera_handler
+    [Detection Processor] as detection_proc
+    [Health Monitor] as health_monitor
+    [Database Manager] as db_manager
 }
 
 package "Core Framework" {
-    component "DependencyContainer" as DC {
-        port "get_service()" as DC_get
-        port "register_service()" as DC_reg
-        note bottom : Manages all service\ninstances and dependencies
-    }
-    
-    component "Configuration" as Config {
-        port "AUTO_START_*" as Config_auto
-        port "MODEL_PATHS" as Config_models
-        port "BASE_DIR" as Config_base
-        note bottom : Auto-startup settings\nModel configurations\nPath management
-    }
-    
-    component "Import Helper" as IH {
-        port "setup_import_paths()" as IH_setup
-        port "validate_imports()" as IH_validate
-        note bottom : Absolute import\npath management
-    }
+    [Dependency Container] as dep_container
+    [Import Helper] as import_helper
+    [Logging Config] as logging_config
+    [Configuration Manager] as config_mgr
 }
 
-' Hardware Connections
-Camera --> CH_init
-Camera --> CH_capture
-Camera --> CH_stream
-Hailo --> DP_vehicle
-Hailo --> DP_plate
-Hailo --> DP_ocr
+package "External Systems" {
+    [Picamera2 Library] as picamera2
+    [Hailo AI Accelerator] as hailo_ai
+    [SQLite Database] as sqlite_db
+    [System Resources] as sys_res
+    [Nginx Reverse Proxy] as nginx
+    [Gunicorn WSGI Server] as gunicorn
+}
 
-' Component to Service Connections
-CH_capture --> CM_capture : Dict{"frame": np.ndarray}
-CH_init --> CM_init
-DP_validate --> DM_process : numpy.ndarray
-DP_vehicle --> DM_process
-DP_plate --> DM_process
-DP_ocr --> DM_process
+' Frontend Template Relationships
+index_template --> base_js : includes
+index_template --> dashboard_js : includes
+camera_template --> base_js : includes
+camera_template --> camera_js : includes
+detection_template --> base_js : includes
+detection_template --> detection_js : includes
+health_template --> base_js : includes
+health_template --> health_js : includes
 
-' Service Layer Internal
-CM_capture --> DM_process : numpy.ndarray
-CM_init --> CM_auto
-DM_init --> DM_auto
-DM_ready --> DM_process
+' JavaScript Module Dependencies
+dashboard_js --> base_js : extends AICameraUtils
+camera_js --> base_js : extends AICameraUtils
+detection_js --> base_js : extends AICameraUtils
+health_js --> base_js : extends AICameraUtils
 
-' Service to Web Connections
-CM --> CB : via DI Container
-DM --> DB : via DI Container
-CB --> WS_camera
-DB --> WS_detection
+' Frontend to Web Layer (HTTP/WebSocket)
+index_template --> main_bp : HTTP GET/POST
+camera_template --> camera_bp : HTTP GET/POST
+detection_template --> detection_bp : HTTP GET/POST
+health_template --> health_bp : HTTP GET/POST
+ws_client --> ws_bp : WebSocket Connection
 
-' Core Framework Connections
-DC_get --> CM
-DC_get --> DM
-DC_get --> CH
-DC_get --> DP
-Config_auto --> CM
-Config_auto --> DM
-Config_models --> DP
-Config_base --> Config
-IH_setup --> DC
+' Web Layer Blueprint Dependencies (Absolute Imports)
+main_bp --> dep_container : "from v1_3.src.core.dependency_container import get_service"
+camera_bp --> dep_container : "from v1_3.src.core.dependency_container import get_service"
+detection_bp --> dep_container : "from v1_3.src.core.dependency_container import get_service"
+health_bp --> dep_container : "from v1_3.src.core.dependency_container import get_service"
+streaming_bp --> dep_container : "from v1_3.src.core.dependency_container import get_service"
 
-' Application Flow
-App_init --> CM : 1. Initialize Camera Manager
-CM_auto --> CM : 2. Auto-start camera if configured
-App_init --> DM : 3. Initialize Detection Manager  
-DM_auto --> DM : 4. Auto-start detection if configured
+' Service Layer Dependencies (Dependency Injection)
+camera_bp --> camera_mgr : get_service('camera_manager')
+detection_bp --> detection_mgr : get_service('detection_manager')
+health_bp --> health_service : get_service('health_service')
+streaming_bp --> video_stream : get_service('video_streaming')
+ws_bp --> ws_sender : get_service('websocket_sender')
 
-' Frame Data Flow
-note "Frame Data Pipeline" as FrameFlow
-FrameFlow : 1. CameraHandler.capture_frame() → Dict
-FrameFlow : 2. CameraManager.capture_frame() → numpy.ndarray
-FrameFlow : 3. DetectionProcessor.validate_and_enhance_frame() → validated numpy.ndarray
-FrameFlow : 4. AI Model Processing → detection results
-FrameFlow : 5. WebSocket broadcast → frontend updates
+' Service to Component Layer
+camera_mgr --> camera_handler : uses (DI)
+detection_mgr --> detection_proc : uses (DI)
+detection_mgr --> db_manager : uses (DI)
+health_service --> health_monitor : uses (DI)
+video_stream --> camera_handler : uses (DI)
+ws_sender --> camera_handler : monitors
+ws_sender --> detection_proc : monitors
+ws_sender --> health_service : monitors
+
+' Health Monitor Dependencies
+health_monitor --> db_manager : uses (DI)
+health_monitor --> camera_mgr : monitors
+health_monitor --> detection_mgr : monitors
+health_monitor --> sys_res : "System Monitoring"
+
+' Component to External Systems
+camera_handler --> picamera2 : "Singleton Pattern"
+detection_proc --> hailo_ai : "AI Model Inference"
+db_manager --> sqlite_db : "Database Operations"
+health_monitor --> sys_res : "System Monitoring"
+
+' Core Framework Services
+dep_container --> camera_mgr : "Service Registration & DI"
+dep_container --> detection_mgr : "Service Registration & DI"
+dep_container --> health_service : "Service Registration & DI"
+dep_container --> video_stream : "Service Registration & DI"
+dep_container --> ws_sender : "Service Registration & DI"
+dep_container --> camera_handler : "Singleton Management"
+dep_container --> detection_proc : "Service Management"
+dep_container --> db_manager : "Service Management"
+dep_container --> health_monitor : "Service Management"
+
+import_helper --> dep_container : "Absolute Import Validation"
+logging_config --> "*" : "Centralized Logging"
+config_mgr --> "*" : "Configuration Management"
+
+' Infrastructure Layer
+nginx --> gunicorn : "Unix Socket Proxy"
+gunicorn --> flask_app : "WSGI Interface"
+
+' Health Monitoring Data Flow
+health_service --> health_monitor : "Health Check Requests"
+health_monitor --> db_manager : "Log Health Results"
+health_service --> camera_mgr : "Get Camera Status"
+health_service --> detection_mgr : "Get Detection Status"
+health_service --> sys_res : "Get System Resources"
 
 ' Auto-Startup Sequence
-note "Auto-Startup Sequence" as AutoStart
-AutoStart : 1. Flask App starts
-AutoStart : 2. _initialize_services() called
-AutoStart : 3. Camera Manager initialized → auto-starts camera/streaming
-AutoStart : 4. Detection Manager initialized → waits STARTUP_DELAY
-AutoStart : 5. Detection auto-starts if camera ready
+camera_mgr --> detection_mgr : "Camera Ready Signal"
+detection_mgr --> health_service : "Detection Ready Signal"
+health_service --> health_monitor : "Start Monitoring"
 
-' Error Prevention
-note "Error Prevention Patterns" as ErrorPrev
-ErrorPrev : 1. Frame type validation (Dict → numpy.ndarray)
-ErrorPrev : 2. Safe attribute access (auto_start_enabled)
-ErrorPrev : 3. Service dependency checking (_is_camera_ready)
-ErrorPrev : 4. Configuration safety (correct attribute names)
+note right of dep_container
+  **Dependency Injection Pattern**
+  - Service registration with absolute imports
+  - Automatic dependency resolution
+  - Singleton pattern for hardware resources
+  - Service lifecycle management
+  - Health monitoring integration
+end note
+
+note right of import_helper
+  **Absolute Imports System**
+  - from v1_3.src.core.*
+  - from v1_3.src.components.*
+  - from v1_3.src.services.*
+  - from v1_3.src.web.blueprints.*
+end note
+
+note right of health_service
+  **Health Service Business Logic**
+  - Health status aggregation
+  - System resource monitoring
+  - Auto-startup coordination
+  - Component readiness detection
+  - Error details and issue tracking
+  - Pagination for health logs
+end note
+
+note right of health_monitor
+  **Health Monitor Component**
+  - Comprehensive system health checks
+  - Database logging of health results
+  - Background monitoring thread
+  - Component-specific health validation
+  - Auto-startup coordination support
+  - Real-time status monitoring
+end note
+
+note bottom of ws_client
+  **Variable Naming Convention**
+  Frontend (camelCase):
+  - cameraStatus, frameCount
+  - detectionStatus, modelLoaded
+  - healthStatus, overallStatus
+  - systemHealth, cpuUsage
+  
+  Backend (snake_case):
+  - camera_status, frame_count
+  - detection_status, model_loaded
+  - health_status, overall_status
+  - system_health, cpu_usage
+end note
+
+note left of health_template
+  **Health Dashboard Features**
+  - Real-time health status updates
+  - Auto-startup monitoring
+  - Component-specific error details
+  - System resource visualization
+  - Health logs with pagination
+  - WebSocket integration
+  - Progress bar visualization
+end note
 
 @enduml
