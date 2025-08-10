@@ -44,6 +44,70 @@
 }
 ```
 
+### 1.4 Health Monitor Response
+```json
+{
+    "success": true,
+    "data": {
+        "overall_status": "healthy",
+        "components": {
+            "camera": {
+                "status": "healthy",
+                "initialized": true,
+                "streaming": true,
+                "auto_start_enabled": true,
+                "last_check": "2025-08-10T11:30:00.000Z"
+            },
+            "detection": {
+                "status": "healthy",
+                "models_loaded": true,
+                "easyocr_available": true,
+                "auto_start": true,
+                "last_check": "2025-08-10T11:30:00.000Z"
+            },
+            "database": {
+                "status": "healthy",
+                "connected": true,
+                "last_check": "2025-08-10T11:30:00.000Z"
+            },
+            "system": {
+                "status": "healthy",
+                "cpu_usage": 25.5,
+                "memory_usage": {
+                    "used": 6.2,
+                    "total": 15.84,
+                    "percentage": 39.1
+                },
+                "disk_usage": {
+                    "used": 20.64,
+                    "total": 57.44,
+                    "percentage": 35.9
+                },
+                "uptime": 86400,
+                "last_check": "2025-08-10T11:30:00.000Z"
+            }
+        },
+        "system": {
+            "cpu_count": 4,
+            "cpu_usage": 25.5,
+            "memory_usage": {
+                "used": 6.2,
+                "total": 15.84,
+                "percentage": 39.1
+            },
+            "disk_usage": {
+                "used": 20.64,
+                "total": 57.44,
+                "percentage": 35.9
+            },
+            "uptime": 86400
+        },
+        "last_check": "2025-08-10T11:30:00.000Z"
+    },
+    "timestamp": "2025-08-10T11:30:00.000Z"
+}
+```
+
 ## 2. Camera Configuration Variables
 
 ### 2.1 Configuration Object Structure
@@ -79,6 +143,23 @@ const statusDisplay = {
     frameCount: 1234,            // Number
     averageFps: 29.5,            // Number
     uptime: 3600                 // Number (seconds)
+};
+
+// Health Monitor Status Variables
+const healthStatus = {
+    overallStatus: "healthy",    // "healthy", "unhealthy", "critical", "unknown"
+    componentStatus: {
+        camera: "healthy",       // "healthy", "unhealthy", "critical", "unknown"
+        detection: "healthy",    // "healthy", "unhealthy", "critical", "unknown"
+        database: "healthy",     // "healthy", "unhealthy", "critical", "unknown"
+        system: "healthy"        // "healthy", "unhealthy", "critical", "unknown"
+    },
+    systemResources: {
+        cpuUsage: 25.5,          // Number (percentage)
+        memoryUsage: 45.2,       // Number (percentage)
+        diskUsage: 35.8,         // Number (percentage)
+        uptime: 86400            // Number (seconds)
+    }
 };
 ```
 
@@ -305,6 +386,19 @@ const uiState = {
 | uptime | Number | 0+ | System uptime in seconds |
 | auto_start_enabled | Boolean | true/false | Auto-start feature status |
 
+### 6.3 Health Monitor Status Types
+| Variable | Type | Range | Description |
+|----------|------|-------|-------------|
+| overall_status | String | "healthy", "unhealthy", "critical", "unknown" | Overall system health status |
+| component_status | Object | Component-specific status | Individual component health status |
+| camera.status | String | "healthy", "unhealthy", "critical", "unknown" | Camera component status |
+| detection.status | String | "healthy", "unhealthy", "critical", "unknown" | Detection component status |
+| database.status | String | "healthy", "unhealthy", "critical", "unknown" | Database component status |
+| system.status | String | "healthy", "unhealthy", "critical", "unknown" | System component status |
+| cpu_usage | Number | 0-100 | CPU usage percentage |
+| memory_usage | Object | Usage statistics | Memory usage information |
+| disk_usage | Object | Usage statistics | Disk usage information |
+
 ## 7. Error Handling Standards
 
 ### 7.1 Error Codes
@@ -315,7 +409,10 @@ ERROR_CODES = {
     'CONFIGURATION_FAILED': 'Configuration update failed',
     'SERVICE_UNAVAILABLE': 'Service not available',
     'INVALID_PARAMETER': 'Invalid parameter provided',
-    'OPERATION_FAILED': 'Operation failed'
+    'OPERATION_FAILED': 'Operation failed',
+    'HEALTH_CHECK_FAILED': 'Health check failed',
+    'COMPONENT_UNHEALTHY': 'Component is unhealthy',
+    'SYSTEM_CRITICAL': 'System is in critical state'
 }
 ```
 
@@ -638,6 +735,7 @@ const detectionDisplay = {
 - 2025-08-09: Added auto-startup configuration variables
 - 2025-08-09: Added error prevention variables
 - 2025-08-09: Added detection pipeline variables
+- 2025-08-10: Added health monitor status variables and error codes
 
 ### 13.2 Review Process
 1. All variable changes must be documented
@@ -646,6 +744,8 @@ const detectionDisplay = {
 4. Test all variable interactions before deployment
 5. Validate frame data structures after camera changes
 6. Test auto-startup sequence after service modifications
+7. Validate health monitor status values and error codes
+8. Test health check response formats and data structures
 
 ### 13.3 Frame Data Testing Requirements
 ```python
@@ -657,8 +757,17 @@ frame_tests = [
     'test_frame_validation_handles_dict_input',
     'test_frame_validation_rejects_invalid_types'
 ]
+
+# Required health monitor tests
+health_tests = [
+    'test_health_status_values',
+    'test_component_status_structure',
+    'test_system_resource_format',
+    'test_error_code_consistency',
+    'test_response_format_compliance'
+]
 ```
 
 ---
 
-**Note:** เอกสารนี้ควรได้รับการอัพเดตเมื่อมีการเปลี่ยนแปลงโครงสร้างหรือตัวแปรใหม่ เพื่อรักษามาตรฐานการพัฒนาร่วมกัน รวมถึงการเปลี่ยนแปลงในโครงสร้างข้อมูล frame และ auto-startup sequence
+**Note:** เอกสารนี้ควรได้รับการอัพเดตเมื่อมีการเปลี่ยนแปลงโครงสร้างหรือตัวแปรใหม่ เพื่อรักษามาตรฐานการพัฒนาร่วมกัน รวมถึงการเปลี่ยนแปลงในโครงสร้างข้อมูล frame, auto-startup sequence, และ health monitor status values

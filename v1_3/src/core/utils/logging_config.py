@@ -41,9 +41,9 @@ def setup_logging(
     """
     # Use centralized log directory at project root
     if log_dir is None:
-        # Point to aicamera/log directory (same level as v1_3)
+        # Point to aicamera/logs directory (same level as v1_3)
         project_root = Path(__file__).parent.parent.parent.parent
-        log_dir = project_root / "log"
+        log_dir = project_root / "logs"
     
     log_dir = Path(log_dir)
     log_dir.mkdir(parents=True, exist_ok=True)

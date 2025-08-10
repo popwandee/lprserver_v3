@@ -67,6 +67,59 @@ package "Backend Layer (Python - snake_case)" {
             'access_errors': list
         }
     }
+    
+    class "Health Monitor Variables" as HealthVars {
+        health_status: Dict = {
+            'overall_status': str,  # "healthy", "unhealthy", "critical", "unknown"
+            'components': dict,
+            'system': dict,
+            'last_check': str
+        }
+        --
+        component_status: Dict = {
+            'camera': {
+                'status': str,
+                'initialized': bool,
+                'streaming': bool,
+                'frame_count': int,
+                'average_fps': float,
+                'uptime': int,
+                'auto_start_enabled': bool
+            },
+            'detection': {
+                'status': str,
+                'models_loaded': bool,
+                'easyocr_available': bool,
+                'detection_active': bool,
+                'auto_start': bool
+            },
+            'database': {
+                'status': str,
+                'connected': bool,
+                'database_path': str
+            },
+            'system': {
+                'status': str,
+                'last_check': str
+            }
+        }
+        --
+        system_resources: Dict = {
+            'cpu_usage': float,
+            'cpu_count': int,
+            'memory_usage': {
+                'used': float,
+                'total': float,
+                'percentage': float
+            },
+            'disk_usage': {
+                'used': float,
+                'total': float,
+                'percentage': float
+            },
+            'uptime': float
+        }
+    }
 }
 
 package "API Response Layer (JSON)" {
@@ -101,6 +154,13 @@ package "API Response Layer (JSON)" {
             'auto_start_enabled': bool,
             'detection_count': int,
             'processing_time': float
+        }
+        --
+        health_status_update: Dict = {
+            'overall_status': str,
+            'components': dict,
+            'system': dict,
+            'last_check': str
         }
     }
 }
@@ -176,6 +236,54 @@ package "Frontend Layer (JavaScript - camelCase)" {
             }
         }
     }
+    
+    class "Health Monitor Variables" as FrontendHealth {
+        healthStatus: Object = {
+            overallStatus: string,  // "healthy", "unhealthy", "critical", "unknown"
+            componentStatus: {
+                camera: {
+                    status: string,
+                    initialized: boolean,
+                    streaming: boolean,
+                    frameCount: number,
+                    averageFps: number,
+                    uptime: number,
+                    autoStartEnabled: boolean
+                },
+                detection: {
+                    status: string,
+                    modelsLoaded: boolean,
+                    easyocrAvailable: boolean,
+                    detectionActive: boolean,
+                    autoStart: boolean
+                },
+                database: {
+                    status: string,
+                    connected: boolean,
+                    databasePath: string
+                },
+                system: {
+                    status: string,
+                    lastCheck: string
+                }
+            },
+            systemResources: {
+                cpuUsage: number,
+                cpuCount: number,
+                memoryUsage: {
+                    used: number,
+                    total: number,
+                    percentage: number
+                },
+                diskUsage: {
+                    used: number,
+                    total: number,
+                    percentage: number
+                },
+                uptime: number
+            }
+        }
+    }
 }
 
 ' Variable Mapping Relationships
@@ -184,15 +292,18 @@ CameraStatus --> APIResponse : camera_status → status
 DetectionStatus --> APIResponse : detection_status → status
 AutoConfig --> APIResponse : config → status
 ErrorVars --> APIResponse : errors → error_response
+HealthVars --> APIResponse : health_status → data
 
 APIResponse --> FrontendFrame : JSON → frameData
 APIResponse --> FrontendCamera : JSON → cameraStatus  
 APIResponse --> FrontendDetection : JSON → detectionStatus
 APIResponse --> FrontendAuto : JSON → autoStartupConfig
 APIResponse --> FrontendErrors : JSON → errorStates
+APIResponse --> FrontendHealth : JSON → healthStatus
 
 WSEvents --> FrontendCamera : WebSocket → cameraStatus
 WSEvents --> FrontendDetection : WebSocket → detectionStatus
+WSEvents --> FrontendHealth : WebSocket → healthStatus
 
 ' Data Flow Notes
 note top of FrameData : "Frame Data Flow:\n1. CameraHandler returns Dict\n2. CameraManager extracts numpy.ndarray\n3. DetectionProcessor validates frame\n4. Results sent via WebSocket/HTTP"
@@ -201,10 +312,14 @@ note top of APIResponse : "API Response Transformation:\n1. snake_case (Python) 
 
 note top of FrontendFrame : "Frontend Variable Conversion:\n1. JSON → camelCase (JavaScript)\n2. Type safety validation\n3. UI state management\n4. Error display handling"
 
+note top of FrontendHealth : "Health Monitor Frontend:\n1. Status indicators (healthy/unhealthy/critical)\n2. Component-specific metrics\n3. System resource monitoring\n4. Real-time updates via WebSocket"
+
 ' Error Prevention Flow
 note bottom of ErrorVars : "Error Prevention:\n1. Frame type validation\n2. Attribute access safety\n3. Service dependency checks\n4. Configuration validation"
 
 note bottom of FrontendErrors : "Frontend Error Handling:\n1. Error state management\n2. User feedback display\n3. Retry mechanisms\n4. Fallback values"
+
+note bottom of HealthVars : "Health Monitor Backend:\n1. Component health checks\n2. System resource monitoring\n3. Database logging\n4. Status aggregation"
 
 ' Auto-Startup Sequence
 note right of AutoConfig : "Auto-Startup Mapping:\n1. Backend config flags\n2. Service initialization order\n3. Frontend status tracking\n4. Error recovery handling"

@@ -9,6 +9,10 @@ It can be used with Gunicorn or other WSGI servers.
 import os
 import sys
 
+# Add project root to path first
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, project_root)
+
 # Import import helper first to setup paths
 from v1_3.src.core.utils.import_helper import setup_import_paths, validate_imports
 setup_import_paths()

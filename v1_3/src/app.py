@@ -27,7 +27,10 @@ setup_import_paths()
 from v1_3.src.core.utils.logging_config import setup_logging, get_logger
 from v1_3.src.core.dependency_container import get_container, get_service
 from v1_3.src.web.blueprints import register_blueprints
-from v1_3.src.core.config import AUTO_START_CAMERA, AUTO_START_DETECTION, STARTUP_DELAY
+from v1_3.src.core.config import (
+    AUTO_START_CAMERA, AUTO_START_DETECTION, AUTO_START_HEALTH_MONITOR,
+    STARTUP_DELAY, HEALTH_MONITOR_STARTUP_DELAY
+)
 
 
 def _initialize_services(logger):
@@ -37,6 +40,7 @@ def _initialize_services(logger):
     Sequence:
     1. Initialize camera manager (auto-starts camera if enabled)
     2. Initialize detection manager (auto-starts detection if enabled)
+    3. Initialize health monitor (auto-starts monitoring when camera and detection are ready)
     
     Args:
         logger: Logger instance
@@ -82,14 +86,41 @@ def _initialize_services(logger):
         logger.error(f"❌ Error initializing Detection Manager: {e}")
         # Don't return False here - camera can work without detection
     
-    # Step 3: Initialize other services (health monitor, etc.)
+    # Step 3: Initialize Health Monitor and Service (will auto-start monitoring when ready)
     try:
-        logger.info("🏥 Step 3: Initializing other services...")
+        logger.info("🏥 Step 3: Initializing Health Monitor and Service...")
+        
+        # Initialize health monitor component
         health_monitor = get_service('health_monitor')
         if health_monitor:
-            logger.info("✅ Health Monitor available")
+            logger.info("✅ Health Monitor component available")
+            if health_monitor.initialize():
+                logger.info("✅ Health Monitor component initialized successfully")
+            else:
+                logger.error("❌ Health Monitor component initialization failed")
+        else:
+            logger.warning("⚠️  Health Monitor component not available")
+        
+        # Initialize health service
+        health_service = get_service('health_service')
+        if health_service:
+            logger.info("✅ Health Service available")
+            if health_service.initialize():
+                logger.info("✅ Health Service initialized successfully")
+                
+                # Set up auto-start monitoring if enabled
+                if AUTO_START_HEALTH_MONITOR:
+                    logger.info("🏥 Health Monitor auto-start enabled - will start when camera and detection are ready")
+                    # The health service will automatically start monitoring when camera and detection are ready
+                else:
+                    logger.info("🏥 Health Monitor auto-start disabled")
+            else:
+                logger.error("❌ Health Service initialization failed")
+        else:
+            logger.warning("⚠️  Health Service not available")
+            
     except Exception as e:
-        logger.warning(f"⚠️  Other services initialization: {e}")
+        logger.warning(f"⚠️  Health services initialization: {e}")
     
     logger.info("🎉 Service initialization sequence completed!")
     return True

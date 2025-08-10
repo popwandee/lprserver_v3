@@ -24,8 +24,8 @@ BASE_DIR = str(current_file.parent.parent.parent.parent.absolute())  # Go up fro
 
 # Database configuration
 DATABASE_PATH = os.path.join(BASE_DIR, 'db', 'lpr_data.db')
-WEBSOCKET_LOG_FILE = os.path.join(BASE_DIR, "log", "websocket.log")
-DETECTION_LOG_FILE = os.path.join(BASE_DIR, "log", "detection.log")
+WEBSOCKET_LOG_FILE = os.path.join(BASE_DIR, "logs", "websocket.log")
+DETECTION_LOG_FILE = os.path.join(BASE_DIR, "logs", "detection.log")
 # AI Models Configuration
 HEF_MODEL_PATH = "@local"
 MODEL_ZOO_URL = "resources" 
@@ -67,14 +67,16 @@ HEALTH_CHECK_INTERVAL = 3600
 AUTO_START_CAMERA = True      # Auto start camera on system startup
 AUTO_START_STREAMING = True   # Auto start streaming when camera starts
 AUTO_START_DETECTION = True   # Auto start detection when streaming starts
+AUTO_START_HEALTH_MONITOR = True  # Auto start health monitoring when detection starts
 STARTUP_DELAY = 5.0          # Delay in seconds between startup steps
+HEALTH_MONITOR_STARTUP_DELAY = 30.0  # Delay before starting health monitoring (increased for model loading)
 
 # Create directories if they don't exist - all in BASE_DIR (aicamera/)
 Path(IMAGE_SAVE_DIR).mkdir(parents=True, exist_ok=True)
 if DATABASE_PATH:
     Path(DATABASE_PATH).parent.mkdir(parents=True, exist_ok=True)
-# Create log directory
-Path(BASE_DIR, 'log').mkdir(parents=True, exist_ok=True)
+# Create logs directory
+Path(BASE_DIR, 'logs').mkdir(parents=True, exist_ok=True)
 
 # Debug: Print BASE_DIR for verification
 from v1_3.src.core.utils.logging_config import get_logger
@@ -82,4 +84,4 @@ logger = get_logger(__name__)
 logger.info(f"Config BASE_DIR set to: {BASE_DIR}")
 logger.info(f"IMAGE_SAVE_DIR: {IMAGE_SAVE_DIR}")
 logger.info(f"DATABASE_PATH: {DATABASE_PATH}")
-logger.info(f"LOG directory: {os.path.join(BASE_DIR, 'log')}")
+logger.info(f"LOGS directory: {os.path.join(BASE_DIR, 'logs')}")

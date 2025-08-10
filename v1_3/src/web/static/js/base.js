@@ -120,6 +120,7 @@ const AICameraUtils = {
         const defaultOptions = {
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json'
             }
         };
 
@@ -130,7 +131,22 @@ const AICameraUtils = {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                return response.json();
+                
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return response.json();
+                } else {
+                    // If not JSON, get text and try to parse as JSON
+                    return response.text().then(text => {
+                        try {
+                            return JSON.parse(text);
+                        } catch (parseError) {
+                            console.error('Response is not valid JSON:', text.substring(0, 200));
+                            throw new Error('Invalid JSON response from server');
+                        }
+                    });
+                }
             })
             .catch(error => {
                 console.error('API request failed:', url, error);

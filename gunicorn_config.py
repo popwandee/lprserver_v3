@@ -15,8 +15,8 @@ max_requests = 1000
 max_requests_jitter = 50
 
 # Logging
-accesslog = "/home/camuser/aicamera/log/gunicorn_access.log"
-errorlog = "/home/camuser/aicamera/log/gunicorn_error.log"
+accesslog = "/home/camuser/aicamera/logs/gunicorn_access.log"
+errorlog = "/home/camuser/aicamera/logs/gunicorn_error.log"
 loglevel = "info"
 access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"'
 

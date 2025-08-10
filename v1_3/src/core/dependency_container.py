@@ -148,6 +148,15 @@ class DependencyContainer:
                                 dependencies={'logger': 'logger'})
         except ImportError:
             self.logger.warning("WebSocketSender not available")
+        
+        try:
+            from v1_3.src.services.health_service import HealthService, create_health_service
+            self.register_service('health_service', HealthService, 
+                                singleton=True,
+                                factory=create_health_service,
+                                dependencies={'health_monitor': 'health_monitor', 'logger': 'logger'})
+        except ImportError as e:
+            self.logger.warning(f"HealthService not available: {e}")
             
     def _create_logger(self, **kwargs) -> logging.Logger:
         """Create a logger instance."""
