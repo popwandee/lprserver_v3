@@ -168,7 +168,7 @@ class HealthStatusAPI {
     }
   }
 }
-
+sudo systemctl list-units --type=service --all | grep -i websocket
 ps aux | grep gunicorn
 camuser@aicamera1:~/aicamera $ ps aux | grep gunicorn
 your 131072x1 screen size is bogus. expect trouble

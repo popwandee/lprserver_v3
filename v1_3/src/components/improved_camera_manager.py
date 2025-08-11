@@ -31,7 +31,7 @@ DEFAULT_CONTRAST = 1.0
 DEFAULT_SATURATION = 1.0
 DEFAULT_SHARPNESS = 1.0
 DEFAULT_AWB_MODE = 'auto'
-IMAGE_SAVE_DIR = '/tmp/captured_images'
+IMAGE_SAVE_DIR = '/home/camuser/aicamera/captured_images'
 
 logger = logging.getLogger(__name__)
 

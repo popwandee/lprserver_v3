@@ -109,7 +109,7 @@ start_app() {
 
     # Create necessary directories
     mkdir -p static/images
-    mkdir -p captured_images
+    mkdir -p /home/camuser/aicamera/captured_images
     mkdir -p log
     mkdir -p tests
 
