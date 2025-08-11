@@ -18,6 +18,28 @@ const DashboardManager = {
         this.setupWebSocket();
         this.setupStatusUpdates();
         this.loadInitialStatus();
+        
+        // Test camera elements after a short delay
+        setTimeout(() => {
+            console.log('Testing camera elements...');
+            const featureResolutionElement = document.getElementById('feature-camera-resolution');
+            const featureFpsElement = document.getElementById('feature-camera-fps');
+            const featureModelElement = document.getElementById('feature-camera-model');
+            const aiAcceleratorElement = document.getElementById('system-info-ai-accelerator');
+            
+            console.log('Camera elements found:', {
+                resolution: featureResolutionElement,
+                fps: featureFpsElement,
+                model: featureModelElement,
+                aiAccelerator: aiAcceleratorElement
+            });
+            
+            if (featureResolutionElement) featureResolutionElement.textContent = 'Test Resolution';
+            if (featureFpsElement) featureFpsElement.textContent = 'Test FPS';
+            if (featureModelElement) featureModelElement.textContent = 'Test Model';
+            if (aiAcceleratorElement) aiAcceleratorElement.textContent = 'Test AI Accelerator';
+        }, 1000);
+        
         console.log('Dashboard Manager initialized');
     },
 
@@ -58,9 +80,9 @@ const DashboardManager = {
     loadInitialStatus: function() {
         // Set initial loading states
         const elements = [
-            'main-camera-model', 'main-camera-resolution', 'main-camera-fps',
-            'main-camera-detail-status', 'main-system-uptime', 'main-camera-feature-status',
-            'feature-camera-model', 'feature-camera-resolution', 'feature-camera-fps'
+            'main-system-uptime', 'feature-camera-status',
+            'feature-camera-model', 'feature-camera-resolution', 'feature-camera-fps',
+            'system-info-cpu', 'system-info-ram', 'system-info-disk', 'system-info-os', 'system-info-ai-accelerator'
         ];
         
         elements.forEach(id => {
@@ -80,8 +102,10 @@ const DashboardManager = {
         AICameraUtils.addLogMessage('main-system-log', 'Updating system status...', 'info');
         
         // Update camera status
+        console.log('Making camera status API request...');
         AICameraUtils.apiRequest('/camera/status')
             .then(data => {
+                console.log('Camera status API response:', data);
                 if (data && data.success) {
                     this.updateCameraStatus(data.status);
                 } else {
@@ -121,6 +145,7 @@ const DashboardManager = {
             .then(data => {
                 if (data && data.success) {
                     this.updateSystemHealth(data);
+                    this.updateSystemInfo(data);
                 }
             })
             .catch(error => {
@@ -138,6 +163,8 @@ const DashboardManager = {
      * Update camera status display
      */
     updateCameraStatus: function(status) {
+        console.log('updateCameraStatus called with:', status);
+        
         let cameraOnline = false;
         let statusText = 'Offline';
 
@@ -154,80 +181,75 @@ const DashboardManager = {
 
         AICameraUtils.updateStatusIndicator('main-camera-status', cameraOnline, statusText);
 
-        // Update camera information with fallback values
-        const resolutionElement = document.getElementById('main-camera-resolution');
-        const fpsElement = document.getElementById('main-camera-fps');
-        const modelElement = document.getElementById('main-camera-model');
-        
         // Feature section elements (duplicate IDs fixed)
         const featureResolutionElement = document.getElementById('feature-camera-resolution');
         const featureFpsElement = document.getElementById('feature-camera-fps');
         const featureModelElement = document.getElementById('feature-camera-model');
         
+        console.log('Found elements:', {
+            resolution: featureResolutionElement,
+            fps: featureFpsElement,
+            model: featureModelElement
+        });
+        
         // Get resolution from camera_handler.current_config.main.size or config
-        if (resolutionElement) {
-            let resolution = null;
-            
-            // Try to get from current_config first (most accurate)
-            if (status && status.camera_handler && status.camera_handler.current_config && status.camera_handler.current_config.main && status.camera_handler.current_config.main.size) {
-                const size = status.camera_handler.current_config.main.size;
-                resolution = `${size[0]}x${size[1]}`;
-            }
-            // Fallback to config object
-            else if (status && status.config && status.config.resolution) {
-                resolution = `${status.config.resolution[0]}x${status.config.resolution[1]}`;
-            }
-            
-            resolutionElement.textContent = resolution || 'Unknown';
-            // Update feature section as well
-            if (featureResolutionElement) {
-                featureResolutionElement.textContent = resolution || 'Unknown';
-            }
+        let resolution = null;
+        
+        console.log('Camera handler config:', status?.camera_handler?.current_config);
+        
+        // Try to get from current_config first (most accurate)
+        if (status && status.camera_handler && status.camera_handler.current_config && status.camera_handler.current_config.main && status.camera_handler.current_config.main.size) {
+            const size = status.camera_handler.current_config.main.size;
+            resolution = `${size[0]}x${size[1]}`;
+            console.log('Resolution from current_config:', resolution);
+        }
+        // Fallback to config object
+        else if (status && status.config && status.config.resolution) {
+            resolution = `${status.config.resolution[0]}x${status.config.resolution[1]}`;
+            console.log('Resolution from config:', resolution);
+        }
+        
+        // Update feature section
+        if (featureResolutionElement) {
+            featureResolutionElement.textContent = resolution || 'Unknown';
+            console.log('Updated resolution element with:', resolution || 'Unknown');
         }
 
         // Get FPS from camera_handler.current_config.controls.FrameDurationLimits or config
-        if (fpsElement) {
-            let fps = null;
-            
-            // Try to get from current_config first (most accurate)
-            if (status && status.camera_handler && status.camera_handler.current_config && status.camera_handler.current_config.controls && status.camera_handler.current_config.controls.FrameDurationLimits) {
-                const frameDuration = status.camera_handler.current_config.controls.FrameDurationLimits[0];
-                fps = `${Math.round(1000000 / frameDuration)} FPS`; // Convert microseconds to FPS
-            }
-            // Fallback to config object
-            else if (status && status.config && status.config.framerate) {
-                fps = `${status.config.framerate} FPS`;
-            }
-            
-            fpsElement.textContent = fps || 'Unknown';
-            // Update feature section as well
-            if (featureFpsElement) {
-                featureFpsElement.textContent = fps || 'Unknown';
-            }
+        let fps = null;
+        
+        console.log('Camera controls:', status?.camera_handler?.current_config?.controls);
+        
+        // Try to get from current_config first (most accurate)
+        if (status && status.camera_handler && status.camera_handler.current_config && status.camera_handler.current_config.controls && status.camera_handler.current_config.controls.FrameDurationLimits) {
+            const frameDuration = status.camera_handler.current_config.controls.FrameDurationLimits[0];
+            fps = `${Math.round(1000000 / frameDuration)} FPS`; // Convert microseconds to FPS
+            console.log('FPS from current_config:', fps);
+        }
+        // Fallback to config object
+        else if (status && status.config && status.config.framerate) {
+            fps = `${status.config.framerate} FPS`;
+            console.log('FPS from config:', fps);
+        }
+        
+        // Update feature section
+        if (featureFpsElement) {
+            featureFpsElement.textContent = fps || 'Unknown';
+            console.log('Updated FPS element with:', fps || 'Unknown');
         }
 
         // Update camera model with fallback
         const cameraModel = (status && status.camera_handler && status.camera_handler.camera_properties && status.camera_handler.camera_properties.Model) || 'Unknown';
         
-        if (modelElement) {
-            modelElement.textContent = cameraModel;
-        }
-        // Update feature section as well
+        console.log('Camera model:', cameraModel);
+        
+        // Update feature section
         if (featureModelElement) {
             featureModelElement.textContent = cameraModel;
+            console.log('Updated model element with:', cameraModel);
         }
 
-        // Update detailed status
-        const detailStatusElement = document.getElementById('main-camera-detail-status');
-        if (detailStatusElement) {
-            if (status && status.streaming) {
-                detailStatusElement.textContent = 'Streaming';
-            } else if (status && status.initialized) {
-                detailStatusElement.textContent = 'Initialized';
-            } else {
-                detailStatusElement.textContent = 'Not initialized';
-            }
-        }
+
 
         // Update uptime with fallback
         const uptimeElement = document.getElementById('main-system-uptime');
@@ -240,7 +262,7 @@ const DashboardManager = {
         }
 
         // Update feature status (duplicate element in features section)
-        const featureStatusElement = document.getElementById('main-camera-feature-status');
+        const featureStatusElement = document.getElementById('feature-camera-status');
         if (featureStatusElement) {
             if (status && status.streaming) {
                 featureStatusElement.textContent = 'Streaming';
@@ -294,17 +316,104 @@ const DashboardManager = {
             
         AICameraUtils.updateStatusIndicator('main-database-status', databaseHealthy, databaseStatusText);
         
-        // Update detailed database status
-        const databaseDetailElement = document.getElementById('main-database-detail-status');
-        if (databaseDetailElement) {
-            databaseDetailElement.textContent = databaseStatusText;
-        }
-        
         // Log system health status
         if (overallStatus === 'healthy') {
             AICameraUtils.addLogMessage('main-system-log', 'System health: ' + systemStatusText, 'success');
         } else {
             AICameraUtils.addLogMessage('main-system-log', 'System health: ' + systemStatusText, 'warning');
+        }
+    },
+
+    /**
+     * Update system information display
+     */
+    updateSystemInfo: function(healthData) {
+        console.log('Updating system info with data:', healthData);
+        
+        // Extract system info from health data
+        const health = healthData.data || healthData;
+        const systemInfo = health.system || {};
+        console.log('Extracted systemInfo:', systemInfo);
+        
+        // Update CPU architecture information
+        const cpuElement = document.getElementById('system-info-cpu');
+        if (cpuElement && systemInfo.cpu_info) {
+            const cpuInfo = systemInfo.cpu_info;
+            let cpuText = 'Unknown';
+            
+            if (cpuInfo.model && cpuInfo.model !== 'Unknown') {
+                // For Raspberry Pi, show model and architecture
+                if (cpuInfo.model.includes('Raspberry Pi')) {
+                    cpuText = `${cpuInfo.model} ${cpuInfo.architecture}`;
+                } else {
+                    cpuText = `${cpuInfo.model} ${cpuInfo.architecture}`;
+                }
+            } else if (cpuInfo.architecture) {
+                cpuText = cpuInfo.architecture;
+            }
+            
+            cpuElement.textContent = cpuText;
+        }
+        
+        // Update RAM information
+        const ramElement = document.getElementById('system-info-ram');
+        if (ramElement && systemInfo.memory_usage) {
+            const totalGB = systemInfo.memory_usage.total;
+            ramElement.textContent = `${totalGB} GB`;
+        }
+        
+        // Update disk information
+        const diskElement = document.getElementById('system-info-disk');
+        if (diskElement && systemInfo.disk_usage) {
+            const totalGB = systemInfo.disk_usage.total;
+            diskElement.textContent = `${totalGB} GB`;
+        }
+        
+        // Update OS information
+        const osElement = document.getElementById('system-info-os');
+        if (osElement && systemInfo.os_info) {
+            const osInfo = systemInfo.os_info;
+            let osText = 'Unknown';
+            
+            if (osInfo.distribution && osInfo.distribution !== 'Unknown') {
+                // Show distribution name and kernel version
+                if (osInfo.kernel_version && osInfo.kernel_version !== 'Unknown') {
+                    osText = `${osInfo.distribution} (Kernel ${osInfo.kernel_version})`;
+                } else {
+                    osText = osInfo.distribution;
+                }
+            } else if (osInfo.name && osInfo.release) {
+                osText = `${osInfo.name} ${osInfo.release}`;
+            } else if (osInfo.name) {
+                osText = osInfo.name;
+            }
+            
+            osElement.textContent = osText;
+        }
+        
+        // Update AI Accelerator information
+        const aiAcceleratorElement = document.getElementById('system-info-ai-accelerator');
+        console.log('AI Accelerator element found:', aiAcceleratorElement);
+        console.log('AI Accelerator info in systemInfo:', systemInfo.ai_accelerator_info);
+        
+        if (aiAcceleratorElement && systemInfo.ai_accelerator_info) {
+            const aiInfo = systemInfo.ai_accelerator_info;
+            console.log('AI Info object:', aiInfo);
+            let aiText = 'Unknown';
+            
+            if (aiInfo.device_architecture && aiInfo.device_architecture !== 'Unknown' && 
+                aiInfo.firmware_version && aiInfo.firmware_version !== 'Unknown') {
+                aiText = `${aiInfo.device_architecture} (FW ${aiInfo.firmware_version})`;
+            } else if (aiInfo.device_architecture && aiInfo.device_architecture !== 'Unknown') {
+                aiText = aiInfo.device_architecture;
+            } else if (aiInfo.board_name && aiInfo.board_name !== 'Unknown') {
+                aiText = aiInfo.board_name;
+            }
+            
+            console.log('Setting AI Accelerator text to:', aiText);
+            aiAcceleratorElement.textContent = aiText;
+        } else {
+            console.log('AI Accelerator element or info not found');
         }
     },
 
