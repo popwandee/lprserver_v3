@@ -104,6 +104,10 @@ app = Flask(__name__,
 camera_manager = get_service('camera_manager')
 detection_manager = get_service('detection_manager')
 
+# Health monitoring services
+health_service = get_service('health_service')
+health_monitor = get_service('health_monitor')
+
 # ❌ NEVER instantiate services directly
 camera_manager = CameraManager()  # DON'T DO THIS
 ```
@@ -219,6 +223,28 @@ WebSocketManager.socket.on('camera_status_update', (status) => {
 // ✅ CORRECT: Use AICameraUtils for common functions
 AICameraUtils.addLogMessage('main-system-log', 'Message', 'info');
 AICameraUtils.updateStatusIndicator('main-camera-status', true, 'Online');
+```
+
+### 5.3 Health WebSocket Events (MANDATORY Names & Flows)
+```javascript
+// Namespace is default unless configured; events are snake_case
+const socket = io('/health');
+
+// Requests
+socket.emit('health_status_request');
+socket.emit('health_logs_request', { level: 'WARNING', page: 1, limit: 50 });
+socket.emit('health_monitor_start', { interval: 60 });
+socket.emit('health_monitor_stop');
+socket.emit('health_check_run');
+socket.emit('join_health_room');
+
+// Responses/updates
+socket.on('health_status_update', (data) => { /* update UI */ });
+socket.on('health_logs_update', (data) => { /* render table + pagination */ });
+socket.on('health_monitor_response', (r) => AICameraUtils.showToast(r.message || r.error, r.success ? 'success' : 'error'));
+socket.on('health_check_response', (data) => { /* refresh status cards */ });
+socket.on('health_room_joined', () => {/* noop */});
+socket.on('health_room_left', () => {/* noop */});
 ```
 
 ## 6. Blueprint Creation Patterns
@@ -364,6 +390,68 @@ try:
                          dependencies={'component': 'new_component', 'logger': 'logger'})
 except ImportError as e:
     self.logger.warning(f"NewService not available: {e}")
+```
+
+### 7.4 HealthMonitor Component Pattern (Low-level checks)
+```python
+# File: v1_3/src/components/health_monitor.py
+from v1_3.src.core.utils.logging_config import get_logger
+from v1_3.src.core.dependency_container import get_service
+
+class HealthMonitor:
+    def __init__(self, logger=None):
+        self.logger = logger or get_logger(__name__)
+        self.db_manager = None
+        self.camera_manager = None
+        self.detection_manager = None
+        self.running = False
+
+    def initialize(self) -> bool:
+        self.db_manager = get_service('database_manager')
+        self.camera_manager = get_service('camera_manager')
+        self.detection_manager = get_service('detection_manager')
+        # Create table health_checks if not exists
+        return bool(self.db_manager)
+
+    def run_all_checks(self) -> dict:
+        return {
+            'overall_status': 'healthy',
+            'component_status': {
+                'camera': self.check_camera(),
+                'disk_space': self.check_disk_space(),
+                'cpu_ram': self.check_cpu_ram(),
+                'models': self.check_model_loading(),
+                'easyocr': self.check_easyocr_init(),
+                'database': self.check_database_connection(),
+                'network': self.check_network_connectivity(),
+            },
+        }
+```
+
+### 7.5 HealthService Pattern (Business logic + aggregation)
+```python
+# File: v1_3/src/services/health_service.py
+from v1_3.src.core.dependency_container import get_service
+from v1_3.src.core.utils.logging_config import get_logger
+
+class HealthService:
+    def __init__(self, health_monitor=None, logger=None):
+        self.logger = logger or get_logger(__name__)
+        self.health_monitor = health_monitor or get_service('health_monitor')
+
+    def get_system_health(self) -> dict:
+        checks = self.health_monitor.run_all_checks()
+        system = self._get_system_info()
+        components = self._build_component_status(checks)
+        return {
+            'success': True,
+            'data': {
+                'overall_status': checks.get('overall_status', 'unknown'),
+                'components': components,
+                'system': system,
+                'last_check': datetime.now().isoformat(),
+            }
+        }
 ```
 
 ## 8. JavaScript Patterns and Standards
@@ -529,6 +617,33 @@ if db_manager:
     return result
 ```
 
+### 10.3 Health Logs Table & Usage (MANDATORY)
+```sql
+-- Table: health_checks
+CREATE TABLE IF NOT EXISTS health_checks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  timestamp TEXT NOT NULL,
+  component TEXT NOT NULL,
+  status TEXT NOT NULL,      -- PASS | FAIL | WARNING
+  message TEXT,
+  details TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+```python
+# Insert log
+cursor.execute(
+  'INSERT INTO health_checks (timestamp, component, status, message, details) VALUES (?, ?, ?, ?, ?)',
+  (datetime.now().isoformat(), 'CPU & RAM', 'PASS', 'System resources OK', json.dumps(details))
+)
+
+# Paginated read with optional level filter
+logs = self.health_monitor.get_latest_health_checks(1000)
+if level:
+    logs = [l for l in logs if l.get('status') == level.upper()]
+```
+
 ## 11. Testing Patterns
 
 ### 11.1 Component Testing
@@ -569,6 +684,26 @@ class TestNewService(unittest.TestCase):
         self.mock_component.initialize.assert_called_once()
 ```
 
+### 11.3 Health Monitor/Service Tests (RECOMMENDED)
+```python
+def test_health_monitor_runs_all_checks(mocker):
+    hm = HealthMonitor(logger=Mock())
+    mocker.patch.object(hm, 'check_camera', return_value=True)
+    mocker.patch.object(hm, 'check_disk_space', return_value=True)
+    mocker.patch.object(hm, 'check_cpu_ram', return_value=True)
+    # ... other checks
+    result = hm.run_all_checks()
+    assert 'component_status' in result
+
+def test_health_service_aggregates(mocker):
+    hm = Mock()
+    hm.run_all_checks.return_value = {'overall_status': 'healthy', 'component_status': {}}
+    svc = HealthService(health_monitor=hm, logger=Mock())
+    data = svc.get_system_health()
+    assert data['success'] is True
+    assert 'data' in data and 'system' in data['data']
+```
+
 ## 12. Common Pitfalls and Solutions
 
 ### 12.1 Import Issues
@@ -606,6 +741,15 @@ if (element) {
 }
 ```
 
+### 12.5 Health Module Pitfalls
+```text
+- Missing DI registration: Ensure both 'health_monitor' and 'health_service' are registered in the DI container.
+- Blocking calls: psutil.cpu_percent(interval=1) is acceptable, but avoid long blocking in WebSocket handlers.
+- Pagination off-by-one: Validate page bounds (>=1) and enforce max limit (<=100) for logs.
+- Event name mismatch: Use snake_case event names exactly as defined (health_status_request, health_logs_request, etc.).
+- Status mapping drift: Keep backend statuses (healthy|unhealthy|critical|unknown) mapped to CSS classes and JS handlers.
+- Thread leaks: Always stop monitoring and join thread on shutdown; prefer daemon threads for auto-start monitor.
+```
 ## 13. AI Code Generation Prompts
 
 ### 13.1 For New Components
@@ -692,6 +836,27 @@ def _initialize_services(logger):
     detection_manager = get_service('detection_manager')
     if detection_manager:
         detection_manager.initialize()
+```
+
+### 14.4 Health Monitor Auto-Start Pattern
+```python
+# MANDATORY: Health monitor/service must start only after camera & detection are ready
+from v1_3.src.core.config import AUTO_START_HEALTH_MONITOR, HEALTH_MONITOR_STARTUP_DELAY
+
+def _initialize_services(logger):
+    camera_manager = get_service('camera_manager')
+    detection_manager = get_service('detection_manager')
+    health_service = get_service('health_service')
+    health_monitor = get_service('health_monitor')
+
+    if camera_manager:
+        camera_manager.initialize()
+    if detection_manager:
+        detection_manager.initialize()
+    if health_monitor and health_service:
+        health_monitor.initialize()
+        if AUTO_START_HEALTH_MONITOR:
+            health_service.initialize()  # spawns background readiness checker and starts monitoring
 ```
 
 ## 15. Frame Data Validation Patterns

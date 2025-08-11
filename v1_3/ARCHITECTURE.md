@@ -348,8 +348,50 @@ v1_3/src/
     │   ├── health.py
     │   └── websocket.py
     ├── templates/                 # HTML Templates
+    │   ├── index.html             # Main dashboard with updated 2-row layout
+    │   ├── camera/
+    │   ├── detection/
+    │   └── health/
     └── static/                    # Static Files
+        ├── js/
+        │   ├── dashboard.js       # Updated for new layout structure
+        │   ├── camera.js
+        │   ├── detection.js
+        │   └── health.js
+        └── css/
 ```
+
+### 4.2.1 Updated Dashboard Layout Structure
+
+The main dashboard (`index.html`) now uses a **2-row layout** for the System Information section:
+
+**Row 1: Centered System Information**
+- Single centered column (`col-md-8`)
+- Left-aligned text content
+- Core system information: CPU Architecture, AI Accelerator, OS & Kernel
+- Clean horizontal separator
+
+**Row 2: Three-Column Layout**
+- **Column 1**: Hardware Information
+  - Main Board, RAM, Disk
+  - Camera details (Model, Resolution, Frame Rate, Status)
+- **Column 2**: Development Information (Static)
+  - Application, Framework, Architecture
+  - Camera, Database, Communication, Deployment, Version Control
+- **Column 3**: Component and Services (Static)
+  - Flask Streaming, Camera Component, Detection Component
+  - Health Monitor, WebSocket Sender, Database Manager
+
+**Removed Elements:**
+- System Status indicators (moved to dedicated health dashboard)
+- Redundant camera information displays
+- Duplicate status elements
+
+**Benefits of New Layout:**
+- Better visual hierarchy and organization
+- Clear separation of dynamic vs static content
+- Improved responsive design
+- Reduced redundancy and cleaner code
 
 ### 4.3 Dependency Flow
 
@@ -1188,7 +1230,56 @@ def register_health_checks(self):
     }
 ```
 
-## 15. สรุป
+## 15. Updated Variable Management and Layout
+
+### 15.1 Dashboard Layout Evolution
+
+The dashboard layout has evolved from a single-row system to a **2-row responsive layout**:
+
+**Previous Layout Issues:**
+- Mixed dynamic and static content in single row
+- Redundant status indicators
+- Poor visual hierarchy
+- Inconsistent element naming
+
+**Current Layout Benefits:**
+- **Row 1**: Centered core system information (CPU, AI Accelerator, OS)
+- **Row 2**: Three-column organization (Hardware, Development, Components)
+- Clear separation of dynamic vs static content
+- Improved responsive design
+- Better user experience
+
+### 15.2 Variable Naming Convention Updates
+
+**Updated Element IDs:**
+- `system-info-cpu` - CPU Architecture information
+- `system-info-ai-accelerator` - AI Accelerator details
+- `system-info-os` - Operating System information
+- `system-info-ram` - RAM usage
+- `system-info-disk` - Disk usage
+- `feature-camera-*` - Camera-related information
+
+**Removed Element IDs:**
+- `main-camera-model`, `main-camera-resolution`, `main-camera-fps`
+- `main-camera-detail-status`, `main-database-detail-status`
+- `main-system-uptime`, `main-camera-status`, `main-detection-status`
+- `main-database-status`, `main-system-status`
+
+**JavaScript Variable Updates:**
+- Updated `dashboard.js` to reflect new element structure
+- Removed unused variable declarations
+- Added new system information update functions
+- Improved error handling for missing elements
+
+### 15.3 Layout Responsiveness
+
+**Bootstrap Grid System:**
+- Row 1: `justify-content-center` for centering
+- Row 2: `col-md-4` for equal three-column layout
+- Responsive breakpoints for mobile devices
+- Consistent spacing with `mb-4` and `my-3`
+
+## 16. สรุป
 
 AI Camera v1.3 ใช้ Dependency Injection, Flask Blueprints และ **Absolute Imports** เพื่อสร้างระบบที่:
 - **Modular**: แบ่งส่วนการทำงานชัดเจน
@@ -1200,5 +1291,7 @@ AI Camera v1.3 ใช้ Dependency Injection, Flask Blueprints และ **Abso
 - **Frame-Safe**: ป้องกัน frame data type errors
 - **Attribute-Safe**: ป้องกัน attribute access errors
 - **Health-Monitored**: ระบบ health monitoring ที่ครอบคลุมและอัตโนมัติ
+- **Layout-Optimized**: 2-row responsive layout with improved UX
+- **Variable-Clean**: Streamlined element IDs and JavaScript variables
 
-Architecture นี้ทำให้ระบบมีความยืดหยุ่นและสามารถพัฒนาเพิ่มเติมได้อย่างมีประสิทธิภาพ พร้อมกับความชัดเจนในการจัดการ dependencies และ imports รวมถึงการจัดการ startup sequence, error prevention และ comprehensive health monitoring system
+Architecture นี้ทำให้ระบบมีความยืดหยุ่นและสามารถพัฒนาเพิ่มเติมได้อย่างมีประสิทธิภาพ พร้อมกับความชัดเจนในการจัดการ dependencies และ imports รวมถึงการจัดการ startup sequence, error prevention, comprehensive health monitoring system และ optimized user interface layout

@@ -505,24 +505,36 @@ package "HTML Template Layer" <<Rectangle>> {
     
     package "Element IDs (kebab-case)" {
         class MainDashboardElements {
-            **System Information Section:**
+            **System Information Section (Row 1 - Centered):**
+            + system-info-cpu
+            + system-info-ai-accelerator
+            + system-info-os
+            --
+            **Hardware Information Section (Row 2 - Column 1):**
+            + system-info-ram
+            + system-info-disk
+            + feature-camera-model
+            + feature-camera-resolution  
+            + feature-camera-fps
+            + feature-camera-status
+            --
+            **Development Information Section (Row 2 - Column 2):**
+            + (Static content - no dynamic spans)
+            --
+            **Component and Services Section (Row 2 - Column 3):**
+            + (Static content - no dynamic spans)
+            --
+            **Removed Elements (No longer used):**
             + main-camera-model
             + main-camera-resolution
             + main-camera-fps
             + main-camera-detail-status
+            + main-database-detail-status
             + main-system-uptime
-            --
-            **Features Section:**
-            + feature-camera-model
-            + feature-camera-resolution  
-            + feature-camera-fps
-            + main-camera-feature-status
-            --
-            **Status Indicators:**
             + main-camera-status
             + main-detection-status
             + main-database-status
-            + main-database-detail-status
+            + main-system-status
             --
             **Log Containers:**
             + main-system-log

@@ -373,10 +373,38 @@ class HealthService:
         """
         try:
             import psutil
+            import platform
+            import subprocess
+            import os
             
             # CPU information
             cpu_percent = psutil.cpu_percent(interval=1)
             cpu_count = psutil.cpu_count()
+            
+            # Get detailed CPU architecture information
+            cpu_arch = platform.machine()
+            cpu_processor = platform.processor()
+            
+            # Try to get Raspberry Pi specific information
+            pi_model = "Unknown"
+            try:
+                with open('/proc/cpuinfo', 'r') as f:
+                    cpuinfo = f.read()
+                    for line in cpuinfo.split('\n'):
+                        if line.startswith('Model'):
+                            pi_model = line.split(':')[1].strip()
+                            break
+            except:
+                pass
+            
+            # Get CPU frequency
+            cpu_freq = "Unknown"
+            try:
+                with open('/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq', 'r') as f:
+                    freq_khz = int(f.read().strip())
+                    cpu_freq = f"{freq_khz // 1000} MHz"
+            except:
+                pass
             
             # Memory information
             memory = psutil.virtual_memory()
@@ -387,7 +415,57 @@ class HealthService:
             # System uptime
             uptime = time.time() - psutil.boot_time()
             
+            # Enhanced OS information
+            os_name = platform.system()
+            os_release = platform.release()
+            os_version = platform.version()
+            
+            # Get distribution information
+            dist_name = "Unknown"
+            dist_version = "Unknown"
+            try:
+                with open('/etc/os-release', 'r') as f:
+                    os_release_content = f.read()
+                    for line in os_release_content.split('\n'):
+                        if line.startswith('PRETTY_NAME='):
+                            dist_name = line.split('=', 1)[1].strip().strip('"')
+                            break
+                        elif line.startswith('NAME='):
+                            dist_name = line.split('=', 1)[1].strip().strip('"')
+                        elif line.startswith('VERSION='):
+                            dist_version = line.split('=', 1)[1].strip().strip('"')
+            except:
+                pass
+            
+            # Get kernel version
+            kernel_version = os_release
+            
+            # Get AI Accelerator information
+            ai_accelerator_info = self._get_ai_accelerator_info()
+            
+            os_info = {
+                'name': os_name,
+                'distribution': dist_name,
+                'distribution_version': dist_version,
+                'kernel_version': kernel_version,
+                'release': os_release,
+                'version': os_version,
+                'platform': platform.platform(),
+                'architecture': cpu_arch
+            }
+            
+            # CPU architecture information
+            cpu_info = {
+                'architecture': cpu_arch,
+                'processor': cpu_processor,
+                'model': pi_model,
+                'cores': cpu_count,
+                'frequency': cpu_freq,
+                'usage_percent': round(cpu_percent, 1)
+            }
+            
             return {
+                'cpu_info': cpu_info,
                 'cpu_usage': round(cpu_percent, 1),
                 'cpu_count': cpu_count,
                 'memory_usage': {
@@ -400,17 +478,121 @@ class HealthService:
                     'total': round(disk.total / (1024**3), 2),
                     'percentage': round((disk.used / disk.total) * 100, 1)
                 },
-                'uptime': round(uptime, 1)
+                'uptime': round(uptime, 1),
+                'os_info': os_info,
+                'ai_accelerator_info': ai_accelerator_info
             }
             
         except Exception as e:
             self.logger.error(f"Error getting system info: {e}")
             return {
+                'cpu_info': {
+                    'architecture': 'Unknown',
+                    'processor': 'Unknown',
+                    'model': 'Unknown',
+                    'cores': 0,
+                    'frequency': 'Unknown',
+                    'usage_percent': 0.0
+                },
                 'cpu_usage': 0.0,
                 'cpu_count': 0,
                 'memory_usage': {'used': 0.0, 'total': 0.0, 'percentage': 0.0},
                 'disk_usage': {'used': 0.0, 'total': 0.0, 'percentage': 0.0},
-                'uptime': 0.0
+                'uptime': 0.0,
+                'os_info': {
+                    'name': 'Unknown',
+                    'distribution': 'Unknown',
+                    'distribution_version': 'Unknown',
+                    'kernel_version': 'Unknown',
+                    'release': 'Unknown',
+                    'version': 'Unknown',
+                    'platform': 'Unknown',
+                    'architecture': 'Unknown'
+                },
+                'ai_accelerator_info': {
+                    'device_architecture': 'Unknown',
+                    'firmware_version': 'Unknown',
+                    'board_name': 'Unknown',
+                    'status': 'Error'
+                }
+            }
+    
+    def _get_ai_accelerator_info(self) -> Dict[str, Any]:
+        """
+        Get AI Accelerator information using hailortcli command.
+        
+        Returns:
+            Dict containing AI accelerator information
+        """
+        try:
+            import subprocess
+            self.logger.info("Attempting to get AI accelerator information...")
+            
+            # Run hailortcli fw-control identify command
+            result = subprocess.run(
+                ['hailortcli', 'fw-control', 'identify'],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            self.logger.info(f"hailortcli command completed with return code: {result.returncode}")
+            self.logger.info(f"hailortcli stdout: {result.stdout}")
+            self.logger.info(f"hailortcli stderr: {result.stderr}")
+            
+            if result.returncode != 0:
+                self.logger.warning(f"hailortcli command failed: {result.stderr}")
+                return {
+                    'device_architecture': 'Unknown',
+                    'firmware_version': 'Unknown',
+                    'board_name': 'Unknown',
+                    'status': 'Not available'
+                }
+            
+            # Parse the output
+            output_lines = result.stdout.strip().split('\n')
+            ai_info = {
+                'device_architecture': 'Unknown',
+                'firmware_version': 'Unknown',
+                'board_name': 'Unknown',
+                'status': 'Available'
+            }
+            
+            for line in output_lines:
+                line = line.strip()
+                if line.startswith('Device Architecture:'):
+                    ai_info['device_architecture'] = line.split(':', 1)[1].strip()
+                elif line.startswith('Firmware Version:'):
+                    ai_info['firmware_version'] = line.split(':', 1)[1].strip()
+                elif line.startswith('Board Name:'):
+                    ai_info['board_name'] = line.split(':', 1)[1].strip().replace('\x00', '')
+            
+            self.logger.info(f"Parsed AI accelerator info: {ai_info}")
+            return ai_info
+            
+        except subprocess.TimeoutExpired:
+            self.logger.warning("hailortcli command timed out")
+            return {
+                'device_architecture': 'Unknown',
+                'firmware_version': 'Unknown',
+                'board_name': 'Unknown',
+                'status': 'Timeout'
+            }
+        except FileNotFoundError:
+            self.logger.warning("hailortcli command not found")
+            return {
+                'device_architecture': 'Unknown',
+                'firmware_version': 'Unknown',
+                'board_name': 'Unknown',
+                'status': 'Not installed'
+            }
+        except Exception as e:
+            self.logger.error(f"Error getting AI accelerator info: {e}")
+            return {
+                'device_architecture': 'Unknown',
+                'firmware_version': 'Unknown',
+                'board_name': 'Unknown',
+                'status': 'Error'
             }
     
     def get_health_logs(self, level: str = None, limit: int = 50, page: int = 1) -> Dict[str, Any]:
