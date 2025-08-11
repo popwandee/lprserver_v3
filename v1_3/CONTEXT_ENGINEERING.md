@@ -1237,6 +1237,76 @@ if __name__ == "__main__":
     app.run()
 ```
 
+### 16.6 Nginx Configuration (MANDATORY)
+
+**CRITICAL: AI Camera v1.3 ใช้ Nginx + Gunicorn Unix Socket**
+
+**Nginx Configuration File:**
+```bash
+# MANDATORY: ใช้ไฟล์เดียวเท่านั้น
+/etc/nginx/sites-available/aicamera_v1.3
+/etc/nginx/sites-enabled/aicamera_v1.3
+```
+
+**Configuration Structure:**
+```nginx
+server {
+    listen 80;
+    server_name _;
+    
+    # Main application (Flask via Gunicorn Unix Socket)
+    location / {
+        proxy_pass http://unix:/tmp/aicamera.sock;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # WebSocket support
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+    
+    # Static files
+    location /static/ {
+        alias /home/camuser/aicamera/v1_3/src/web/static/;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+    
+    # Health check endpoint (with and without trailing slash)
+    location ~ ^/health/?$ {
+        proxy_pass http://unix:/tmp/aicamera.sock;
+        proxy_set_header Host $host;
+        access_log off;
+    }
+}
+```
+
+**MANDATORY Rules:**
+1. **NEVER create multiple nginx config files** - ใช้ `aicamera_v1.3` เท่านั้น
+2. **NEVER use port 5000 directly** - Flask ทำงานผ่าน Unix Socket
+3. **ALWAYS use nginx port 80** - สำหรับ external access
+4. **ALWAYS test nginx config** - `sudo nginx -t` ก่อน reload
+5. **ALWAYS reload nginx** - `sudo systemctl reload nginx` หลังแก้ไข
+
+**Service Architecture:**
+```
+Internet → Port 80 → Nginx → Unix Socket → Gunicorn → Flask App
+```
+
+**Testing Endpoints:**
+```bash
+# MANDATORY: Test via nginx port 80
+curl http://localhost/health/
+curl http://localhost/websocket-sender/
+curl http://localhost/
+
+# NEVER: Test Flask directly on port 5000
+# curl http://localhost:5000/health/  # ❌ ไม่ทำงาน
+```
+
 ### 16.5 Offline Mode Configuration (MANDATORY)
 
 **WebSocket Sender Offline Mode:**
@@ -1283,5 +1353,8 @@ When generating code for AI Camera v1.3:
 13. **ALWAYS handle offline mode**: Graceful degradation for WebSocket services
 14. **ALWAYS use .env.production**: For production configuration
 15. **ALWAYS validate configuration**: Check required environment variables
+16. **ALWAYS use nginx port 80**: Flask ทำงานผ่าน Gunicorn Unix Socket
+17. **NEVER create multiple nginx configs**: ใช้ `aicamera_v1.3` เท่านั้น
+18. **ALWAYS test nginx config**: `sudo nginx -t` ก่อน reload
 
 This document ensures consistency and prevents conflicts in AI Camera v1.3 development.
