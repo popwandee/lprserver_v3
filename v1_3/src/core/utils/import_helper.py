@@ -91,23 +91,39 @@ def validate_imports() -> List[str]:
     """
     errors = []
     required_modules = [
+        # Core modules
         'v1_3.src.core.config',
         'v1_3.src.core.dependency_container',
         'v1_3.src.core.utils.logging_config',
+        'v1_3.src.core.utils.import_helper',
+        
+        # Component modules
         'v1_3.src.components.camera_handler',
         'v1_3.src.components.detection_processor',
         'v1_3.src.components.health_monitor',
         'v1_3.src.components.database_manager',
+        'v1_3.src.components.improved_camera_manager',
+        
+        # Service modules
         'v1_3.src.services.camera_manager',
         'v1_3.src.services.detection_manager',
         'v1_3.src.services.video_streaming',
         'v1_3.src.services.websocket_sender',
+        'v1_3.src.services.health_service',
+        
+        # Web blueprint modules
         'v1_3.src.web.blueprints.main',
         'v1_3.src.web.blueprints.camera',
         'v1_3.src.web.blueprints.detection',
+        'v1_3.src.web.blueprints.detection_results',
         'v1_3.src.web.blueprints.health',
         'v1_3.src.web.blueprints.streaming',
-        'v1_3.src.web.blueprints.websocket'
+        'v1_3.src.web.blueprints.websocket',
+        'v1_3.src.web.blueprints.websocket_sender',
+        
+        # Main application modules
+        'v1_3.src.app',
+        'v1_3.src.wsgi'
     ]
     
     for module_name in required_modules:
@@ -116,6 +132,10 @@ def validate_imports() -> List[str]:
             logger.debug(f"✓ Successfully imported {module_name}")
         except ImportError as e:
             error_msg = f"✗ Failed to import {module_name}: {e}"
+            errors.append(error_msg)
+            logger.error(error_msg)
+        except Exception as e:
+            error_msg = f"✗ Unexpected error importing {module_name}: {e}"
             errors.append(error_msg)
             logger.error(error_msg)
     
