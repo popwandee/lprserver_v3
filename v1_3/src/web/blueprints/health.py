@@ -32,13 +32,6 @@ def health_dashboard():
         return "Health dashboard not available", 500
 
 
-@health_bp.route('')
-def health_redirect():
-    """Redirect /health to /health/ for dashboard."""
-    from flask import redirect, url_for
-    return redirect(url_for('health.health_dashboard'))
-
-
 @health_bp.route('/system')
 def get_system_health():
     """

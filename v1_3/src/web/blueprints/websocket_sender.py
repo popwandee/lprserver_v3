@@ -32,13 +32,6 @@ def websocket_sender_dashboard():
         return "WebSocket sender dashboard not available", 500
 
 
-@websocket_sender_bp.route('')
-def websocket_sender_redirect():
-    """Redirect /websocket-sender to /websocket-sender/ for dashboard."""
-    from flask import redirect, url_for
-    return redirect(url_for('websocket_sender.websocket_sender_dashboard'))
-
-
 @websocket_sender_bp.route('/status')
 def get_websocket_sender_status():
     """
@@ -82,6 +75,7 @@ def get_websocket_sender_logs():
     Query Parameters:
         page (optional): Page number (default: 1)
         limit (optional): Records per page (default: 50)
+        filter (optional): Filter by action type
     
     Returns:
         JSON response with WebSocket sender logs
@@ -90,6 +84,7 @@ def get_websocket_sender_logs():
         # Get query parameters
         page = request.args.get('page', 1, type=int)
         limit = request.args.get('limit', 50, type=int)
+        filter_type = request.args.get('filter', '')
         
         # Validate parameters
         page = max(1, page)
@@ -106,12 +101,32 @@ def get_websocket_sender_logs():
         # Get logs from database
         logs = database_manager.get_websocket_sender_logs(limit=limit)
         
+        # Apply filter if specified
+        if filter_type:
+            filtered_logs = []
+            for log in logs:
+                if filter_type == 'send_detection' and log.get('action') == 'send_detection':
+                    filtered_logs.append(log)
+                elif filter_type == 'send_health' and log.get('action') == 'send_health':
+                    filtered_logs.append(log)
+                elif filter_type == 'connection' and 'connection' in log.get('action', ''):
+                    filtered_logs.append(log)
+                elif filter_type == 'error' and log.get('status') in ['error', 'failed']:
+                    filtered_logs.append(log)
+            logs = filtered_logs
+        
+        # Apply pagination
+        total_logs = len(logs)
+        start_idx = (page - 1) * limit
+        end_idx = start_idx + limit
+        paginated_logs = logs[start_idx:end_idx]
+        
         return jsonify({
             'success': True,
-            'logs': logs,
+            'logs': paginated_logs,
             'page': page,
             'limit': limit,
-            'total_logs': len(logs),
+            'total_logs': total_logs,
             'timestamp': datetime.now().isoformat()
         })
         
@@ -244,6 +259,48 @@ def test_connection():
         
     except Exception as e:
         logger.error(f"Error testing WebSocket connection: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+@websocket_sender_bp.route('/clear-logs', methods=['POST'])
+def clear_websocket_sender_logs():
+    """
+    Clear WebSocket sender logs.
+    
+    Returns:
+        JSON response with operation result
+    """
+    try:
+        database_manager = get_service('database_manager')
+        if not database_manager:
+            return jsonify({
+                'success': False,
+                'error': 'Database manager not available',
+                'timestamp': datetime.now().isoformat()
+            }), 500
+        
+        # Clear logs
+        success = database_manager.clear_websocket_sender_logs()
+        
+        if success:
+            logger.info("WebSocket sender logs cleared via web interface")
+            return jsonify({
+                'success': True,
+                'message': 'WebSocket sender logs cleared successfully',
+                'timestamp': datetime.now().isoformat()
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to clear WebSocket sender logs',
+                'timestamp': datetime.now().isoformat()
+            }), 500
+        
+    except Exception as e:
+        logger.error(f"Error clearing WebSocket sender logs: {e}")
         return jsonify({
             'success': False,
             'error': str(e),

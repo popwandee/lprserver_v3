@@ -1180,6 +1180,27 @@ def get_status(self):
     }
 ```
 
+### 13.4 Frame Error Prevention Patterns
+```python
+# Frame validation error codes
+FRAME_ERROR_CODES = {
+    'INVALID_TYPE': 'Expected numpy.ndarray, got dict',
+    'EMPTY_FRAME': 'Frame size is 0',
+    'MISSING_FRAME_KEY': 'Dict missing frame key',
+    'VALIDATION_FAILED': 'Frame validation failed'
+}
+
+# Frame error response format
+def create_frame_error_response(error_type: str, details: dict) -> dict:
+    return {
+        'success': False,
+        'error': FRAME_ERROR_CODES.get(error_type, 'Frame validation failed'),
+        'error_type': error_type,
+        'details': details,
+        'timestamp': datetime.now().isoformat()
+    }
+```
+
 ## 14. Health Monitoring Integration Patterns
 
 ### 14.1 Component Health Check Integration
@@ -1279,7 +1300,285 @@ The dashboard layout has evolved from a single-row system to a **2-row responsiv
 - Responsive breakpoints for mobile devices
 - Consistent spacing with `mb-4` and `my-3`
 
-## 16. สรุป
+## 16. WebSocket Sender Offline Mode Architecture
+
+### 16.1 Offline Mode Overview
+
+WebSocket Sender ใน AI Camera v1.3 รองรับ **Offline Mode** เพื่อให้ระบบทำงานได้แม้ไม่สามารถเชื่อมต่อ server ได้:
+
+**Key Features:**
+- **Graceful Degradation**: ทำงานใน local mode เมื่อไม่มี server URL
+- **Data Persistence**: บันทึกข้อมูลในฐานข้อมูล local
+- **Auto Recovery**: ส่งข้อมูลที่ค้างไว้เมื่อเชื่อมต่อได้
+- **Smart Reconnection**: Retry connection อัตโนมัติ
+
+### 16.2 Offline Mode Implementation
+
+```python
+# WebSocket Sender Offline Mode Logic
+class WebSocketSender:
+    def initialize(self) -> bool:
+        if not self.server_url:
+            self.logger.warning("WEBSOCKET_SERVER_URL not configured - service will run in offline mode")
+            self.server_url = None  # Set to None to indicate offline mode
+            return True  # Allow initialization in offline mode
+    
+    def _send_detection_data(self) -> int:
+        # Check if in offline mode
+        if not self.server_url:
+            # In offline mode, just log that we're processing locally
+            self.database_manager.log_websocket_action(
+                action='send_detection',
+                status='offline',
+                message=f'Processing {len(unsent_detections)} detection records locally (offline mode)',
+                data_type='detection_results',
+                record_count=len(unsent_detections)
+            )
+            return len(unsent_detections)  # Return count as "processed"
+        
+        # Normal online mode - send to server
+        # ... existing sending logic
+```
+
+### 16.3 Reconnection and Pending Data Handling
+
+```python
+async def connect(self) -> bool:
+    """Connect to WebSocket server with pending data handling."""
+    try:
+        # ... connection logic ...
+        
+        if self.connected:
+            # Try to send any pending data after successful connection
+            await self._send_pending_data()
+        
+        return True
+    except Exception as e:
+        # ... error handling ...
+
+async def _send_pending_data(self):
+    """Send any pending data after successful connection."""
+    try:
+        if not self.connected or not self.server_url:
+            return
+        
+        self.logger.info("Sending pending data after reconnection...")
+        
+        # Send pending detection data
+        detection_count = self._send_detection_data()
+        if detection_count > 0:
+            self.logger.info(f"Sent {detection_count} pending detection records")
+        
+        # Send pending health data
+        health_count = self._send_health_data()
+        if health_count > 0:
+            self.logger.info(f"Sent {health_count} pending health records")
+            
+    except Exception as e:
+        self.logger.error(f"Error sending pending data: {e}")
+```
+
+### 16.4 Status Display Integration
+
+**Dashboard Status Indicators:**
+
+```javascript
+// Offline Mode Status Display
+updateServerConnectionDisplay: function(status) {
+    let connected = false;
+    let connectionText = 'Disconnected';
+    let dataActive = false;
+    let dataText = 'Inactive';
+
+    if (status) {
+        // Check if in offline mode
+        if (status.offline_mode) {
+            connected = false;
+            connectionText = 'Offline Mode';
+            dataActive = status.running && (status.detection_thread_alive || status.health_thread_alive);
+            dataText = dataActive ? 'Active (Local)' : 'Inactive';
+        } else {
+            // Normal online mode
+            if (status.connected) {
+                connected = true;
+                connectionText = 'Connected';
+            }
+            if (status.running && (status.detection_thread_alive || status.health_thread_alive)) {
+                dataActive = true;
+                dataText = 'Active';
+            }
+        }
+    }
+
+    // Update UI elements
+    AICameraUtils.updateStatusIndicator('main-server-connection-status', connected, connectionText);
+    AICameraUtils.updateStatusIndicator('main-data-sending-status', dataActive, dataText);
+}
+```
+
+### 16.5 Configuration Management
+
+**Environment Configuration:**
+```bash
+# v1_3/.env.production
+WEBSOCKET_SERVER_URL="ws://100.95.46.128:8765"
+AICAMERA_ID="1"
+CHECKPOINT_ID="1"
+```
+
+**Config Loading Process:**
+```python
+# v1_3/src/core/config.py
+def load_env_file():
+    """Load environment variables from .env.production file."""
+    env_file = Path(__file__).parent.parent.parent / '.env.production'
+    if env_file.exists():
+        with open(env_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    value = value.strip('"\'')
+                    os.environ[key.strip()] = value
+
+# Load environment variables
+load_env_file()
+
+# WebSocket server configuration
+WEBSOCKET_SERVER_URL = os.getenv("WEBSOCKET_SERVER_URL")
+```
+
+## 17. Import Helper and Configuration Architecture
+
+### 17.1 Import Helper System
+
+**Purpose:** จัดการ import paths และ absolute imports ให้ถูกต้อง
+
+```python
+# v1_3/src/core/utils/import_helper.py
+def setup_import_paths(base_path: Optional[str] = None) -> None:
+    """Setup import paths for absolute imports."""
+    if base_path is None:
+        # Get the project root directory (aicamera/)
+        current_file = Path(__file__)
+        project_root = current_file.parent.parent.parent.parent  # Go up from utils/core/src/v1_3
+        logger.info(f"Auto-detected project root: {project_root.absolute()}")
+    else:
+        project_root = Path(base_path)
+    
+    # Add project root to sys.path for absolute imports
+    project_root_str = str(project_root.absolute())
+    if project_root_str not in sys.path:
+        sys.path.insert(0, project_root_str)
+    
+    # Add v1_3 directory for v1_3.* imports
+    v1_3_path = str(project_root / 'v1_3')
+    if v1_3_path not in sys.path:
+        sys.path.insert(0, v1_3_path)
+    
+    # Add v1_3/src directory for src.* imports
+    v1_3_src_path = str(project_root / 'v1_3' / 'src')
+    if v1_3_src_path not in sys.path:
+        sys.path.insert(0, v1_3_src_path)
+```
+
+### 17.2 Application Startup Process
+
+**Startup Sequence:**
+```python
+# v1_3/src/app.py
+def create_app():
+    """Create and configure Flask application using absolute imports."""
+    # 1. Load environment variables
+    load_env_file()
+    
+    # 2. Setup import paths
+    from v1_3.src.core.utils.import_helper import setup_import_paths, validate_imports
+    setup_import_paths()
+    
+    # 3. Validate imports
+    import_errors = validate_imports()
+    if import_errors:
+        logger.warning("Some imports failed:")
+        for error in import_errors:
+            logger.warning(f"  {error}")
+    
+    # 4. Create Flask app with correct paths
+    current_dir = Path(__file__).parent
+    template_dir = current_dir / 'web' / 'templates'
+    static_dir = current_dir / 'web' / 'static'
+    
+    app = Flask(__name__, 
+                template_folder=str(template_dir),
+                static_folder=str(static_dir))
+    
+    # 5. Load configuration
+    app.config.from_object('v1_3.src.core.config')
+    
+    # 6. Initialize dependency container
+    container = get_container()
+    
+    # 7. Initialize SocketIO
+    socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+    
+    # 8. Register blueprints
+    register_blueprints(app, socketio)
+    
+    # 9. Initialize services with auto-startup sequence
+    _initialize_services(logger)
+    
+    return app, socketio
+```
+
+### 17.3 WSGI Entry Point
+
+```python
+# v1_3/src/wsgi.py
+#!/usr/bin/env python3
+"""
+WSGI Entry Point for AI Camera v1.3
+
+This module provides the WSGI application entry point for deployment.
+"""
+
+import sys
+from pathlib import Path
+
+# Add project root to Python path
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+# Setup import paths
+from v1_3.src.core.utils.import_helper import setup_import_paths
+setup_import_paths()
+
+# Import and create application
+from v1_3.src.app import create_app
+
+app, socketio = create_app()
+
+if __name__ == "__main__":
+    app.run()
+```
+
+### 17.4 Configuration Best Practices
+
+**1. Environment Variables:**
+- ใช้ `.env.production` สำหรับ production settings
+- ใช้ `os.getenv()` ใน config.py
+- ไม่ hardcode sensitive values
+
+**2. Import Management:**
+- ใช้ absolute imports: `from v1_3.src.core.* import *`
+- เรียก `setup_import_paths()` ก่อน import modules
+- ใช้ `validate_imports()` เพื่อตรวจสอบ
+
+**3. Path Management:**
+- ใช้ `Path(__file__).parent` สำหรับ relative paths
+- ตรวจสอบ file existence ก่อนใช้งาน
+- ใช้ absolute paths สำหรับ deployment
+
+## 18. สรุป
 
 AI Camera v1.3 ใช้ Dependency Injection, Flask Blueprints และ **Absolute Imports** เพื่อสร้างระบบที่:
 - **Modular**: แบ่งส่วนการทำงานชัดเจน
@@ -1293,5 +1592,7 @@ AI Camera v1.3 ใช้ Dependency Injection, Flask Blueprints และ **Abso
 - **Health-Monitored**: ระบบ health monitoring ที่ครอบคลุมและอัตโนมัติ
 - **Layout-Optimized**: 2-row responsive layout with improved UX
 - **Variable-Clean**: Streamlined element IDs and JavaScript variables
+- **Offline-Capable**: WebSocket Sender รองรับ offline mode และ auto-recovery
+- **Config-Managed**: จัดการ configuration ผ่าน environment variables และ import helper
 
-Architecture นี้ทำให้ระบบมีความยืดหยุ่นและสามารถพัฒนาเพิ่มเติมได้อย่างมีประสิทธิภาพ พร้อมกับความชัดเจนในการจัดการ dependencies และ imports รวมถึงการจัดการ startup sequence, error prevention, comprehensive health monitoring system และ optimized user interface layout
+Architecture นี้ทำให้ระบบมีความยืดหยุ่นและสามารถพัฒนาเพิ่มเติมได้อย่างมีประสิทธิภาพ พร้อมกับความชัดเจนในการจัดการ dependencies และ imports รวมถึงการจัดการ startup sequence, error prevention, comprehensive health monitoring system, optimized user interface layout และ robust offline mode support

@@ -412,7 +412,8 @@ ERROR_CODES = {
     'OPERATION_FAILED': 'Operation failed',
     'HEALTH_CHECK_FAILED': 'Health check failed',
     'COMPONENT_UNHEALTHY': 'Component is unhealthy',
-    'SYSTEM_CRITICAL': 'System is in critical state'
+    'SYSTEM_CRITICAL': 'System is in critical state',
+    'FRAME_VALIDATION_ERROR': 'Frame validation failed'
 }
 ```
 
@@ -962,6 +963,249 @@ function updateSystemInfo(healthData) {
 - **Better Maintainability**: Clearer element ID naming convention
 - **Improved Responsiveness**: Better mobile and tablet experience
 
+## 15. WebSocket Sender Offline Mode Variables
+
+### 15.1 Offline Mode Status Variables
+
+**Backend Status Variables (snake_case):**
+```python
+# WebSocket Sender Status with Offline Mode
+websocket_sender_status = {
+    'enabled': True,
+    'running': True,
+    'connected': False,  # False in offline mode
+    'server_url': None,  # None indicates offline mode
+    'offline_mode': True,  # New field for offline mode
+    'aicamera_id': '1',
+    'checkpoint_id': '1',
+    'retry_count': 0,
+    'total_detections_sent': 0,
+    'total_health_sent': 0,
+    'last_detection_check': '2025-08-10T11:30:00.000Z',
+    'last_health_check': '2025-08-10T11:30:00.000Z',
+    'detection_thread_alive': True,
+    'health_thread_alive': True
+}
+```
+
+**Frontend Status Variables (camelCase):**
+```javascript
+// WebSocket Sender Status with Offline Mode
+const websocketSenderStatus = {
+    enabled: true,
+    running: true,
+    connected: false,  // False in offline mode
+    serverUrl: null,   // null indicates offline mode
+    offlineMode: true, // New field for offline mode
+    aicameraId: '1',
+    checkpointId: '1',
+    retryCount: 0,
+    totalDetectionsSent: 0,
+    totalHealthSent: 0,
+    lastDetectionCheck: '2025-08-10T11:30:00.000Z',
+    lastHealthCheck: '2025-08-10T11:30:00.000Z',
+    detectionThreadAlive: true,
+    healthThreadAlive: true
+};
+```
+
+### 15.2 Offline Mode Log Variables
+
+**Backend Log Variables (snake_case):**
+```python
+# Offline Mode Log Entry
+offline_log_entry = {
+    'timestamp': '2025-08-10T11:30:00.000Z',
+    'action': 'send_detection',
+    'status': 'offline',  # New status for offline mode
+    'message': 'Processing 5 detection records locally (offline mode)',
+    'data_type': 'detection_results',
+    'record_count': 5,
+    'aicamera_id': '1',
+    'checkpoint_id': '1'
+}
+
+# Connection Log Entry
+connection_log_entry = {
+    'timestamp': '2025-08-10T11:30:00.000Z',
+    'action': 'connect',
+    'status': 'success',  # or 'failed'
+    'message': 'Connected to ws://100.95.46.128:8765',
+    'aicamera_id': '1',
+    'checkpoint_id': '1'
+}
+```
+
+**Frontend Log Display Variables (camelCase):**
+```javascript
+// Offline Mode Log Display
+const offlineLogDisplay = {
+    timestamp: '2025-08-10T11:30:00.000Z',
+    action: 'send_detection',
+    status: 'offline',  // New status for offline mode
+    message: 'Processing 5 detection records locally (offline mode)',
+    dataType: 'detection_results',
+    recordCount: 5,
+    aicameraId: '1',
+    checkpointId: '1'
+};
+
+// Connection Log Display
+const connectionLogDisplay = {
+    timestamp: '2025-08-10T11:30:00.000Z',
+    action: 'connect',
+    status: 'success',  // or 'failed'
+    message: 'Connected to ws://100.95.46.128:8765',
+    aicameraId: '1',
+    checkpointId: '1'
+};
+```
+
+### 15.3 Dashboard Status Display Variables
+
+**Offline Mode Status Display:**
+```javascript
+// Offline Mode Status Display Variables
+const offlineStatusDisplay = {
+    // Server Connection Status
+    serverConnection: {
+        connected: false,
+        connectionText: 'Offline Mode',
+        statusClass: 'status-offline'
+    },
+    
+    // Data Sending Status
+    dataSending: {
+        active: true,  // true if threads are alive
+        dataText: 'Active (Local)',
+        statusClass: 'status-active'
+    },
+    
+    // Last Sync Time
+    lastSync: {
+        time: '2025-08-10T11:30:00.000Z',
+        displayText: '2025-08-10 11:30:00'
+    }
+};
+
+// Online Mode Status Display Variables
+const onlineStatusDisplay = {
+    // Server Connection Status
+    serverConnection: {
+        connected: true,
+        connectionText: 'Connected',
+        statusClass: 'status-online'
+    },
+    
+    // Data Sending Status
+    dataSending: {
+        active: true,
+        dataText: 'Active',
+        statusClass: 'status-active'
+    },
+    
+    // Last Sync Time
+    lastSync: {
+        time: '2025-08-10T11:30:00.000Z',
+        displayText: '2025-08-10 11:30:00'
+    }
+};
+```
+
+### 15.4 Environment Configuration Variables
+
+**Environment Variables (.env.production):**
+```bash
+# WebSocket Server Configuration
+WEBSOCKET_SERVER_URL="ws://lprserver:port"
+AICAMERA_ID="1"
+CHECKPOINT_ID="1"
+
+# Database Configuration
+DB_PATH="db/lpr_data.db"
+
+# Security Configuration
+SECRET_KEY="f4cf43e2322bcca04b16f201cad8b281ce1360d85e0170e0"
+```
+
+**Configuration Loading Variables:**
+```python
+# Config Loading Process Variables
+config_loading = {
+    'env_file_path': '/home/camuser/aicamera/v1_3/.env.production',
+    'env_file_exists': True,
+    'loaded_variables': {
+        'WEBSOCKET_SERVER_URL': 'ws://lprserver:port',
+        'AICAMERA_ID': '1',
+        'CHECKPOINT_ID': '1',
+        'SECRET_KEY': 'f4cf43e2322bcca04b16f201cad8b281ce1360d85e0170e0',
+        'DB_PATH': 'db/lpr_data.db'
+    },
+    'missing_variables': [],
+    'validation_status': 'success'
+}
+```
+
+### 15.5 Import Helper Variables
+
+**Import Path Variables:**
+```python
+# Import Helper Path Variables
+import_paths = {
+    'project_root': '/home/camuser/aicamera',
+    'v1_3_path': '/home/camuser/aicamera/v1_3',
+    'v1_3_src_path': '/home/camuser/aicamera/v1_3/src',
+    'current_working_directory': '/home/camuser/aicamera/v1_3'
+}
+
+# Import Validation Variables
+import_validation = {
+    'required_modules': [
+        'v1_3.src.core.config',
+        'v1_3.src.core.dependency_container',
+        'v1_3.src.components.camera_handler',
+        'v1_3.src.components.health_monitor',
+        'v1_3.src.services.camera_manager',
+        'v1_3.src.services.health_service',
+        'v1_3.src.services.websocket_sender'
+    ],
+    'validation_errors': [],
+    'validation_status': 'success'
+}
+```
+
+### 15.6 Application Startup Variables
+
+**Startup Sequence Variables:**
+```python
+# Application Startup Variables
+startup_sequence = {
+    'step_1_load_env': {
+        'status': 'completed',
+        'env_file_loaded': True,
+        'variables_loaded': 5
+    },
+    'step_2_setup_imports': {
+        'status': 'completed',
+        'import_paths_setup': True,
+        'validation_passed': True
+    },
+    'step_3_create_app': {
+        'status': 'completed',
+        'flask_app_created': True,
+        'template_folder': '/home/camuser/aicamera/v1_3/src/web/templates',
+        'static_folder': '/home/camuser/aicamera/v1_3/src/web/static'
+    },
+    'step_4_initialize_services': {
+        'status': 'completed',
+        'camera_manager': 'initialized',
+        'detection_manager': 'initialized',
+        'health_service': 'initialized',
+        'websocket_sender': 'initialized_offline_mode'
+    }
+}
+```
+
 ---
 
-**Note:** เอกสารนี้ควรได้รับการอัพเดตเมื่อมีการเปลี่ยนแปลงโครงสร้างหรือตัวแปรใหม่ เพื่อรักษามาตรฐานการพัฒนาร่วมกัน รวมถึงการเปลี่ยนแปลงในโครงสร้างข้อมูล frame, auto-startup sequence, health monitor status values, และ dashboard layout structure
+**Note:** เอกสารนี้ควรได้รับการอัพเดตเมื่อมีการเปลี่ยนแปลงโครงสร้างหรือตัวแปรใหม่ เพื่อรักษามาตรฐานการพัฒนาร่วมกัน รวมถึงการเปลี่ยนแปลงในโครงสร้างข้อมูล frame, auto-startup sequence, health monitor status values, dashboard layout structure, WebSocket sender offline mode, และ configuration management system

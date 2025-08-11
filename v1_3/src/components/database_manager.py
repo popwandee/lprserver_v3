@@ -826,7 +826,8 @@ class DatabaseManager:
     
     def log_websocket_action(self, action: str, status: str, message: str = None, 
                            data_type: str = None, record_count: int = 0, 
-                           server_response: str = None) -> Optional[int]:
+                           server_response: str = None, aicamera_id: str = None,
+                           checkpoint_id: str = None) -> Optional[int]:
         """
         Log WebSocket sender action to database.
         
@@ -837,6 +838,8 @@ class DatabaseManager:
             data_type: Type of data being processed
             record_count: Number of records processed
             server_response: Server response text
+            aicamera_id: AI Camera ID
+            checkpoint_id: Checkpoint ID
             
         Returns:
             Optional[int]: ID of inserted log record, None if failed
@@ -849,9 +852,9 @@ class DatabaseManager:
             cursor = self.connection.cursor()
             cursor.execute("""
                 INSERT INTO websocket_sender_logs 
-                (timestamp, action, status, message, data_type, record_count, server_response)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (timestamp, action, status, message, data_type, record_count, server_response))
+                (timestamp, action, status, message, data_type, record_count, server_response, aicamera_id, checkpoint_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (timestamp, action, status, message, data_type, record_count, server_response, aicamera_id, checkpoint_id))
             
             self.connection.commit()
             record_id = cursor.lastrowid
@@ -879,7 +882,7 @@ class DatabaseManager:
             
             cursor = self.connection.cursor()
             cursor.execute("""
-                SELECT timestamp, action, status, message, data_type, record_count, server_response
+                SELECT timestamp, action, status, message, data_type, record_count, server_response, aicamera_id, checkpoint_id
                 FROM websocket_sender_logs
                 ORDER BY created_at DESC
                 LIMIT ?
@@ -896,7 +899,9 @@ class DatabaseManager:
                     'message': row[3],
                     'data_type': row[4],
                     'record_count': row[5],
-                    'server_response': row[6]
+                    'server_response': row[6],
+                    'aicamera_id': row[7],
+                    'checkpoint_id': row[8]
                 }
                 results.append(result)
             

@@ -99,64 +99,223 @@ const DashboardManager = {
      * Update system status
      */
     updateSystemStatus: function() {
-        AICameraUtils.addLogMessage('main-system-log', 'Updating system status...', 'info');
-        
         // Update camera status
-        console.log('Making camera status API request...');
         AICameraUtils.apiRequest('/camera/status')
             .then(data => {
-                console.log('Camera status API response:', data);
-                if (data && data.success) {
+                if (data.success) {
                     this.updateCameraStatus(data.status);
-                } else {
-                    this.updateCameraStatus(null);
+                    this.updateWebSocketStatus('camera', data.status);
                 }
             })
             .catch(error => {
-                console.error('Camera API request failed:', error);
-                console.warn('Camera status not available:', error.message);
-                // Set default offline status with proper structure
-                this.updateCameraStatus({
-                    streaming: false, 
-                    initialized: false,
-                    config: null,
-                    camera_handler: null,
-                    uptime: 0
-                });
-                AICameraUtils.addLogMessage('main-system-log', 'Failed to get camera status: ' + error.message, 'error');
+                console.error('Failed to fetch camera status:', error);
+                this.updateWebSocketStatus('camera', { error: true });
             });
 
         // Update detection status
         AICameraUtils.apiRequest('/detection/status')
             .then(data => {
-                if (data && data.success) {
+                if (data.success) {
                     this.updateDetectionStatus(data.status);
+                    this.updateWebSocketStatus('detection', data.status);
                 }
             })
             .catch(error => {
-                console.warn('Detection status not available:', error.message);
-                // Set default inactive status
-                this.updateDetectionStatus({service_running: false});
-                AICameraUtils.addLogMessage('main-system-log', 'Failed to get detection status: ' + error.message, 'error');
+                console.error('Failed to fetch detection status:', error);
+                this.updateWebSocketStatus('detection', { error: true });
             });
 
-        // Update system health
+        // Update health status
         AICameraUtils.apiRequest('/health/system')
             .then(data => {
-                if (data && data.success) {
-                    this.updateSystemHealth(data);
-                    this.updateSystemInfo(data);
+                if (data.success) {
+                    this.updateHealthStatus(data);
+                    this.updateWebSocketStatus('health', data);
                 }
             })
             .catch(error => {
-                console.warn('Health status not available:', error.message);
-                // Set default healthy status
-                this.updateSystemHealth({data: {overall_status: 'unknown', components: {}}});
-                AICameraUtils.addLogMessage('main-system-log', 'Failed to get system health: ' + error.message, 'error');
+                console.error('Failed to fetch health status:', error);
+                this.updateWebSocketStatus('health', { error: true });
             });
 
         // Update WebSocket sender status
-        this.updateServerStatus();
+        AICameraUtils.apiRequest('/websocket-sender/status')
+            .then(data => {
+                if (data.success) {
+                    this.updateWebSocketStatus('sender', data.status);
+                }
+            })
+            .catch(error => {
+                console.error('Failed to fetch WebSocket sender status:', error);
+                this.updateWebSocketStatus('sender', { error: true });
+            });
+
+        // Update streaming status
+        AICameraUtils.apiRequest('/streaming/status')
+            .then(data => {
+                if (data.success) {
+                    this.updateWebSocketStatus('streaming', data.status);
+                }
+            })
+            .catch(error => {
+                console.error('Failed to fetch streaming status:', error);
+                this.updateWebSocketStatus('streaming', { error: true });
+            });
+
+        // Update WebSocket communication status (overall)
+        this.updateWebSocketCommunicationStatus();
+
+        // Update database status
+        AICameraUtils.apiRequest('/health/system')
+            .then(data => {
+                if (data.success && data.health && data.health.components) {
+                    const dbComponent = data.health.components.get('database_manager', {});
+                    this.updateWebSocketStatus('database', dbComponent);
+                }
+            })
+            .catch(error => {
+                console.error('Failed to fetch database status:', error);
+                this.updateWebSocketStatus('database', { error: true });
+            });
+    },
+
+    /**
+     * Update WebSocket component status with appropriate colors
+     * Following VARIABLE_MANAGEMENT.md standards
+     */
+    updateWebSocketStatus: function(component, status) {
+        const elementId = `websocket-${component}-status`;
+        const element = document.getElementById(elementId);
+        
+        if (!element) {
+            console.warn(`Element not found: ${elementId}`);
+            return;
+        }
+
+        let text, className;
+
+        if (status.error) {
+            text = 'Error';
+            className = 'status-badge error';
+        } else {
+            switch (component) {
+                case 'camera':
+                    if (status.streaming) {
+                        text = 'Active';
+                        className = 'status-badge active';
+                    } else if (status.initialized) {
+                        text = 'Ready';
+                        className = 'status-badge warning';
+                    } else {
+                        text = 'Inactive';
+                        className = 'status-badge inactive';
+                    }
+                    break;
+                    
+                case 'detection':
+                    if (status.service_running) {
+                        text = 'Running';
+                        className = 'status-badge running';
+                    } else {
+                        text = 'Stopped';
+                        className = 'status-badge stopped';
+                    }
+                    break;
+                    
+                case 'health':
+                    if (status.health && status.health.overall_status === 'healthy') {
+                        text = 'Healthy';
+                        className = 'status-badge active';
+                    } else if (status.health && status.health.overall_status === 'unhealthy') {
+                        text = 'Warning';
+                        className = 'status-badge warning';
+                    } else if (status.health && status.health.overall_status === 'critical') {
+                        text = 'Critical';
+                        className = 'status-badge error';
+                    } else {
+                        text = 'Unknown';
+                        className = 'status-badge loading';
+                    }
+                    break;
+                    
+                case 'sender':
+                    if (status.connected) {
+                        text = 'Connected';
+                        className = 'status-badge connected';
+                    } else if (status.running) {
+                        text = 'Running';
+                        className = 'status-badge warning';
+                    } else if (status.enabled) {
+                        text = 'Enabled';
+                        className = 'status-badge loading';
+                    } else {
+                        text = 'Disabled';
+                        className = 'status-badge inactive';
+                    }
+                    break;
+                    
+                case 'streaming':
+                    if (status.active) {
+                        text = 'Active';
+                        className = 'status-badge active';
+                    } else {
+                        text = 'Inactive';
+                        className = 'status-badge inactive';
+                    }
+                    break;
+                    
+                case 'database':
+                    if (status.status === 'healthy') {
+                        text = 'Connected';
+                        className = 'status-badge connected';
+                    } else if (status.status === 'unhealthy') {
+                        text = 'Warning';
+                        className = 'status-badge warning';
+                    } else if (status.status === 'critical') {
+                        text = 'Error';
+                        className = 'status-badge error';
+                    } else {
+                        text = 'Unknown';
+                        className = 'status-badge loading';
+                    }
+                    break;
+                    
+                default:
+                    text = 'Unknown';
+                    className = 'status-badge loading';
+            }
+        }
+
+        element.textContent = text;
+        element.className = className;
+    },
+
+    /**
+     * Update overall WebSocket communication status
+     */
+    updateWebSocketCommunicationStatus: function() {
+        const element = document.getElementById('websocket-communication-status');
+        if (!element) return;
+
+        // Check if WebSocket sender is connected
+        AICameraUtils.apiRequest('/websocket-sender/status')
+            .then(data => {
+                if (data.success && data.status.connected) {
+                    element.textContent = 'Connected';
+                    element.className = 'status-badge connected';
+                } else if (data.success && data.status.running) {
+                    element.textContent = 'Running';
+                    element.className = 'status-badge warning';
+                } else {
+                    element.textContent = 'Disconnected';
+                    element.className = 'status-badge disconnected';
+                }
+            })
+            .catch(error => {
+                console.error('Failed to fetch WebSocket communication status:', error);
+                element.textContent = 'Error';
+                element.className = 'status-badge error';
+            });
     },
 
     /**
@@ -458,16 +617,24 @@ const DashboardManager = {
         let lastSync = 'Never';
 
         if (status) {
-            // Server connection status
-            if (status.connected) {
-                connected = true;
-                connectionText = 'Connected';
-            }
+            // Check if in offline mode
+            if (status.offline_mode) {
+                connected = false;
+                connectionText = 'Offline Mode';
+                dataActive = status.running && (status.detection_thread_alive || status.health_thread_alive);
+                dataText = dataActive ? 'Active (Local)' : 'Inactive';
+            } else {
+                // Server connection status
+                if (status.connected) {
+                    connected = true;
+                    connectionText = 'Connected';
+                }
 
-            // Data sending status
-            if (status.running && (status.detection_thread_alive || status.health_thread_alive)) {
-                dataActive = true;
-                dataText = 'Active';
+                // Data sending status
+                if (status.running && (status.detection_thread_alive || status.health_thread_alive)) {
+                    dataActive = true;
+                    dataText = 'Active';
+                }
             }
 
             // Last sync time
@@ -528,12 +695,22 @@ const DashboardManager = {
                 logClass = 'text-danger';
             } else if (log.status === 'no_data') {
                 logClass = 'text-info';
+            } else if (log.status === 'offline') {
+                logClass = 'text-warning';
+            } else if (log.status === 'connect') {
+                logClass = 'text-primary';
             }
 
             // Format message
             let message = '';
             if (log.status === 'no_data') {
                 message = `${log.timestamp}: no data to send`;
+            } else if (log.status === 'offline') {
+                message = `${log.timestamp}: ${log.message || 'processing locally (offline mode)'}`;
+            } else if (log.status === 'connect' && log.status === 'success') {
+                message = `${log.timestamp}: connected to server`;
+            } else if (log.status === 'connect' && log.status === 'failed') {
+                message = `${log.timestamp}: connection failed - ${log.message}`;
             } else if (log.status === 'success' && log.action === 'send_detection') {
                 message = `${log.timestamp}: send lpr detection completed (${log.record_count} records)`;
             } else if (log.status === 'success' && log.action === 'send_health') {

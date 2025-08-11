@@ -247,6 +247,32 @@ socket.on('health_room_joined', () => {/* noop */});
 socket.on('health_room_left', () => {/* noop */});
 ```
 
+### 5.4 Camera WebSocket Events (MANDATORY Names & Flows)
+```javascript
+// Camera Control Events
+socket.emit('camera_control', { command: 'start' | 'stop' | 'restart' | 'capture' });
+socket.emit('camera_config_update', { config: {...} });
+socket.emit('camera_status_request', {});
+
+// Camera Response Events
+socket.on('camera_status_update', (status) => { /* update UI */ });
+socket.on('camera_control_response', (r) => AICameraUtils.showToast(r.message, r.success ? 'success' : 'error'));
+socket.on('camera_config_response', (r) => AICameraUtils.showToast(r.message, r.success ? 'success' : 'error'));
+```
+
+### 5.5 Detection WebSocket Events (MANDATORY Names & Flows)
+```javascript
+// Detection Control Events
+socket.emit('detection_control', { command: 'start' | 'stop' | 'restart' });
+socket.emit('detection_config_update', { config: {...} });
+socket.emit('detection_status_request', {});
+
+// Detection Response Events
+socket.on('detection_status_update', (status) => { /* update UI */ });
+socket.on('detection_control_response', (r) => AICameraUtils.showToast(r.message, r.success ? 'success' : 'error'));
+socket.on('detection_results_update', (results) => { /* update detection display */ });
+```
+
 ## 6. Blueprint Creation Patterns
 
 ### 6.1 Blueprint File Structure
@@ -1026,8 +1052,214 @@ def new_function(param1: str, param2: int) -> Dict[str, Any]:
 # Always update relevant documentation files:
 - ARCHITECTURE.md: For structural changes
 - README.md: For feature changes
-- variable_management.md: For API changes
+- VARIABLE_MANAGEMENT.md: For API changes
 - CONTEXT_ENGINEERING.md: For new patterns
+```
+
+### 15.3 Error Code Standards (MANDATORY)
+```python
+ERROR_CODES = {
+    'CAMERA_NOT_INITIALIZED': 'Camera not initialized',
+    'CAMERA_NOT_STREAMING': 'Camera not streaming',
+    'CONFIGURATION_FAILED': 'Configuration update failed',
+    'SERVICE_UNAVAILABLE': 'Service not available',
+    'INVALID_PARAMETER': 'Invalid parameter provided',
+    'OPERATION_FAILED': 'Operation failed',
+    'HEALTH_CHECK_FAILED': 'Health check failed',
+    'COMPONENT_UNHEALTHY': 'Component is unhealthy',
+    'SYSTEM_CRITICAL': 'System is in critical state',
+    'FRAME_VALIDATION_ERROR': 'Frame validation failed'
+}
+```
+
+### 15.4 Dashboard Element ID Standards (MANDATORY)
+```javascript
+// System Information Elements (Row 1)
+const systemInfoElements = {
+    cpu: 'system-info-cpu',
+    aiAccelerator: 'system-info-ai-accelerator',
+    os: 'system-info-os'
+};
+
+// Hardware Information Elements (Row 2, Column 1)
+const hardwareElements = {
+    ram: 'system-info-ram',
+    disk: 'system-info-disk',
+    cameraModel: 'feature-camera-model',
+    cameraResolution: 'feature-camera-resolution',
+    cameraFps: 'feature-camera-fps',
+    cameraStatus: 'feature-camera-status'
+};
+
+// WebSocket Status Elements
+const websocketStatusElements = {
+    communicationStatus: 'websocket-communication-status',
+    senderStatus: 'websocket-sender-status',
+    streamingStatus: 'websocket-streaming-status',
+    cameraStatus: 'websocket-camera-status',
+    detectionStatus: 'websocket-detection-status',
+    healthStatus: 'websocket-health-status',
+    databaseStatus: 'websocket-database-status'
+};
+```
+
+## 16. Import Helper and Configuration Management
+
+### 16.1 Import Helper System (MANDATORY)
+
+**Purpose:** จัดการ import paths และ absolute imports ให้ถูกต้อง
+
+```python
+# MANDATORY: Always use import helper for setup
+from v1_3.src.core.utils.import_helper import setup_import_paths, validate_imports
+
+# Setup import paths before any other imports
+setup_import_paths()
+
+# Validate imports to catch issues early
+import_errors = validate_imports()
+if import_errors:
+    logger.warning("Import validation failed:")
+    for error in import_errors:
+        logger.warning(f"  {error}")
+```
+
+### 16.2 Configuration Management (MANDATORY)
+
+**Environment Variables Setup:**
+```bash
+# v1_3/.env.production (MANDATORY for production)
+WEBSOCKET_SERVER_URL="ws://lprserver:port"
+AICAMERA_ID="1"
+CHECKPOINT_ID="1"
+SECRET_KEY="your-secret-key"
+DB_PATH="db/lpr_data.db"
+```
+
+**Config Loading Process:**
+```python
+# v1_3/src/core/config.py
+def load_env_file():
+    """Load environment variables from .env.production file."""
+    env_file = Path(__file__).parent.parent.parent / '.env.production'
+    if env_file.exists():
+        with open(env_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    value = value.strip('"\'')
+                    os.environ[key.strip()] = value
+
+# MANDATORY: Load environment variables first
+load_env_file()
+
+# MANDATORY: Use os.getenv() for configuration
+WEBSOCKET_SERVER_URL = os.getenv("WEBSOCKET_SERVER_URL")
+AICAMERA_ID = os.getenv("AICAMERA_ID", "1")
+CHECKPOINT_ID = os.getenv("CHECKPOINT_ID", "1")
+```
+
+### 16.3 Application Startup Process (MANDATORY)
+
+**Startup Sequence:**
+```python
+# v1_3/src/app.py
+def create_app():
+    """Create and configure Flask application using absolute imports."""
+    # 1. MANDATORY: Load environment variables first
+    load_env_file()
+    
+    # 2. MANDATORY: Setup import paths
+    from v1_3.src.core.utils.import_helper import setup_import_paths, validate_imports
+    setup_import_paths()
+    
+    # 3. MANDATORY: Validate imports
+    import_errors = validate_imports()
+    if import_errors:
+        logger.warning("Some imports failed:")
+        for error in import_errors:
+            logger.warning(f"  {error}")
+    
+    # 4. MANDATORY: Create Flask app with correct paths
+    current_dir = Path(__file__).parent
+    template_dir = current_dir / 'web' / 'templates'
+    static_dir = current_dir / 'web' / 'static'
+    
+    app = Flask(__name__, 
+                template_folder=str(template_dir),
+                static_folder=str(static_dir))
+    
+    # 5. MANDATORY: Load configuration
+    app.config.from_object('v1_3.src.core.config')
+    
+    # 6. MANDATORY: Initialize dependency container
+    container = get_container()
+    
+    # 7. MANDATORY: Initialize SocketIO
+    socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+    
+    # 8. MANDATORY: Register blueprints
+    register_blueprints(app, socketio)
+    
+    # 9. MANDATORY: Initialize services with auto-startup sequence
+    _initialize_services(logger)
+    
+    return app, socketio
+```
+
+### 16.4 WSGI Entry Point (MANDATORY)
+
+```python
+# v1_3/src/wsgi.py
+#!/usr/bin/env python3
+"""
+WSGI Entry Point for AI Camera v1.3
+"""
+
+import sys
+from pathlib import Path
+
+# MANDATORY: Add project root to Python path
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+# MANDATORY: Setup import paths
+from v1_3.src.core.utils.import_helper import setup_import_paths
+setup_import_paths()
+
+# MANDATORY: Import and create application
+from v1_3.src.app import create_app
+
+app, socketio = create_app()
+
+if __name__ == "__main__":
+    app.run()
+```
+
+### 16.5 Offline Mode Configuration (MANDATORY)
+
+**WebSocket Sender Offline Mode:**
+```python
+# MANDATORY: Handle missing server URL gracefully
+def initialize(self) -> bool:
+    if not self.server_url:
+        self.logger.warning("WEBSOCKET_SERVER_URL not configured - service will run in offline mode")
+        self.server_url = None  # Set to None to indicate offline mode
+        return True  # Allow initialization in offline mode
+```
+
+**Dashboard Status Display:**
+```javascript
+// MANDATORY: Handle offline mode status
+updateServerConnectionDisplay: function(status) {
+    if (status.offline_mode) {
+        connected = false;
+        connectionText = 'Offline Mode';
+        dataActive = status.running && (status.detection_thread_alive || status.health_thread_alive);
+        dataText = dataActive ? 'Active (Local)' : 'Inactive';
+    }
+}
 ```
 
 ---
@@ -1046,5 +1278,10 @@ When generating code for AI Camera v1.3:
 8. **ALWAYS register new blueprints** in `__init__.py`
 9. **ALWAYS use AICameraUtils** for common frontend functions
 10. **ALWAYS validate imports** after changes
+11. **ALWAYS use import helper**: `setup_import_paths()` before imports
+12. **ALWAYS load environment variables**: `load_env_file()` in config.py
+13. **ALWAYS handle offline mode**: Graceful degradation for WebSocket services
+14. **ALWAYS use .env.production**: For production configuration
+15. **ALWAYS validate configuration**: Check required environment variables
 
 This document ensures consistency and prevents conflicts in AI Camera v1.3 development.

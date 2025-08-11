@@ -12,6 +12,23 @@ Date: December 2024
 import os
 from pathlib import Path
 
+# Load environment variables from .env.production first
+def load_env_file():
+    """Load environment variables from .env.production file."""
+    env_file = Path(__file__).parent.parent.parent / '.env.production'
+    if env_file.exists():
+        with open(env_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    # Remove quotes if present
+                    value = value.strip('"\'')
+                    os.environ[key.strip()] = value
+
+# Load environment variables
+load_env_file()
+
 # Flask Configuration
 FLASK_HOST =  '0.0.0.0'
 FLASK_PORT = int(5000)
@@ -42,6 +59,12 @@ IMAGE_SAVE_DIR =  os.path.join(BASE_DIR, 'captured_images')
 
 # WebSocket server configuration
 WEBSOCKET_SERVER_URL = os.getenv("WEBSOCKET_SERVER_URL")
+
+# AI Camera Identification
+AICAMERA_ID = os.getenv("AICAMERA_ID", "1")
+CHECKPOINT_ID = os.getenv("CHECKPOINT_ID", "1")
+LOCATION_LAT = "13.729610"
+LOCATION_LON = "100.501443"
 
 # Camera properties defaults
 DEFAULT_RESOLUTION = (640, 640)

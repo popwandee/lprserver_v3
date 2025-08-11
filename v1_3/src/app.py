@@ -16,6 +16,23 @@ from pathlib import Path
 from typing import Tuple
 from datetime import datetime
 
+# Load environment variables from .env.production first
+def load_env_file():
+    """Load environment variables from .env.production file."""
+    env_file = Path(__file__).parent.parent / '.env.production'
+    if env_file.exists():
+        with open(env_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    # Remove quotes if present
+                    value = value.strip('"\'')
+                    os.environ[key.strip()] = value
+
+# Load environment variables
+load_env_file()
+
 from flask import Flask, render_template, jsonify, request, Response
 from flask_socketio import SocketIO
 import logging
@@ -200,9 +217,9 @@ def create_app():
     except Exception as e:
         logger.error(f"Failed to initialize services: {e}")
     
-    @app.route('/health')
-    def health():
-        """Health check endpoint."""
+    @app.route('/api/health')
+    def api_health():
+        """API Health check endpoint."""
         try:
             camera_manager = get_service('camera_manager')
             detection_manager = get_service('detection_manager')
