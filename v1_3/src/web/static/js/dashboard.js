@@ -125,7 +125,18 @@ const DashboardManager = {
                 this.updateWebSocketStatus('detection', { error: true });
             });
 
-        // Update health status
+        // Update system information (fast endpoint)
+        AICameraUtils.apiRequest('/health/system-info')
+            .then(data => {
+                if (data.success) {
+                    this.updateSystemInfo(data);
+                }
+            })
+            .catch(error => {
+                console.error('Failed to fetch system info:', error);
+            });
+
+        // Update health status (comprehensive)
         AICameraUtils.apiRequest('/health/system')
             .then(data => {
                 if (data.success) {
@@ -486,12 +497,41 @@ const DashboardManager = {
     /**
      * Update system information display
      */
+    updateHealthStatus: function(healthData) {
+        console.log('Updating health status with data:', healthData);
+        
+        // Update system information
+        this.updateSystemInfo(healthData);
+        
+        // Update system resources if available
+        if (healthData.data && healthData.data.system) {
+            const systemInfo = healthData.data.system;
+            
+            // Update CPU usage
+            const cpuElement = document.getElementById('cpu-usage');
+            if (cpuElement && systemInfo.cpu_usage !== undefined) {
+                cpuElement.textContent = `${systemInfo.cpu_usage}%`;
+            }
+
+            // Update memory usage
+            const memoryElement = document.getElementById('memory-usage');
+            if (memoryElement && systemInfo.memory_usage && systemInfo.memory_usage.percentage !== undefined) {
+                memoryElement.textContent = `${systemInfo.memory_usage.percentage}%`;
+            }
+
+            // Update disk usage
+            const diskElement = document.getElementById('disk-usage');
+            if (diskElement && systemInfo.disk_usage && systemInfo.disk_usage.percentage !== undefined) {
+                diskElement.textContent = `${systemInfo.disk_usage.percentage}%`;
+            }
+        }
+    },
+
     updateSystemInfo: function(healthData) {
         console.log('Updating system info with data:', healthData);
         
-        // Extract system info from health data
-        const health = healthData.data || healthData;
-        const systemInfo = health.system || {};
+        // Extract system info from health data - fix the path to match the API response structure
+        const systemInfo = healthData.data && healthData.data.system ? healthData.data.system : {};
         console.log('Extracted systemInfo:', systemInfo);
         
         // Update CPU architecture information

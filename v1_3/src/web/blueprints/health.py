@@ -113,6 +113,44 @@ def get_health_logs():
         }), 500
 
 
+@health_bp.route('/system-info')
+def get_system_info():
+    """
+    Get system information without running health checks.
+    This is a fast endpoint for displaying system info on the dashboard.
+    
+    Returns:
+        JSON response with system information
+    """
+    try:
+        health_service = get_service('health_service')
+        if not health_service:
+            return jsonify({
+                'success': False,
+                'error': 'Health service not available',
+                'timestamp': datetime.now().isoformat()
+            }), 500
+        
+        # Get system info directly without running health checks
+        system_info = health_service._get_system_info()
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'system': system_info
+            },
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting system info: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+
 @health_bp.route('/status')
 def get_health_status():
     """
