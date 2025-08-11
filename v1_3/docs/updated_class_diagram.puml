@@ -523,6 +523,16 @@ note bottom of AICameraUtils
   - system_health, cpu_usage, memory_usage
   - health_status, overall_status, component_status
   
+  **Updated Element IDs (kebab-case):**
+  - system-info-cpu, system-info-ai-accelerator, system-info-os
+  - system-info-ram, system-info-disk
+  - feature-camera-model, feature-camera-resolution, feature-camera-fps, feature-camera-status
+  
+  **Removed Element IDs:**
+  - main-camera-model, main-camera-resolution, main-camera-fps
+  - main-camera-detail-status, main-database-detail-status
+  - main-system-uptime, main-camera-status, main-detection-status
+  
   **API Response Format:**
   - success: boolean
   - data/status: object
@@ -539,6 +549,18 @@ note left of HealthDashboard
   - Health logs with pagination
   - WebSocket integration
   - Progress bar visualization
+end note
+
+note right of DashboardManager
+  **Updated Dashboard Layout (2-Row Structure)**
+  - Row 1: Centered system info (CPU, AI Accelerator, OS)
+  - Row 2: Three-column layout
+    - Hardware Information (RAM, Disk, Camera)
+    - Development Information (static)
+    - Component and Services (static)
+  - Removed: System status indicators (moved to health dashboard)
+  - Improved: Better organization and visual hierarchy
+  - Responsive: Bootstrap grid system with proper breakpoints
 end note
 
 @enduml

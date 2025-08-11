@@ -226,4 +226,15 @@ note left of health_template
   - Progress bar visualization
 end note
 
+note right of index_template
+  **Updated System Information Layout**
+  - Row 1: Centered system info (CPU, AI Accelerator, OS)
+  - Row 2: Three-column layout
+    - Column 1: Hardware Information (RAM, Disk, Camera)
+    - Column 2: Development Information (static)
+    - Column 3: Component and Services (static)
+  - Removed: System Status indicators (moved to health dashboard)
+  - Improved: Better organization and visual hierarchy
+end note
+
 @enduml

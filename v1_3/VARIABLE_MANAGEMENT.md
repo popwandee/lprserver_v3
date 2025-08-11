@@ -736,6 +736,7 @@ const detectionDisplay = {
 - 2025-08-09: Added error prevention variables
 - 2025-08-09: Added detection pipeline variables
 - 2025-08-10: Added health monitor status variables and error codes
+- 2025-08-10: Updated dashboard layout to 2-row structure with improved variable organization
 
 ### 13.2 Review Process
 1. All variable changes must be documented
@@ -768,6 +769,199 @@ health_tests = [
 ]
 ```
 
+## 14. Updated Dashboard Layout Variables
+
+### 14.1 New Layout Structure Variables
+
+**Row 1: Centered System Information**
+```html
+<!-- System Information Section (Centered) -->
+<div class="row justify-content-center mb-4">
+    <div class="col-md-8">
+        <h6 class="text-center">System Information</h6>
+        <ul class="list-unstyled text-start">
+            <li><strong>CPU Architecture:</strong> <span id="system-info-cpu">Loading...</span></li>
+            <li><strong>AI Accelerator:</strong> <span id="system-info-ai-accelerator">Loading...</span></li>
+            <li><strong>OS & Kernel:</strong> <span id="system-info-os">Loading...</span></li>
+        </ul>
+    </div>
+</div>
+```
+
+**Row 2: Three-Column Layout**
+```html
+<!-- Hardware Information (Column 1) -->
+<div class="col-md-4">
+    <h6>Hardware Information</h6>
+    <ul class="list-unstyled">
+        <li><strong>Main Board:</strong> Raspberry Pi 5</li>
+        <li><strong>RAM:</strong> <span id="system-info-ram">Loading...</span></li>
+        <li><strong>Disk:</strong> <span id="system-info-disk">Loading...</span></li>
+        <li><strong>Camera Model:</strong> <span id="feature-camera-model">Loading...</span></li>
+        <li><strong>Resolution:</strong> <span id="feature-camera-resolution">Loading...</span></li>
+        <li><strong>Frame Rate:</strong> <span id="feature-camera-fps">Loading...</span></li>
+        <li><strong>Status:</strong> <span id="feature-camera-status">Loading...</span></li>
+    </ul>
+</div>
+
+<!-- Development Information (Column 2) -->
+<div class="col-md-4">
+    <h6>Development Information</h6>
+    <ul class="list-unstyled">
+        <li><strong>Application:</strong> AI Camera v1.3</li>
+        <li><strong>Framework:</strong> Flask + Blueprints</li>
+        <li><strong>Architecture:</strong> Dependency Injection + Services</li>
+        <li><strong>Camera:</strong> Picamera2 + Hailo AI</li>
+        <li><strong>Database:</strong> SQLite + SQLAlchemy</li>
+        <li><strong>Communication:</strong> WebSocket + REST API</li>
+        <li><strong>Deployment:</strong> Gunicorn + Nginx</li>
+        <li><strong>Version Control:</strong> Git</li>
+    </ul>
+</div>
+
+<!-- Component and Services (Column 3) -->
+<div class="col-md-4">
+    <h6>Component and Services</h6>
+    <ul class="list-unstyled">
+        <li><strong>Flask Streaming</strong></li>
+        <li><strong>Camera Component</strong></li>
+        <li><strong>Detection Component</strong></li>
+        <li><strong>Health Monitor</strong></li>
+        <li><strong>WebSocket Sender</strong></li>
+        <li><strong>Database Manager</strong></li>
+    </ul>
+</div>
+```
+
+### 14.2 Updated Element ID Variables
+
+**New System Information Elements:**
+```javascript
+// System Information Elements (Row 1)
+const systemInfoElements = {
+    cpu: document.getElementById('system-info-cpu'),
+    aiAccelerator: document.getElementById('system-info-ai-accelerator'),
+    os: document.getElementById('system-info-os')
+};
+
+// Hardware Information Elements (Row 2, Column 1)
+const hardwareElements = {
+    ram: document.getElementById('system-info-ram'),
+    disk: document.getElementById('system-info-disk'),
+    cameraModel: document.getElementById('feature-camera-model'),
+    cameraResolution: document.getElementById('feature-camera-resolution'),
+    cameraFps: document.getElementById('feature-camera-fps'),
+    cameraStatus: document.getElementById('feature-camera-status')
+};
+```
+
+**Removed Elements (No longer used):**
+```javascript
+// Removed Element IDs
+const removedElements = [
+    'main-camera-model',
+    'main-camera-resolution', 
+    'main-camera-fps',
+    'main-camera-detail-status',
+    'main-database-detail-status',
+    'main-system-uptime',
+    'main-camera-status',
+    'main-detection-status',
+    'main-database-status',
+    'main-system-status'
+];
+```
+
+### 14.3 JavaScript Update Functions
+
+**Updated System Information Update Function:**
+```javascript
+function updateSystemInfo(healthData) {
+    // Update CPU Architecture
+    if (healthData.system && healthData.system.cpu_info) {
+        const cpuElement = document.getElementById('system-info-cpu');
+        if (cpuElement) {
+            const cpuInfo = healthData.system.cpu_info;
+            cpuElement.textContent = `${cpuInfo.model} ${cpuInfo.architecture}`;
+        }
+    }
+    
+    // Update AI Accelerator
+    if (healthData.system && healthData.system.ai_accelerator_info) {
+        const aiElement = document.getElementById('system-info-ai-accelerator');
+        if (aiElement) {
+            const aiInfo = healthData.system.ai_accelerator_info;
+            aiElement.textContent = `Device Architecture: ${aiInfo.device_architecture}, Firmware: ${aiInfo.firmware_version}`;
+        }
+    }
+    
+    // Update OS Information
+    if (healthData.system && healthData.system.os_info) {
+        const osElement = document.getElementById('system-info-os');
+        if (osElement) {
+            const osInfo = healthData.system.os_info;
+            osElement.textContent = `${osInfo.distribution} ${osInfo.distribution_version} (Kernel ${osInfo.kernel_version})`;
+        }
+    }
+    
+    // Update RAM and Disk
+    if (healthData.system) {
+        const ramElement = document.getElementById('system-info-ram');
+        const diskElement = document.getElementById('system-info-disk');
+        
+        if (ramElement && healthData.system.memory_usage) {
+            ramElement.textContent = `${healthData.system.memory_usage.total.toFixed(2)} GB`;
+        }
+        
+        if (diskElement && healthData.system.disk_usage) {
+            diskElement.textContent = `${healthData.system.disk_usage.total.toFixed(2)} GB`;
+        }
+    }
+}
+```
+
+### 14.4 Layout Responsiveness Variables
+
+**Bootstrap Grid Classes:**
+```css
+/* Row 1: Centered layout */
+.row-1-classes = {
+    container: 'row justify-content-center mb-4',
+    content: 'col-md-8',
+    title: 'text-center',
+    content: 'text-start'
+};
+
+/* Row 2: Three-column layout */
+.row-2-classes = {
+    container: 'row',
+    column1: 'col-md-4',  // Hardware Information
+    column2: 'col-md-4',  // Development Information  
+    column3: 'col-md-4'   // Component and Services
+};
+
+/* Responsive breakpoints */
+.responsive-breakpoints = {
+    mobile: 'col-12',     // Stack vertically on mobile
+    tablet: 'col-md-6',   // Two columns on tablet
+    desktop: 'col-md-4'   // Three columns on desktop
+};
+```
+
+### 14.5 Layout Benefits and Improvements
+
+**Visual Hierarchy Improvements:**
+- **Row 1**: Core system information prominently displayed and centered
+- **Row 2**: Detailed information organized in logical categories
+- **Clear Separation**: Dynamic vs static content clearly separated
+- **Better UX**: Improved readability and information organization
+
+**Code Organization Benefits:**
+- **Reduced Redundancy**: Eliminated duplicate status indicators
+- **Cleaner JavaScript**: Removed unused variable declarations
+- **Better Maintainability**: Clearer element ID naming convention
+- **Improved Responsiveness**: Better mobile and tablet experience
+
 ---
 
-**Note:** เอกสารนี้ควรได้รับการอัพเดตเมื่อมีการเปลี่ยนแปลงโครงสร้างหรือตัวแปรใหม่ เพื่อรักษามาตรฐานการพัฒนาร่วมกัน รวมถึงการเปลี่ยนแปลงในโครงสร้างข้อมูล frame, auto-startup sequence, และ health monitor status values
+**Note:** เอกสารนี้ควรได้รับการอัพเดตเมื่อมีการเปลี่ยนแปลงโครงสร้างหรือตัวแปรใหม่ เพื่อรักษามาตรฐานการพัฒนาร่วมกัน รวมถึงการเปลี่ยนแปลงในโครงสร้างข้อมูล frame, auto-startup sequence, health monitor status values, และ dashboard layout structure
