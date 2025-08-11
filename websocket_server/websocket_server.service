@@ -1,0 +1,20 @@
+[Unit]
+Description=WebSocket Server for AI Camera System
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=devuser
+Group=devgroup
+WorkingDirectory=/home/devuser/lprserver_v2/websocket_server
+Environment=PATH=/home/devuser/lprserver_v2/venv-django/bin
+Environment=PYTHONPATH=/home/devuser/lprserver_v2/venv-django/lib/python3.12/site-packages
+ExecStart=/home/devuser/lprserver_v2/venv-django/bin/python /home/devuser/lprserver_v2/websocket_server/websocket_server.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target 

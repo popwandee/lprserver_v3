@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Status JavaScript Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        pre { background-color: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Health Status JavaScript Test</h1>
+    
+    <div id="testResults"></div>
+    
+    <h2>Test Health Status API</h2>
+    <button onclick="testHealthAPI()">Test API</button>
+    <button onclick="testComponentMapping()">Test Component Mapping</button>
+    
+    <div id="apiResult"></div>
+    <div id="mappingResult"></div>
+
+    <script>
+        function log(message, type = 'info') {
+            const results = document.getElementById('testResults');
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.textContent = message;
+            results.appendChild(div);
+        }
+
+        function testHealthAPI() {
+            log('Testing Health Status API...', 'info');
+            
+            fetch('/api/health_status')
+                .then(response => response.json())
+                .then(data => {
+                    log('✅ API Response received', 'success');
+                    log(`Status: ${data.status}`, 'info');
+                    log(`Number of health checks: ${data.health_checks.length}`, 'info');
+                    
+                    const apiResult = document.getElementById('apiResult');
+                    apiResult.innerHTML = `
+                        <h3>API Response:</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                    
+                    // Test the component mapping
+                    testComponentMappingWithData(data.health_checks);
+                })
+                .catch(error => {
+                    log(`❌ API Error: ${error.message}`, 'error');
+                });
+        }
+
+        function testComponentMapping() {
+            log('Testing Component Mapping...', 'info');
+            
+            // Simulate health check data
+            const testData = [
+                { component: 'Camera', status: 'FAIL', message: 'Camera not initialized.' },
+                { component: 'Disk Space', status: 'PASS', message: 'Disk space OK: 35.31 GB free.' },
+                { component: 'CPU & RAM', status: 'PASS', message: 'CPU: 28.8% (4 cores), RAM: 15.7%.' },
+                { component: 'Detection Models', status: 'PASS', message: 'All detection model directories found.' },
+                { component: 'EasyOCR', status: 'FAIL', message: 'EasyOCR module not found.' },
+                { component: 'Database', status: 'PASS', message: 'Database connection is active.' },
+                { component: 'Network Connectivity', status: 'PASS', message: 'Network connectivity OK.' }
+            ];
+            
+            testComponentMappingWithData(testData);
+        }
+
+        function testComponentMappingWithData(healthChecks) {
+            log('Testing Component Mapping with Data...', 'info');
+            
+            // Map component names to their element IDs (same as in the main template)
+            const componentMap = {
+                'Camera': 'cameraStatus',
+                'Disk Space': 'diskStatus',
+                'CPU & RAM': 'cpuStatus',
+                'Detection Models': 'modelsStatus',
+                'EasyOCR': 'ocrStatus',
+                'Database': 'dbStatus',
+                'Network Connectivity': 'networkStatus'
+            };
+            
+            log('Component Map:', 'info');
+            Object.entries(componentMap).forEach(([component, elementId]) => {
+                log(`  ${component} -> ${elementId}`, 'info');
+            });
+            
+            // Test mapping each component
+            healthChecks.forEach(check => {
+                const elementId = componentMap[check.component];
+                if (elementId) {
+                    log(`✅ Mapped: ${check.component} -> ${elementId} (${check.status})`, 'success');
+                } else {
+                    log(`❌ No mapping found for: ${check.component}`, 'error');
+                }
+            });
+            
+            const mappingResult = document.getElementById('mappingResult');
+            mappingResult.innerHTML = `
+                <h3>Component Mapping Test:</h3>
+                <pre>${JSON.stringify(healthChecks.map(check => ({
+                    component: check.component,
+                    status: check.status,
+                    mappedTo: componentMap[check.component] || 'NOT_FOUND'
+                })), null, 2)}</pre>
+            `;
+        }
+
+        // Auto-test on page load
+        window.addEventListener('load', function() {
+            log('Page loaded, starting tests...', 'info');
+            setTimeout(testHealthAPI, 1000);
+        });
+    </script>
+</body>
+</html> 

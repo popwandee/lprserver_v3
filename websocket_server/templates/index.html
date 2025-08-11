@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Camera System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>AI Camera v2</h1>
+            <p>โครงการวิจัยกล้องปัญญาประดิษฐ์ กองทัพบก</p>
+        </div>
+        
+        <!-- Navigation -->
+        <div class="nav-tabs">
+            <a href="/" class="nav-tab active">Live Camera</a>
+            <a href="/detection" class="nav-tab">Detection Results</a>
+            <a href="/health" class="nav-tab">Health Monitoring</a>
+        </div>
+        <div class="video-container">
+            <img id="videoFeed" class="video-feed" style="display: none;" alt="Camera Feed" onload="console.log('Video feed loaded successfully')" onerror="console.error('Video feed failed to load')">
+            <div id="noVideo" style="padding: 50px; text-align: center; color: #666;">
+                <h3>No video feed available</h3>
+                <p>Start the camera to see the video feed</p>
+            </div>
+        </div>
+        <div class="info">
+            <h3>Instructions:</h3>
+            <ol>
+                <li>Click "Start Camera" to initialize and start the camera</li>
+                <li>Click "Stop Camera" to stop streaming (camera remains initialized)</li>
+                <li>Click "Close Camera" to completely close the camera</li>
+                <li>The video feed will appear below once streaming starts</li>
+            </ol>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-success" onclick="startCamera()" id="startBtn">Start Camera</button>
+            <button class="btn btn-primary" onclick="stopCamera()" id="stopBtn" disabled>Stop Camera</button>
+            <button class="btn btn-danger" onclick="closeCamera()" id="closeBtn" disabled>Close Camera</button>
+        </div>
+
+        <!-- Camera Settings Form -->
+        <div class="settings-panel" id="settingsPanel" style="display: none;">
+            <h3>Camera Settings</h3>
+            <form id="cameraSettingsForm">
+                <div class="settings-grid">
+                    <!-- Brightness Control -->
+                    <div class="setting-group">
+                        <label for="brightness">Brightness (-1.0 to 1.0):</label>
+                        <input type="range" id="brightness" name="brightness" min="-1.0" max="1.0" step="0.1" value="0.0">
+                        <span id="brightnessValue">0.0</span>
+                    </div>
+
+                    <!-- Contrast Control -->
+                    <div class="setting-group">
+                        <label for="contrast">Contrast (0.0 to 2.0):</label>
+                        <input type="range" id="contrast" name="contrast" min="0.0" max="2.0" step="0.1" value="1.0">
+                        <span id="contrastValue">1.0</span>
+                    </div>
+
+                    <!-- Saturation Control -->
+                    <div class="setting-group">
+                        <label for="saturation">Saturation (0.0 to 2.0):</label>
+                        <input type="range" id="saturation" name="saturation" min="0.0" max="2.0" step="0.1" value="1.0">
+                        <span id="saturationValue">1.0</span>
+                    </div>
+
+                    <!-- Sharpness Control -->
+                    <div class="setting-group">
+                        <label for="sharpness">Sharpness (0.0 to 4.0):</label>
+                        <input type="range" id="sharpness" name="sharpness" min="0.0" max="4.0" step="0.1" value="1.0">
+                        <span id="sharpnessValue">1.0</span>
+                    </div>
+
+                    <!-- Focus Control -->
+                    <div class="setting-group">
+                        <label for="focus">Focus (0.0 to 1.0):</label>
+                        <input type="range" id="focus" name="focus" min="0.0" max="1.0" step="0.1" value="0.0">
+                        <span id="focusValue">0.0</span>
+                    </div>
+
+                    <!-- AWB Mode Control -->
+                    <div class="setting-group">
+                        <label for="awb_mode">AWB Mode:</label>
+                        <select id="awb_mode" name="awb_mode">
+                            <option value="0">Auto</option>
+                            <option value="1">Fluorescent</option>
+                            <option value="2">Incandescent</option>
+                            <option value="3">Tungsten</option>
+                            <option value="4">Horizon</option>
+                            <option value="5">Daylight</option>
+                            <option value="6">Cloudy</option>
+                            <option value="7">Shade</option>
+                            <option value="8">Custom</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-buttons">
+                    <button type="button" class="btn btn-primary" onclick="updateSettings()">Update Settings</button>
+                    <button type="button" class="btn btn-secondary" onclick="resetSettings()">Reset to Default</button>
+                    <button type="button" class="btn btn-secondary" onclick="loadCurrentSettings()">Load Current</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-info" onclick="toggleSettings()" id="settingsBtn">Show Settings</button>
+            <button class="btn btn-warning" onclick="runHealthCheck()" id="healthBtn">Run Health Check</button>
+            <button class="btn btn-secondary" onclick="testHealthStatus()" id="testBtn">Test Health Status</button>
+            <button class="btn btn-secondary" onclick="testVideoFeed()" id="testVideoBtn">Test Video Feed</button>
+        </div>
+
+        <!-- Detection Controls -->
+        <div class="controls">
+            <button class="btn btn-success" onclick="startDetection()" id="startDetectionBtn">Start Detection</button>
+            <button class="btn btn-danger" onclick="stopDetection()" id="stopDetectionBtn" disabled>Stop Detection</button>
+            <button class="btn btn-info" onclick="getDetectionStatus()" id="detectionStatusBtn">Detection Status</button>
+        </div>
+
+        <!-- Detection Status Panel -->
+        <div class="health-panel" id="detectionPanel">
+            <h3>Detection Status</h3>
+            <div class="health-summary" id="detectionSummary">
+                <div class="health-indicator">
+                    <span class="health-label">Detection Status:</span>
+                    <span class="health-value" id="detectionStatus">Stopped</span>
+                </div>
+                <div class="health-indicator">
+                    <span class="health-label">Processing Frame Count:</span>
+                    <span class="health-value" id="processingCount">0</span>
+                </div>
+                <div class="health-indicator">
+                    <span class="health-label">Detection Results Count:</span>
+                    <span class="health-value" id="detectionResultsCount">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="status" id="statusDiv">
+            <span id="statusText">Camera not initialized</span>
+        </div>
+
+        <!-- Health Status Panel -->
+        <div class="health-panel" id="healthPanel">
+            <h3>System Health Status</h3>
+            <div class="health-summary" id="healthSummary">
+                <div class="health-indicator">
+                    <span class="health-label">Overall Status:</span>
+                    <span class="health-value" id="overallStatus">Loading...</span>
+                </div>
+                <div class="health-indicator">
+                    <span class="health-label">Last Check:</span>
+                    <span class="health-value" id="lastCheckTime">-</span>
+                </div>
+            </div>
+            <div class="health-details" id="healthDetails">
+                <div class="health-item">
+                    <span class="component-name">Camera</span>
+                    <span class="component-status" id="cameraStatus">-</span>
+                </div>
+                <div class="health-item">
+                    <span class="component-name">Disk Space</span>
+                    <span class="component-status" id="diskStatus">-</span>
+                </div>
+                <div class="health-item">
+                    <span class="component-name">CPU & RAM</span>
+                    <span class="component-status" id="cpuStatus">-</span>
+                </div>
+                <div class="health-item">
+                    <span class="component-name">Detection Models</span>
+                    <span class="component-status" id="modelsStatus">-</span>
+                </div>
+                <div class="health-item">
+                    <span class="component-name">EasyOCR</span>
+                    <span class="component-status" id="ocrStatus">-</span>
+                </div>
+                <div class="health-item">
+                    <span class="component-name">Database</span>
+                    <span class="component-status" id="dbStatus">-</span>
+                </div>
+                <div class="health-item">
+                    <span class="component-name">Network Connectivity</span>
+                    <span class="component-status" id="networkStatus">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Health History -->
+        <div class="health-history" id="healthHistory">
+            <h3>Health Check History (Latest 10)</h3>
+            <div class="history-list" id="historyList">
+                <div class="loading">Loading health history...</div>
+            </div>
+        </div>
+
+        
+    </div>
+
+    <script>
+        let statusCheckInterval;
+        let healthCheckInterval;
+        let detectionStatusInterval;
+
+        function updateStatus() {
+            fetch('/api/camera_status')
+                .then(response => response.json())
+                .then(data => {
+                    const statusDiv = document.getElementById('statusDiv');
+                    const statusText = document.getElementById('statusText');
+                    const startBtn = document.getElementById('startBtn');
+                    const stopBtn = document.getElementById('stopBtn');
+                    const closeBtn = document.getElementById('closeBtn');
+                    const videoFeed = document.getElementById('videoFeed');
+                    const noVideo = document.getElementById('noVideo');
+
+                    if (data.initialized) {
+                        if (data.streaming) {
+                            statusDiv.className = 'status online';
+                            statusText.textContent = 'Camera streaming';
+                            startBtn.disabled = true;
+                            stopBtn.disabled = false;
+                            closeBtn.disabled = false;
+                            videoFeed.style.display = 'block';
+                            videoFeed.classList.remove('hidden');
+                            noVideo.style.display = 'none';
+                            videoFeed.src = '/video_feed?' + new Date().getTime();
+                        } else {
+                            statusDiv.className = 'status initializing';
+                            statusText.textContent = 'Camera initialized but not streaming';
+                            startBtn.disabled = false;
+                            stopBtn.disabled = true;
+                            closeBtn.disabled = false;
+                            videoFeed.style.display = 'none';
+                            videoFeed.classList.add('hidden');
+                            noVideo.style.display = 'block';
+                        }
+                    } else {
+                        statusDiv.className = 'status offline';
+                        statusText.textContent = 'Camera not initialized';
+                        startBtn.disabled = false;
+                        stopBtn.disabled = true;
+                        closeBtn.disabled = true;
+                        videoFeed.style.display = 'none';
+                        videoFeed.classList.add('hidden');
+                        noVideo.style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching status:', error);
+                    document.getElementById('statusText').textContent = 'Error checking status';
+                });
+        }
+
+        function startCamera() {
+            fetch('/api/start_camera', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('Camera started successfully!');
+                        updateStatus();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error starting camera:', error);
+                    alert('Error starting camera');
+                });
+        }
+
+        function stopCamera() {
+            fetch('/api/stop_camera', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('Camera stopped successfully!');
+                        updateStatus();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error stopping camera:', error);
+                    alert('Error stopping camera');
+                });
+        }
+
+        function closeCamera() {
+            if (confirm('Are you sure you want to close the camera completely?')) {
+                fetch('/api/close_camera', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            alert('Camera closed successfully!');
+                            updateStatus();
+                        } else {
+                            alert('Error: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error closing camera:', error);
+                        alert('Error closing camera');
+                    });
+            }
+        }
+
+        // Start status checking
+        updateStatus();
+        statusCheckInterval = setInterval(updateStatus, 2000);
+
+        // Start health status checking
+        updateHealthStatus();
+        healthCheckInterval = setInterval(updateHealthStatus, 10000); // Check every 10 seconds
+        
+        // Also update health status after a short delay to ensure data is loaded
+        setTimeout(updateHealthStatus, 2000);
+
+        // Start detection status checking
+        updateDetectionStatus();
+        detectionStatusInterval = setInterval(updateDetectionStatus, 5000); // Check every 5 seconds
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (statusCheckInterval) {
+                clearInterval(statusCheckInterval);
+            }
+            if (healthCheckInterval) {
+                clearInterval(healthCheckInterval);
+            }
+            if (detectionStatusInterval) {
+                clearInterval(detectionStatusInterval);
+            }
+        });
+
+        // Camera Settings Functions
+        function toggleSettings() {
+            const panel = document.getElementById('settingsPanel');
+            const btn = document.getElementById('settingsBtn');
+            
+            if (panel.style.display === 'none') {
+                panel.style.display = 'block';
+                btn.textContent = 'Hide Settings';
+                loadCurrentSettings();
+            } else {
+                panel.style.display = 'none';
+                btn.textContent = 'Show Settings';
+            }
+        }
+
+        // Update range value displays
+        document.addEventListener('DOMContentLoaded', function() {
+            const ranges = ['brightness', 'contrast', 'saturation', 'sharpness', 'focus'];
+            ranges.forEach(id => {
+                const range = document.getElementById(id);
+                const value = document.getElementById(id + 'Value');
+                if (range && value) {
+                    range.addEventListener('input', function() {
+                        value.textContent = this.value;
+                    });
+                }
+            });
+        });
+
+        function updateSettings() {
+            const form = document.getElementById('cameraSettingsForm');
+            const formData = new FormData(form);
+            const settings = {};
+            
+            // Collect all form values
+            for (let [key, value] of formData.entries()) {
+                if (value !== '') {
+                    settings[key] = parseFloat(value);
+                }
+            }
+            
+            // Send settings to server
+            fetch('/api/update_camera_settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(settings)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Settings updated successfully!');
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error updating settings:', error);
+                alert('Error updating settings');
+            });
+        }
+
+        function resetSettings() {
+            // Reset to default values
+            document.getElementById('brightness').value = 0.0;
+            document.getElementById('brightnessValue').textContent = '0.0';
+            document.getElementById('contrast').value = 1.0;
+            document.getElementById('contrastValue').textContent = '1.0';
+            document.getElementById('saturation').value = 1.0;
+            document.getElementById('saturationValue').textContent = '1.0';
+            document.getElementById('sharpness').value = 1.0;
+            document.getElementById('sharpnessValue').textContent = '1.0';
+            document.getElementById('focus').value = 0.0;
+            document.getElementById('focusValue').textContent = '0.0';
+            document.getElementById('awb_mode').value = 0;
+            
+            // Apply reset settings
+            updateSettings();
+        }
+
+        function loadCurrentSettings() {
+            fetch('/api/get_camera_settings')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success' && data.settings) {
+                        const settings = data.settings;
+                        
+                        // Update form values
+                        if (settings.brightness !== undefined) {
+                            document.getElementById('brightness').value = settings.brightness;
+                            document.getElementById('brightnessValue').textContent = settings.brightness;
+                        }
+                        if (settings.contrast !== undefined) {
+                            document.getElementById('contrast').value = settings.contrast;
+                            document.getElementById('contrastValue').textContent = settings.contrast;
+                        }
+                        if (settings.saturation !== undefined) {
+                            document.getElementById('saturation').value = settings.saturation;
+                            document.getElementById('saturationValue').textContent = settings.saturation;
+                        }
+                        if (settings.sharpness !== undefined) {
+                            document.getElementById('sharpness').value = settings.sharpness;
+                            document.getElementById('sharpnessValue').textContent = settings.sharpness;
+                        }
+                        if (settings.focus !== undefined) {
+                            document.getElementById('focus').value = settings.focus;
+                            document.getElementById('focusValue').textContent = settings.focus;
+                        }
+                        if (settings.awb_mode !== undefined) {
+                            document.getElementById('awb_mode').value = settings.awb_mode;
+                        }
+                    } else {
+                        console.log('No current settings available');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading current settings:', error);
+                });
+        }
+
+        // Health Monitor Functions
+        function updateHealthStatus() {
+            fetch('/api/health_status')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Health status data:', data);
+                    if (data.status === 'success') {
+                        updateHealthSummary(data.health_checks);
+                        updateHealthHistory(data.health_checks);
+                    } else {
+                        console.error('Health status API returned error:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating health status:', error);
+                });
+        }
+
+        function updateHealthSummary(healthChecks) {
+            console.log('Updating health summary with:', healthChecks);
+            
+            if (healthChecks.length === 0) {
+                document.getElementById('overallStatus').textContent = 'No data';
+                document.getElementById('lastCheckTime').textContent = '-';
+                return;
+            }
+
+            // Get latest check time
+            const latestCheck = healthChecks[0];
+            document.getElementById('lastCheckTime').textContent = new Date(latestCheck.timestamp).toLocaleString();
+
+            // Calculate overall status based on latest check for each component
+            const componentStatuses = {};
+            healthChecks.forEach(check => {
+                componentStatuses[check.component] = check.status;
+            });
+            
+            const passCount = Object.values(componentStatuses).filter(status => status === 'PASS').length;
+            const totalCount = Object.keys(componentStatuses).length;
+            const overallStatus = passCount === totalCount ? 'Healthy' : 
+                                 passCount >= totalCount * 0.7 ? 'Warning' : 'Critical';
+
+            console.log('Overall status calculation:', { passCount, totalCount, overallStatus });
+
+            const overallElement = document.getElementById('overallStatus');
+            overallElement.textContent = overallStatus;
+            overallElement.className = 'health-value ' + 
+                (overallStatus === 'Healthy' ? 'status-pass' : 
+                 overallStatus === 'Warning' ? 'status-warning' : 'status-fail');
+
+            // Update component statuses
+            updateComponentStatuses(healthChecks);
+        }
+
+        function updateComponentStatuses(healthChecks) {
+            console.log('Updating component statuses with:', healthChecks);
+            
+            // Map component names to their element IDs
+            const componentMap = {
+                'Camera': 'cameraStatus',
+                'Disk Space': 'diskStatus',
+                'CPU & RAM': 'cpuStatus',
+                'Detection Models': 'modelsStatus',
+                'EasyOCR': 'ocrStatus',
+                'Database': 'dbStatus',
+                'Network Connectivity': 'networkStatus'
+            };
+            
+            // Initialize all statuses to 'Unknown'
+            Object.values(componentMap).forEach(elementId => {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.textContent = 'Unknown';
+                    element.className = 'component-status';
+                }
+            });
+            
+            // Update with actual health check data
+            healthChecks.forEach(check => {
+                console.log('Processing check:', check.component, check.status);
+                const elementId = componentMap[check.component];
+                if (elementId) {
+                    const element = document.getElementById(elementId);
+                    if (element) {
+                        element.textContent = check.status;
+                        element.className = 'component-status status-' + check.status.toLowerCase();
+                        console.log('Updated element:', elementId, 'with status:', check.status);
+                    } else {
+                        console.error('Element not found:', elementId);
+                    }
+                } else {
+                    console.error('No mapping found for component:', check.component);
+                }
+            });
+        }
+
+        function updateHealthHistory(healthChecks) {
+            const historyList = document.getElementById('historyList');
+            
+            if (healthChecks.length === 0) {
+                historyList.innerHTML = '<div class="loading">No health check data available</div>';
+                return;
+            }
+
+            historyList.innerHTML = healthChecks.map(check => `
+                <div class="history-item ${check.status.toLowerCase()}">
+                    <div class="history-time">${new Date(check.timestamp).toLocaleString()}</div>
+                    <div class="history-component">${check.component}</div>
+                    <div class="history-message">${check.message}</div>
+                </div>
+            `).join('');
+        }
+
+        function runHealthCheck() {
+            const btn = document.getElementById('healthBtn');
+            btn.disabled = true;
+            btn.textContent = 'Running...';
+
+            fetch('/api/health_check', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('Health check completed successfully!');
+                        updateHealthStatus(); // Refresh the display
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error running health check:', error);
+                    alert('Error running health check');
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.textContent = 'Run Health Check';
+                });
+        }
+
+        function testHealthStatus() {
+            console.log('Testing health status...');
+            fetch('/api/health_status')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Raw health status data:', data);
+                    if (data.status === 'success') {
+                        alert('Health status API working! Found ' + data.health_checks.length + ' health checks.');
+                        updateHealthStatus();
+                    } else {
+                        alert('Health status API error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error testing health status:', error);
+                    alert('Error testing health status: ' + error.message);
+                });
+        }
+
+        function testVideoFeed() {
+            const videoFeed = document.getElementById('videoFeed');
+            const noVideo = document.getElementById('noVideo');
+            
+            // Force show video feed
+            videoFeed.style.display = 'block';
+            videoFeed.classList.remove('hidden');
+            noVideo.style.display = 'none';
+            videoFeed.src = '/video_feed?' + new Date().getTime();
+            
+            alert('Video feed test completed.');
+        }
+
+        // Detection Control Functions
+        function startDetection() {
+            const startBtn = document.getElementById('startDetectionBtn');
+            const stopBtn = document.getElementById('stopDetectionBtn');
+            
+            startBtn.disabled = true;
+            startBtn.textContent = 'Starting...';
+            
+            fetch('/api/start_detection', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('Detection started successfully!');
+                        startBtn.disabled = true;
+                        stopBtn.disabled = false;
+                        updateDetectionStatus();
+                    } else {
+                        alert('Error: ' + data.message);
+                        startBtn.disabled = false;
+                        startBtn.textContent = 'Start Detection';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error starting detection:', error);
+                    alert('Error starting detection');
+                    startBtn.disabled = false;
+                    startBtn.textContent = 'Start Detection';
+                });
+        }
+
+        function stopDetection() {
+            const startBtn = document.getElementById('startDetectionBtn');
+            const stopBtn = document.getElementById('stopDetectionBtn');
+            
+            stopBtn.disabled = true;
+            stopBtn.textContent = 'Stopping...';
+            
+            fetch('/api/stop_detection', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('Detection stopped successfully!');
+                        startBtn.disabled = false;
+                        stopBtn.disabled = true;
+                        startBtn.textContent = 'Start Detection';
+                        stopBtn.textContent = 'Stop Detection';
+                        updateDetectionStatus();
+                    } else {
+                        alert('Error: ' + data.message);
+                        stopBtn.disabled = false;
+                        stopBtn.textContent = 'Stop Detection';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error stopping detection:', error);
+                    alert('Error stopping detection');
+                    stopBtn.disabled = false;
+                    stopBtn.textContent = 'Stop Detection';
+                });
+        }
+
+        function getDetectionStatus() {
+            updateDetectionStatus();
+        }
+
+        function updateDetectionStatus() {
+            fetch('/api/detection_status')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const statusElement = document.getElementById('detectionStatus');
+                        const processingCountElement = document.getElementById('processingCount');
+                        const detectionResultsCountElement = document.getElementById('detectionResultsCount');
+                        const startBtn = document.getElementById('startDetectionBtn');
+                        const stopBtn = document.getElementById('stopDetectionBtn');
+                        
+                        // Update status display
+                        if (data.detection_active) {
+                            statusElement.textContent = 'Running';
+                            statusElement.className = 'health-value status-pass';
+                            startBtn.disabled = true;
+                            stopBtn.disabled = false;
+                        } else {
+                            statusElement.textContent = 'Stopped';
+                            statusElement.className = 'health-value status-fail';
+                            startBtn.disabled = false;
+                            stopBtn.disabled = true;
+                        }
+                        
+                        // Update processing count
+                        processingCountElement.textContent = data.processing_count || 0;
+                        
+                        // Update detection results count
+                        detectionResultsCountElement.textContent = data.detection_results_count || 0;
+                        
+                    } else {
+                        console.error('Detection status API error:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating detection status:', error);
+                });
+        }
+    </script>
+</body>
+</html> 
