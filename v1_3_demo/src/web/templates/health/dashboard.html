@@ -1,0 +1,1036 @@
+{% extends "base.html" %}
+
+{% set active_page = "health" %}
+{% set use_socketio = true %}
+
+{% block title %}System Health - AI Camera v1.3{% endblock %}
+
+{% block additional_css %}
+<link href="{{ url_for('static', filename='css/health.css') }}" rel="stylesheet">
+<style>
+.health-dashboard {
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.health-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+    color: white;
+}
+
+.health-title {
+    font-size: 2rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.health-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-health {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: #4CAF50;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #45a049;
+}
+
+.btn-secondary {
+    background: #2196F3;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #1976D2;
+}
+
+.btn-warning {
+    background: #ff9800;
+    color: white;
+}
+
+.btn-warning:hover {
+    background: #f57c00;
+}
+
+.btn-danger {
+    background: #f44336;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #d32f2f;
+}
+
+.health-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.health-card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.health-card:hover {
+    transform: translateY(-2px);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.card-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.status-indicator {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.status-healthy {
+    background: #e8f5e8;
+    color: #2e7d32;
+}
+
+.status-unhealthy {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+.status-critical {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.status-unknown {
+    background: #f5f5f5;
+    color: #757575;
+}
+
+.health-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 15px;
+}
+
+.metric-item {
+    text-align: center;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.metric-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.metric-label {
+    font-size: 0.8rem;
+    color: #666;
+    text-transform: uppercase;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e0e0e0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+
+.progress-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.progress-healthy {
+    background: #4CAF50;
+}
+
+.progress-warning {
+    background: #ff9800;
+}
+
+.progress-critical {
+    background: #f44336;
+}
+
+.health-logs {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.logs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.logs-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.log-level-filter {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background: white;
+}
+
+.logs-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.logs-table th,
+.logs-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.logs-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #333;
+}
+
+.log-level {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.log-pass {
+    background: #e8f5e8;
+    color: #2e7d32;
+}
+
+.log-fail {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.log-warning {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+.loading {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+}
+
+.error-message {
+    background: #ffebee;
+    color: #c62828;
+    padding: 15px;
+    border-radius: 5px;
+    margin: 20px 0;
+    border-left: 4px solid #f44336;
+}
+
+.success-message {
+    background: #e8f5e8;
+    color: #2e7d32;
+    padding: 15px;
+    border-radius: 5px;
+    margin: 20px 0;
+    border-left: 4px solid #4CAF50;
+}
+
+@media (max-width: 768px) {
+    .health-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .health-actions {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .health-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .logs-header {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .logs-controls {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="health-dashboard">
+    <!-- Header -->
+    <div class="health-header">
+        <div>
+            <h1 class="health-title">🏥 System Health Monitor</h1>
+            <p>Real-time system health monitoring and diagnostics</p>
+        </div>
+        <!-- Health actions hidden - auto start enabled -->
+        <div class="health-actions" style="display: none;">
+            <button class="btn-health btn-primary" onclick="runHealthCheck()">
+                🔍 Run Health Check
+            </button>
+            <button class="btn-health btn-secondary" onclick="startMonitoring()">
+                ▶️ Start Monitoring
+            </button>
+            <button class="btn-health btn-warning" onclick="stopMonitoring()">
+                ⏹️ Stop Monitoring
+            </button>
+            <button class="btn-health btn-secondary" onclick="refreshData()">
+                🔄 Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Health Status Grid -->
+    <div class="health-grid" id="health-grid">
+        <div class="loading">Loading health status...</div>
+    </div>
+
+    <!-- Health Logs -->
+    <div class="health-logs">
+        <div class="logs-header">
+            <h2>📋 Health Check Logs</h2>
+            <div class="logs-controls">
+                <select class="log-level-filter" id="log-level-filter">
+                    <option value="">All Levels</option>
+                    <option value="PASS">Pass</option>
+                    <option value="WARNING">Warning</option>
+                    <option value="FAIL">Fail</option>
+                </select>
+                <button class="btn-health btn-secondary" onclick="refreshLogs()">
+                    🔄 Refresh Logs
+                </button>
+            </div>
+        </div>
+        <div id="logs-container">
+            <div class="loading">Loading logs...</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block additional_js %}
+<script src="{{ url_for('static', filename='js/health.js') }}"></script>
+<script>
+// Health Dashboard JavaScript
+const HealthDashboard = {
+    socket: null,
+    refreshInterval: null,
+    autoStartNotificationShown: false, // Flag to track if auto-start notification was shown
+    
+    init: function() {
+        this.initializeWebSocket();
+        this.setupEventHandlers();
+        this.loadInitialData();
+        this.autoStartHealthMonitoring();
+        console.log('Health Dashboard initialized with auto-start');
+    },
+    
+    initializeWebSocket: function() {
+        if (typeof io === 'undefined') {
+            console.warn('Socket.IO not available');
+            return;
+        }
+        
+        console.log('Initializing WebSocket connection to health service...');
+        this.socket = io('/health');
+        this.setupSocketHandlers();
+        
+        // Join health monitoring room
+        this.socket.emit('join_health_room');
+    },
+    
+    setupSocketHandlers: function() {
+        if (!this.socket) return;
+        
+        this.socket.on('connect', () => {
+            console.log('Connected to health service');
+            AICameraUtils.addLogMessage('health-status', 'Connected to health service', 'success');
+        });
+        
+        this.socket.on('connect_error', (error) => {
+            console.error('WebSocket connection error:', error);
+        });
+        
+        this.socket.on('disconnect', (reason) => {
+            console.log('WebSocket disconnected:', reason);
+        });
+        
+        this.socket.on('health_status_update', (data) => {
+            this.updateHealthStatus(data);
+        });
+        
+        this.socket.on('health_logs_update', (data) => {
+            this.updateLogs(data);
+        });
+        
+        this.socket.on('health_monitor_response', (data) => {
+            this.handleMonitorResponse(data);
+        });
+        
+        this.socket.on('health_check_response', (data) => {
+            this.handleCheckResponse(data);
+        });
+    },
+    
+    setupEventHandlers: function() {
+        // Log level filter change
+        document.getElementById('log-level-filter').addEventListener('change', function() {
+            HealthDashboard.refreshLogs();
+        });
+    },
+    
+    loadInitialData: function() {
+        this.loadHealthStatus();
+        this.loadLogs();
+    },
+    
+    loadHealthStatus: function() {
+        console.log('Loading health status...');
+        AICameraUtils.apiRequest('/health/system')
+            .then(data => {
+                console.log('Health status response:', data);
+                if (data && data.success) {
+                    this.updateHealthStatus(data);
+                } else {
+                    console.warn('Invalid health status response:', data);
+                    this.showError('Failed to load health status: Invalid response format');
+                }
+            })
+            .catch(error => {
+                console.error('Health status request failed:', error);
+                this.showError('Failed to load health status: ' + error.message);
+            });
+    },
+    
+    loadLogs: function(page = 1) {
+        const level = document.getElementById('log-level-filter').value;
+        let url = '/health/logs?limit=50&page=' + page;
+        
+        if (level) {
+            url += `&level=${level}`;
+        }
+        
+        console.log('Loading health logs from:', url);
+        AICameraUtils.apiRequest(url)
+            .then(data => {
+                console.log('Logs response:', data);
+                if (data && data.success) {
+                    this.updateLogs(data);
+                } else {
+                    console.warn('Invalid logs response:', data);
+                    this.showError('Failed to load logs: Invalid response format');
+                }
+            })
+            .catch(error => {
+                console.error('Logs request failed:', error);
+                this.showError('Failed to load logs: ' + error.message);
+            });
+    },
+    
+    updateHealthStatus: function(data) {
+        console.log('Updating health status with data:', data);
+        
+        if (!data || !data.success) {
+            console.error('Invalid health status data:', data);
+            this.showError(data?.error || 'Invalid health status data');
+            return;
+        }
+        
+        const health = data.data;
+        const grid = document.getElementById('health-grid');
+        
+        if (!health || !health.components) {
+            console.error('No health data or components available:', health);
+            grid.innerHTML = '<div class="error-message">No health data available</div>';
+            return;
+        }
+        
+        let html = '';
+        
+        // Overall status card
+        html += this.createOverallStatusCard(health);
+        
+        // Component cards
+        Object.keys(health.components).forEach(component => {
+            html += this.createComponentCard(component, health.components[component]);
+        });
+        
+        // System resources card
+        if (health.system) {
+            html += this.createSystemResourcesCard(health.system);
+        }
+        
+        grid.innerHTML = html;
+    },
+    
+    createOverallStatusCard: function(health) {
+        const status = health.overall_status || 'unknown';
+        const statusIndicator = this.createStatusIndicator(status);
+        
+        // Analyze component statuses for detailed information
+        let statusDetails = '';
+        if (status === 'warning' || status === 'critical' || status === 'unhealthy') {
+            const components = health.components || {};
+            const problematicComponents = [];
+            
+            Object.keys(components).forEach(componentName => {
+                const component = components[componentName];
+                if (component.status === 'unhealthy' || component.status === 'critical' || component.status === 'error') {
+                    problematicComponents.push({
+                        name: componentName,
+                        status: component.status,
+                        details: this.getComponentErrorDetails(componentName, component)
+                    });
+                }
+            });
+            
+            if (problematicComponents.length > 0) {
+                statusDetails = `
+                    <div class="status-details" style="margin-top: 15px; padding: 10px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px;">
+                        <div style="font-weight: 600; color: #856404; margin-bottom: 8px;">
+                            ⚠️ Issues Detected:
+                        </div>
+                        ${problematicComponents.map(comp => `
+                            <div style="margin-bottom: 5px; font-size: 0.9rem;">
+                                <strong>${comp.name.charAt(0).toUpperCase() + comp.name.slice(1)}:</strong> 
+                                <span style="color: #d63031;">${comp.status}</span>
+                                ${comp.details ? `<br><span style="font-size: 0.8rem; color: #636e72;">${comp.details}</span>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+        }
+        
+        return `
+            <div class="health-card">
+                <div class="card-header">
+                    <h3 class="card-title">🏥 Overall System Health</h3>
+                    ${statusIndicator}
+                </div>
+                <div class="health-metrics">
+                    <div class="metric-item">
+                        <div class="metric-value">${health.components ? Object.keys(health.components).length : 0}</div>
+                        <div class="metric-label">Components</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">${health.last_check ? new Date(health.last_check).toLocaleTimeString() : 'N/A'}</div>
+                        <div class="metric-label">Last Check</div>
+                    </div>
+                </div>
+                ${statusDetails}
+                ${status !== 'healthy' ? `
+                    <div style="margin-top: 15px; text-align: center;">
+                        <button onclick="HealthDashboard.showHealthLogs()" class="btn-health btn-secondary" style="font-size: 0.9rem; padding: 8px 16px;">
+                            🔍 View Health Logs
+                        </button>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    },
+    
+    createComponentCard: function(component, data) {
+        const status = data.status || 'unknown';
+        const statusIndicator = this.createStatusIndicator(status);
+        
+        let icon = '🔧';
+        let metrics = '';
+        
+        switch (component) {
+            case 'camera':
+                icon = '📷';
+                metrics = `
+                    <div class="metric-item">
+                        <div class="metric-value">${data.initialized ? 'Yes' : 'No'}</div>
+                        <div class="metric-label">Initialized</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">${data.streaming ? 'Yes' : 'No'}</div>
+                        <div class="metric-label">Streaming</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">${data.frame_count || 0}</div>
+                        <div class="metric-label">Frame Count</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">${(data.average_fps || 0).toFixed(1)}</div>
+                        <div class="metric-label">Avg FPS</div>
+                    </div>
+                `;
+                break;
+            case 'detection':
+                icon = '🤖';
+                metrics = `
+                    <div class="metric-item">
+                        <div class="metric-value">${data.models_loaded ? 'Yes' : 'No'}</div>
+                        <div class="metric-label">Models Loaded</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">${data.easyocr_available ? 'Yes' : 'No'}</div>
+                        <div class="metric-label">EasyOCR Ready</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">${data.detection_active ? 'Yes' : 'No'}</div>
+                        <div class="metric-label">Detection Active</div>
+                    </div>
+                `;
+                break;
+            case 'database':
+                icon = '💾';
+                metrics = `
+                    <div class="metric-item">
+                        <div class="metric-value">${data.connected ? 'Yes' : 'No'}</div>
+                        <div class="metric-label">Connected</div>
+                    </div>
+                `;
+                break;
+            case 'system':
+                icon = '🖥️';
+                metrics = `
+                    <div class="metric-item">
+                        <div class="metric-value">System Online</div>
+                        <div class="metric-label">Status</div>
+                    </div>
+                `;
+                break;
+        }
+        
+        return `
+            <div class="health-card">
+                <div class="card-header">
+                    <h3 class="card-title">${icon} ${component.charAt(0).toUpperCase() + component.slice(1)}</h3>
+                    ${statusIndicator}
+                </div>
+                <div class="health-metrics">
+                    ${metrics}
+                </div>
+            </div>
+        `;
+    },
+    
+    createSystemResourcesCard: function(system) {
+        const statusIndicator = this.createStatusIndicator('healthy');
+        return `
+            <div class="health-card system-resources">
+                <div class="card-header">
+                    <h3 class="card-title">📊 System Resources</h3>
+                    ${statusIndicator}
+                </div>
+                <div class="health-metrics">
+                    <div class="metric-item">
+                        <div class="metric-value">${system.cpu_usage || 0}%</div>
+                        <div class="metric-label">CPU Usage</div>
+                        <div class="progress-bar progress-bar-large" data-value="${system.cpu_usage || 0}%">
+                            <div class="progress-fill progress-fill-large ${this.getProgressClass(system.cpu_usage)}" style="width: ${system.cpu_usage || 0}%"></div>
+                        </div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">${system.memory_usage ? system.memory_usage.percentage : 0}%</div>
+                        <div class="metric-label">Memory Usage</div>
+                        <div class="progress-bar progress-bar-large" data-value="${system.memory_usage ? system.memory_usage.percentage : 0}%">
+                            <div class="progress-fill progress-fill-large ${this.getProgressClass(system.memory_usage ? system.memory_usage.percentage : 0)}" style="width: ${system.memory_usage ? system.memory_usage.percentage : 0}%"></div>
+                        </div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">${system.disk_usage ? system.disk_usage.percentage : 0}%</div>
+                        <div class="metric-label">Disk Usage</div>
+                        <div class="progress-bar progress-bar-large" data-value="${system.disk_usage ? system.disk_usage.percentage : 0}%">
+                            <div class="progress-fill progress-fill-large ${this.getProgressClass(system.disk_usage ? system.disk_usage.percentage : 0)}" style="width: ${system.disk_usage ? system.disk_usage.percentage : 0}%"></div>
+                        </div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">${this.formatUptime(system.uptime)}</div>
+                        <div class="metric-label">Uptime</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+    
+    updateLogs: function(data) {
+        if (!data || !data.success) {
+            this.showError(data?.error || 'Invalid logs data');
+            return;
+        }
+        
+        const logs = data.data?.logs || [];
+        const pagination = data.data?.pagination || {};
+        const container = document.getElementById('logs-container');
+        
+        if (logs.length === 0) {
+            container.innerHTML = '<div class="loading">No logs available</div>';
+            return;
+        }
+        
+        let html = `
+            <table class="logs-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Level</th>
+                        <th>Component</th>
+                        <th>Message</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        
+        logs.forEach(log => {
+            const levelClass = this.getLogLevelClass(log.level);
+            const timestamp = new Date(log.timestamp).toLocaleString();
+            
+            html += `
+                <tr>
+                    <td>${timestamp}</td>
+                    <td><span class="log-level ${levelClass}">${log.level}</span></td>
+                    <td>${log.module}</td>
+                    <td>${log.message}</td>
+                </tr>
+            `;
+        });
+        
+        html += '</tbody></table>';
+        
+        // Add pagination controls
+        if (pagination.total_pages > 1) {
+            html += this.createPaginationControls(pagination);
+        }
+        
+        container.innerHTML = html;
+    },
+    
+    createPaginationControls: function(pagination) {
+        const { current_page, total_pages, total_count, per_page, has_next, has_prev } = pagination;
+        
+        let html = `
+            <div class="pagination-controls">
+                <div class="pagination-info">
+                    Showing ${((current_page - 1) * per_page) + 1} to ${Math.min(current_page * per_page, total_count)} of ${total_count} logs
+                </div>
+                <div class="pagination-buttons">
+        `;
+        
+        // Previous button
+        if (has_prev) {
+            html += `<button class="btn-health btn-secondary" onclick="HealthDashboard.loadLogs(${current_page - 1})">← Previous</button>`;
+        } else {
+            html += `<button class="btn-health btn-secondary" disabled>← Previous</button>`;
+        }
+        
+        // Page numbers
+        const startPage = Math.max(1, current_page - 2);
+        const endPage = Math.min(total_pages, current_page + 2);
+        
+        for (let i = startPage; i <= endPage; i++) {
+            if (i === current_page) {
+                html += `<button class="btn-health btn-primary" disabled>${i}</button>`;
+            } else {
+                html += `<button class="btn-health btn-secondary" onclick="HealthDashboard.loadLogs(${i})">${i}</button>`;
+            }
+        }
+        
+        // Next button
+        if (has_next) {
+            html += `<button class="btn-health btn-secondary" onclick="HealthDashboard.loadLogs(${current_page + 1})">Next →</button>`;
+        } else {
+            html += `<button class="btn-health btn-secondary" disabled>Next →</button>`;
+        }
+        
+        html += `
+                </div>
+            </div>
+        `;
+        
+        return html;
+    },
+    
+    getProgressClass: function(value) {
+        if (value >= 90) return 'progress-critical';
+        if (value >= 70) return 'progress-unhealthy';
+        return 'progress-healthy';
+    },
+    
+    getLogLevelClass: function(level) {
+        switch (level) {
+            case 'PASS': return 'log-pass';
+            case 'FAIL': return 'log-fail';
+            case 'WARNING': return 'log-warning';
+            default: return 'log-pass';
+        }
+    },
+    
+    getStatusIndicatorClass: function(status) {
+        switch (status.toLowerCase()) {
+            case 'healthy': return 'status-healthy';
+            case 'unhealthy': return 'status-unhealthy';
+            case 'critical': return 'status-critical';
+            case 'warning': return 'status-unhealthy';
+            default: return 'status-unknown';
+        }
+    },
+    
+    createStatusIndicator: function(status) {
+        const statusClass = this.getStatusIndicatorClass(status);
+        const statusText = status.charAt(0).toUpperCase() + status.slice(1);
+        return `<span class="status-indicator ${statusClass}">${statusText}</span>`;
+    },
+    
+    getComponentErrorDetails: function(componentName, component) {
+        switch (componentName) {
+            case 'camera':
+                if (!component.initialized) return 'Camera not initialized';
+                if (!component.streaming) return 'Camera not streaming';
+                return 'Camera service unavailable';
+                
+            case 'detection':
+                if (!component.models_loaded) return 'AI models not loaded';
+                if (!component.easyocr_available) return 'EasyOCR not available';
+                if (!component.detection_active) return 'Detection service not active';
+                if (!component.service_running) return 'Detection service not running';
+                if (!component.thread_alive) return 'Detection thread not alive';
+                return 'Detection service unavailable';
+                
+            case 'database':
+                if (!component.connected) return 'Database connection failed';
+                return 'Database service unavailable';
+                
+            case 'system':
+                return 'System resources critical';
+                
+            default:
+                return 'Component status unknown';
+        }
+    },
+    
+    formatUptime: function(seconds) {
+        if (!seconds) return 'N/A';
+        
+        const days = Math.floor(seconds / 86400);
+        const hours = Math.floor((seconds % 86400) / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        
+        if (days > 0) return `${days}d ${hours}h`;
+        if (hours > 0) return `${hours}h ${minutes}m`;
+        return `${minutes}m`;
+    },
+    
+    handleMonitorResponse: function(data) {
+        if (data.success) {
+            AICameraUtils.showToast(data.message, 'success');
+        } else {
+            AICameraUtils.showToast(data.error, 'error');
+        }
+    },
+    
+    handleCheckResponse: function(data) {
+        if (data.success) {
+            this.updateHealthStatus(data);
+            AICameraUtils.showToast('Health check completed', 'success');
+        } else {
+            AICameraUtils.showToast(data.error, 'error');
+        }
+    },
+    
+    showError: function(message) {
+        const grid = document.getElementById('health-grid');
+        grid.innerHTML = `<div class="error-message">${message}</div>`;
+    },
+    
+    showHealthLogs: function() {
+        // Scroll to health logs section
+        const logsSection = document.getElementById('health-logs');
+        if (logsSection) {
+            logsSection.scrollIntoView({ behavior: 'smooth' });
+            // Highlight the logs section
+            logsSection.style.border = '2px solid #ff9800';
+            setTimeout(() => {
+                logsSection.style.border = '';
+            }, 3000);
+        } else {
+            // If logs section not found, load it
+            this.loadLogs();
+            setTimeout(() => {
+                const logsSection = document.getElementById('health-logs');
+                if (logsSection) {
+                    logsSection.scrollIntoView({ behavior: 'smooth' });
+                }
+            }, 500);
+        }
+    },
+    
+    cleanup: function() {
+        if (this.refreshInterval) {
+            clearInterval(this.refreshInterval);
+        }
+        if (this.socket) {
+            this.socket.emit('leave_health_room');
+        }
+    },
+    
+    autoStartHealthMonitoring: function() {
+        console.log('Auto-starting health monitoring...');
+        
+        // Check if camera and detection are running
+        this.checkSystemStatusAndStartMonitoring();
+        
+        // Set up periodic check for system status
+        this.refreshInterval = setInterval(() => {
+            this.checkSystemStatusAndStartMonitoring();
+        }, 45000); // Check every 45 seconds (increased for better detection initialization)
+    },
+    
+    checkSystemStatusAndStartMonitoring: function() {
+        console.log('Checking system status for auto-start...');
+        
+        // Get current system status
+        AICameraUtils.apiRequest('/health/system')
+            .then(data => {
+                if (data && data.success) {
+                    const health = data.data;
+                    const components = health.components || {};
+                    
+                    // Check if camera is running
+                    const cameraRunning = components.camera && 
+                                        components.camera.status === 'healthy' && 
+                                        components.camera.streaming;
+                    
+                    // Check if detection is running
+                    const detectionRunning = components.detection && 
+                                           components.detection.status === 'healthy' && 
+                                           components.detection.detection_active;
+                    
+                    console.log('Camera running:', cameraRunning);
+                    console.log('Detection running:', detectionRunning);
+                    
+                    // If both camera and detection are running, start health monitoring
+                    if (cameraRunning && detectionRunning) {
+                        this.startHealthMonitoring();
+                    } else {
+                        console.log('Waiting for camera and detection to start...');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error checking system status:', error);
+            });
+    },
+    
+    startHealthMonitoring: function() {
+        console.log('Starting health monitoring automatically...');
+        
+        if (this.socket) {
+            this.socket.emit('health_monitor_start', { interval: 60 });
+            
+            // Only show notification once
+            if (!this.autoStartNotificationShown) {
+                AICameraUtils.showToast('Health monitoring started automatically', 'success');
+                this.autoStartNotificationShown = true;
+            }
+        } else {
+            console.warn('WebSocket not available for health monitoring');
+        }
+    }
+};
+
+// Global functions for button actions
+function runHealthCheck() {
+    if (HealthDashboard.socket) {
+        HealthDashboard.socket.emit('health_check_run');
+    } else {
+        HealthDashboard.loadHealthStatus();
+    }
+}
+
+function startMonitoring() {
+    if (HealthDashboard.socket) {
+        HealthDashboard.socket.emit('health_monitor_start', { interval: 60 });
+    }
+}
+
+function stopMonitoring() {
+    if (HealthDashboard.socket) {
+        HealthDashboard.socket.emit('health_monitor_stop');
+    }
+}
+
+function refreshData() {
+    HealthDashboard.loadHealthStatus();
+}
+
+function refreshLogs() {
+    HealthDashboard.loadLogs();
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    HealthDashboard.init();
+    
+    window.addEventListener('beforeunload', function() {
+        HealthDashboard.cleanup();
+    });
+    
+    console.log('Health Dashboard JavaScript loaded');
+});
+</script>
+{% endblock %}

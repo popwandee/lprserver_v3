@@ -11,7 +11,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATABASE_PATH = os.path.join(BASE_DIR,'db', 'lpr_data.db')
 
 # Image saving paths
-IMAGE_SAVE_DIR = os.path.join(BASE_DIR, 'captured_images')
+IMAGE_SAVE_DIR = '/home/camuser/aicamera/captured_images'
 # Ensure the directory exists
 os.makedirs(IMAGE_SAVE_DIR, exist_ok=True)
 

@@ -43,7 +43,7 @@ def create_test_data():
     db = DatabaseManager()
     
     # Ensure directories exist
-    os.makedirs('captured_images', exist_ok=True)
+    os.makedirs('/home/camuser/aicamera/captured_images', exist_ok=True)
     os.makedirs('static/images', exist_ok=True)
     
     # Test license plates
@@ -61,8 +61,8 @@ def create_test_data():
             vehicle_img = f"test_vehicle_{i+1}.jpg"
             lp_img = f"test_lp_{i+1}.jpg"
             
-            vehicle_path = os.path.join('captured_images', vehicle_img)
-            lp_path = os.path.join('captured_images', lp_img)
+            vehicle_path = os.path.join('/home/camuser/aicamera/captured_images', vehicle_img)
+            lp_path = os.path.join('/home/camuser/aicamera/captured_images', lp_img)
             
             # Create images
             create_test_image(f"Vehicle {i+1}", vehicle_path)

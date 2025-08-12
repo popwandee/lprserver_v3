@@ -168,7 +168,7 @@ class HealthStatusAPI {
     }
   }
 }
-
+sudo systemctl list-units --type=service --all | grep -i websocket
 ps aux | grep gunicorn
 camuser@aicamera1:~/aicamera $ ps aux | grep gunicorn
 your 131072x1 screen size is bogus. expect trouble
@@ -180,8 +180,16 @@ kill -HUP 837
 
 systemd → gunicorn → nginx → camera start → detection start → health monitor start
 
-modify camera to display meta data instead of frame count or avg fps
-add websocket
+ตรวจสอบการแสดงผลข้อมูลเหล่านี้ในหน้า main dashboard ว่ามีการใช้ตัวแปรถูกต้องหรือไม่ เป็นไปตามกฎ variable_management.md และ updated_variable_mapping_diagram.puml หรือไม่ ได้แก่ข้อมูลดังนี้
+CPU Architecture: Loading...
+AI Accelerator: Test AI Accelerator
+OS & Kernel: Loading...
+RAM: Loading...
+Disk: Loading...
+โดยไม่เปลี่ยนแปลงแก้ไขส่วนอื่น หากจำเป็นต้องแก้ไขให้แจ้งให้ทราบก่อน
 
+1.modify camera to display meta data instead of frame count or avg fps
+add websocket
+2.
 create LPR web server to manage with cursor background
 Create AICAMERA Standalone for demo

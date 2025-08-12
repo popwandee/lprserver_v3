@@ -33,7 +33,8 @@ from v1_3.src.core.utils.logging_config import get_logger
 from v1_3.src.core.config import (
     WEBSOCKET_SERVER_URL, SENDER_INTERVAL, HEALTH_SENDER_INTERVAL,
     WEBSOCKET_SENDER_ENABLED, WEBSOCKET_CONNECTION_TIMEOUT, 
-    WEBSOCKET_RETRY_INTERVAL, WEBSOCKET_MAX_RETRIES
+    WEBSOCKET_RETRY_INTERVAL, WEBSOCKET_MAX_RETRIES,
+    AICAMERA_ID, CHECKPOINT_ID
 )
 
 logger = get_logger(__name__)
@@ -85,8 +86,11 @@ class WebSocketSender:
         self.connection_timeout = WEBSOCKET_CONNECTION_TIMEOUT
         self.retry_interval = WEBSOCKET_RETRY_INTERVAL
         self.max_retries = WEBSOCKET_MAX_RETRIES
-        
-        self.logger.info("WebSocketSender initialized")
+
+        # AI Camera Identification
+        self.aicamera_id = AICAMERA_ID
+        self.checkpoint_id = CHECKPOINT_ID
+        self.logger.info(f"WebSocketSender initialized - AI Camera ID: {self.aicamera_id}, Checkpoint ID: {self.checkpoint_id}")
     
     def initialize(self) -> bool:
         """
@@ -101,8 +105,8 @@ class WebSocketSender:
                 return False
                 
             if not self.server_url:
-                self.logger.warning("WEBSOCKET_SERVER_URL not configured")
-                return False
+                self.logger.warning("WEBSOCKET_SERVER_URL not configured - service will run in offline mode")
+                self.server_url = None  # Set to None to indicate offline mode
             
             # Get database manager from DI container if not provided
             if not self.database_manager:
@@ -112,7 +116,10 @@ class WebSocketSender:
                 self.logger.error("Database manager not available")
                 return False
             
-            self.logger.info(f"WebSocket sender initialized for server: {self.server_url}")
+            if self.server_url:
+                self.logger.info(f"WebSocket sender initialized for server: {self.server_url}")
+            else:
+                self.logger.info("WebSocket sender initialized in offline mode (no server URL configured)")
             return True
             
         except Exception as e:
@@ -129,6 +136,11 @@ class WebSocketSender:
         try:
             if self.connected:
                 return True
+            
+            # Check if we have a server URL
+            if not self.server_url:
+                self.logger.warning("No server URL configured - staying in offline mode")
+                return False
             
             self.logger.info(f"Connecting to WebSocket server: {self.server_url}")
             
@@ -150,6 +162,10 @@ class WebSocketSender:
                 )
             
             self.logger.info("WebSocket connection established")
+            
+            # Try to send any pending data after successful connection
+            await self._send_pending_data()
+            
             return True
             
         except Exception as e:
@@ -166,6 +182,35 @@ class WebSocketSender:
             
             self.logger.error(f"WebSocket connection failed: {e}")
             return False
+    
+    async def _send_pending_data(self):
+        """
+        Send any pending data after successful connection.
+        This method tries to send any unsent detection and health data.
+        """
+        try:
+            if not self.connected or not self.server_url:
+                return
+            
+            self.logger.info("Sending pending data after reconnection...")
+            
+            # Send pending detection data
+            detection_count = self._send_detection_data()
+            if detection_count > 0:
+                self.logger.info(f"Sent {detection_count} pending detection records")
+            
+            # Send pending health data
+            health_count = self._send_health_data()
+            if health_count > 0:
+                self.logger.info(f"Sent {health_count} pending health records")
+            
+            if detection_count > 0 or health_count > 0:
+                self.logger.info("Successfully sent all pending data")
+            else:
+                self.logger.info("No pending data to send")
+                
+        except Exception as e:
+            self.logger.error(f"Error sending pending data: {e}")
     
     async def disconnect(self) -> bool:
         """
@@ -265,7 +310,11 @@ class WebSocketSender:
             )
             self.health_thread.start()
             
-            self.logger.info("WebSocket sender service started")
+            if self.server_url:
+                self.logger.info("WebSocket sender service started (online mode)")
+            else:
+                self.logger.info("WebSocket sender service started (offline mode)")
+            
             return True
             
         except Exception as e:
@@ -282,7 +331,14 @@ class WebSocketSender:
             
             # Disconnect WebSocket
             if self.connected:
-                asyncio.run(self.disconnect())
+                try:
+                    # Create a new event loop for disconnection
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    loop.run_until_complete(self.disconnect())
+                    loop.close()
+                except Exception as e:
+                    self.logger.error(f"Error during WebSocket disconnection: {e}")
             
             # Wait for threads to finish
             if self.detection_thread and self.detection_thread.is_alive():
@@ -300,24 +356,31 @@ class WebSocketSender:
         """Main loop for detection data sender thread."""
         self.logger.info("Detection sender thread started")
         
-        while self.running and not self.stop_event.is_set():
-            try:
-                self.last_detection_check = datetime.now()
-                sent_count = self._send_detection_data()
-                
-                if sent_count > 0:
-                    self.total_detections_sent += sent_count
-                    self.logger.info(f"Sent {sent_count} detection records to server")
-                
-                # Wait for next interval or stop event
-                if self.stop_event.wait(SENDER_INTERVAL):
-                    break
+        # Create new event loop for this thread
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        try:
+            while self.running and not self.stop_event.is_set():
+                try:
+                    self.last_detection_check = datetime.now()
+                    sent_count = self._send_detection_data()
                     
-            except Exception as e:
-                self.logger.error(f"Error in detection sender loop: {e}")
-                # Wait before retrying
-                if self.stop_event.wait(SENDER_INTERVAL):
-                    break
+                    if sent_count > 0:
+                        self.total_detections_sent += sent_count
+                        self.logger.info(f"Sent {sent_count} detection records to server")
+                    
+                    # Wait for next interval or stop event
+                    if self.stop_event.wait(SENDER_INTERVAL):
+                        break
+                        
+                except Exception as e:
+                    self.logger.error(f"Error in detection sender loop: {e}")
+                    # Wait before retrying
+                    if self.stop_event.wait(SENDER_INTERVAL):
+                        break
+        finally:
+            loop.close()
         
         self.logger.info("Detection sender thread stopped")
     
@@ -325,24 +388,31 @@ class WebSocketSender:
         """Main loop for health status sender thread."""
         self.logger.info("Health sender thread started")
         
-        while self.running and not self.stop_event.is_set():
-            try:
-                self.last_health_check = datetime.now()
-                sent_count = self._send_health_data()
-                
-                if sent_count > 0:
-                    self.total_health_sent += sent_count
-                    self.logger.info(f"Sent {sent_count} health records to server")
-                
-                # Wait for next interval or stop event
-                if self.stop_event.wait(HEALTH_SENDER_INTERVAL):
-                    break
+        # Create new event loop for this thread
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        try:
+            while self.running and not self.stop_event.is_set():
+                try:
+                    self.last_health_check = datetime.now()
+                    sent_count = self._send_health_data()
                     
-            except Exception as e:
-                self.logger.error(f"Error in health sender loop: {e}")
-                # Wait before retrying
-                if self.stop_event.wait(HEALTH_SENDER_INTERVAL):
-                    break
+                    if sent_count > 0:
+                        self.total_health_sent += sent_count
+                        self.logger.info(f"Sent {sent_count} health records to server")
+                    
+                    # Wait for next interval or stop event
+                    if self.stop_event.wait(HEALTH_SENDER_INTERVAL):
+                        break
+                        
+                except Exception as e:
+                    self.logger.error(f"Error in health sender loop: {e}")
+                    # Wait before retrying
+                    if self.stop_event.wait(HEALTH_SENDER_INTERVAL):
+                        break
+        finally:
+            loop.close()
         
         self.logger.info("Health sender thread stopped")
     
@@ -367,9 +437,25 @@ class WebSocketSender:
                     status='no_data',
                     message='No detection data to send',
                     data_type='detection_results',
-                    record_count=0
+                    record_count=0,
+                    aicamera_id=self.aicamera_id,
+                    checkpoint_id=self.checkpoint_id
                 )
                 return 0
+            
+            # Check if in offline mode
+            if not self.server_url:
+                # In offline mode, just log that we're processing locally
+                self.database_manager.log_websocket_action(
+                    action='send_detection',
+                    status='offline',
+                    message=f'Processing {len(unsent_detections)} detection records locally (offline mode)',
+                    data_type='detection_results',
+                    record_count=len(unsent_detections),
+                    aicamera_id=self.aicamera_id,
+                    checkpoint_id=self.checkpoint_id
+                )
+                return len(unsent_detections)
             
             sent_count = 0
             
@@ -390,7 +476,9 @@ class WebSocketSender:
                         status='failed',
                         message=f'Failed to send detection ID {detection["id"]}',
                         data_type='detection_results',
-                        record_count=1
+                        record_count=1,
+                        aicamera_id=self.aicamera_id,
+                        checkpoint_id=self.checkpoint_id
                     )
             
             if sent_count > 0:
@@ -400,7 +488,9 @@ class WebSocketSender:
                     status='success',
                     message=f'Successfully sent {sent_count} detection records',
                     data_type='detection_results',
-                    record_count=sent_count
+                    record_count=sent_count,
+                    aicamera_id=self.aicamera_id,
+                    checkpoint_id=self.checkpoint_id
                 )
             
             return sent_count
@@ -413,7 +503,9 @@ class WebSocketSender:
                     action='send_detection',
                     status='failed',
                     message=f'Error sending detection data: {str(e)}',
-                    data_type='detection_results'
+                    data_type='detection_results',
+                    aicamera_id=self.aicamera_id,
+                    checkpoint_id=self.checkpoint_id
                 )
             return 0
     
@@ -438,9 +530,25 @@ class WebSocketSender:
                     status='no_data',
                     message='No health data to send',
                     data_type='health_checks',
-                    record_count=0
+                    record_count=0,
+                    aicamera_id=self.aicamera_id,
+                    checkpoint_id=self.checkpoint_id
                 )
                 return 0
+            
+            # Check if in offline mode
+            if not self.server_url:
+                # In offline mode, just log that we're processing locally
+                self.database_manager.log_websocket_action(
+                    action='send_health',
+                    status='offline',
+                    message=f'Processing {len(unsent_health)} health check records locally (offline mode)',
+                    data_type='health_checks',
+                    record_count=len(unsent_health),
+                    aicamera_id=self.aicamera_id,
+                    checkpoint_id=self.checkpoint_id
+                )
+                return len(unsent_health)
             
             sent_count = 0
             
@@ -461,7 +569,9 @@ class WebSocketSender:
                         status='failed',
                         message=f'Failed to send health check ID {health_check["id"]}',
                         data_type='health_checks',
-                        record_count=1
+                        record_count=1,
+                        aicamera_id=self.aicamera_id,
+                        checkpoint_id=self.checkpoint_id
                     )
             
             if sent_count > 0:
@@ -471,7 +581,9 @@ class WebSocketSender:
                     status='success',
                     message=f'Successfully sent {sent_count} health check records',
                     data_type='health_checks',
-                    record_count=sent_count
+                    record_count=sent_count,
+                    aicamera_id=self.aicamera_id,
+                    checkpoint_id=self.checkpoint_id
                 )
             
             return sent_count
@@ -484,7 +596,9 @@ class WebSocketSender:
                     action='send_health',
                     status='failed',
                     message=f'Error sending health data: {str(e)}',
-                    data_type='health_checks'
+                    data_type='health_checks',
+                    aicamera_id=self.aicamera_id,
+                    checkpoint_id=self.checkpoint_id
                 )
             return 0
     
@@ -502,6 +616,8 @@ class WebSocketSender:
             # Prepare data for sending
             data = {
                 'type': 'detection_result',
+                'aicamera_id': self.aicamera_id,
+                'checkpoint_id': self.checkpoint_id,
                 'timestamp': detection['timestamp'],
                 'vehicles_count': detection['vehicles_count'],
                 'plates_count': detection['plates_count'],
@@ -558,6 +674,8 @@ class WebSocketSender:
             # Prepare data for sending
             data = {
                 'type': 'health_check',
+                'aicamera_id': self.aicamera_id,
+                'checkpoint_id': self.checkpoint_id,
                 'timestamp': health_check['timestamp'],
                 'component': health_check['component'],
                 'status': health_check['status'],
@@ -583,8 +701,11 @@ class WebSocketSender:
         return {
             'enabled': self.enabled,
             'running': self.running,
-            'connected': self.connected,
+            'connected': self.connected if self.server_url else False,
             'server_url': self.server_url,
+            'offline_mode': self.server_url is None,
+            'aicamera_id': self.aicamera_id,
+            'checkpoint_id': self.checkpoint_id,
             'retry_count': self.retry_count,
             'total_detections_sent': self.total_detections_sent,
             'total_health_sent': self.total_health_sent,

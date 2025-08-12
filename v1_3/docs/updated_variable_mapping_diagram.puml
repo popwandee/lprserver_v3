@@ -892,4 +892,113 @@ note bottom of HealthDashboardVars
   - Progress bar state management
 end note
 
+' WebSocket Sender Offline Mode Variables
+package "WebSocket Sender Offline Mode" as WebSocketOfflineMode {
+  class OfflineModeStatus {
+    + enabled: boolean
+    + running: boolean
+    + connected: boolean
+    + server_url: string|null
+    + offline_mode: boolean
+    + aicamera_id: string
+    + checkpoint_id: string
+    + retry_count: number
+    + total_detections_sent: number
+    + total_health_sent: number
+    + last_detection_check: string
+    + last_health_check: string
+    + detection_thread_alive: boolean
+    + health_thread_alive: boolean
+  }
+  
+  class OfflineModeLogs {
+    + timestamp: string
+    + action: string
+    + status: string
+    + message: string
+    + data_type: string
+    + record_count: number
+    + aicamera_id: string
+    + checkpoint_id: string
+  }
+  
+  class OfflineModeDisplay {
+    + serverConnection: object
+    + dataSending: object
+    + lastSync: object
+    + connectionText: string
+    + dataText: string
+    + statusClass: string
+  }
+}
+
+' Configuration Management Variables
+package "Configuration Management" as ConfigManagement {
+  class EnvironmentConfig {
+    + WEBSOCKET_SERVER_URL: string
+    + AICAMERA_ID: string
+    + CHECKPOINT_ID: string
+    + SECRET_KEY: string
+    + DB_PATH: string
+  }
+  
+  class ImportHelperConfig {
+    + project_root: string
+    + v1_3_path: string
+    + v1_3_src_path: string
+    + current_working_directory: string
+  }
+  
+  class StartupSequence {
+    + step_1_load_env: object
+    + step_2_setup_imports: object
+    + step_3_create_app: object
+    + step_4_initialize_services: object
+  }
+}
+
+' Relationships for Offline Mode
+WebSocketVars ..> OfflineModeStatus : "Status Updates"
+OfflineModeStatus ..> OfflineModeDisplay : "UI State"
+OfflineModeLogs ..> MainDashboardElements : "Log Display"
+OfflineModeDisplay ..> MainDashboardElements : "Status Display"
+
+' Relationships for Configuration
+EnvironmentConfig ..> WebSocketOfflineMode : "Configures"
+ImportHelperConfig ..> StartupSequence : "Manages"
+StartupSequence ..> WebSocketOfflineMode : "Initializes"
+
+note top of WebSocketOfflineMode
+  **WebSocket Sender Offline Mode Features**
+  - Graceful degradation when server unavailable
+  - Local data processing and storage
+  - Auto-recovery when connection restored
+  - Smart reconnection with pending data
+  - Clear status indication (Offline Mode)
+  - Comprehensive logging for offline operations
+  
+  **Offline Mode Status Values:**
+  - connected: false
+  - server_url: null
+  - offline_mode: true
+  - connectionText: "Offline Mode"
+  - dataText: "Active (Local)"
+end note
+
+note top of ConfigManagement
+  **Configuration Management System**
+  - Environment variables from .env.production
+  - Import helper for absolute imports
+  - Startup sequence validation
+  - Path management for deployment
+  - Configuration validation and error handling
+  
+  **Key Configuration Files:**
+  - v1_3/.env.production
+  - v1_3/src/core/config.py
+  - v1_3/src/core/utils/import_helper.py
+  - v1_3/src/app.py
+  - v1_3/src/wsgi.py
+end note
+
 @enduml

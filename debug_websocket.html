@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Debug - AI Camera v1.3</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .log { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { margin: 5px; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Debug - AI Camera v1.3</h1>
+    
+    <div>
+        <button onclick="testHealthWebSocket()">Test Health WebSocket</button>
+        <button onclick="testCameraWebSocket()">Test Camera WebSocket</button>
+        <button onclick="testDetectionWebSocket()">Test Detection WebSocket</button>
+        <button onclick="clearLogs()">Clear Logs</button>
+    </div>
+    
+    <div id="logs"></div>
+    
+    <script>
+        function addLog(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const log = document.createElement('div');
+            log.className = `log ${type}`;
+            log.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            logs.appendChild(log);
+            console.log(message);
+        }
+        
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+        
+        function testHealthWebSocket() {
+            addLog('Testing Health WebSocket connection...', 'info');
+            
+            try {
+                const socket = io('/health');
+                
+                socket.on('connect', () => {
+                    addLog('✅ Health WebSocket connected successfully', 'success');
+                    socket.emit('health_status_request');
+                });
+                
+                socket.on('connect_error', (error) => {
+                    addLog(`❌ Health WebSocket connection error: ${error}`, 'error');
+                });
+                
+                socket.on('disconnect', (reason) => {
+                    addLog(`⚠️ Health WebSocket disconnected: ${reason}`, 'info');
+                });
+                
+                socket.on('health_status_update', (data) => {
+                    addLog(`📊 Health status update: ${JSON.stringify(data)}`, 'success');
+                });
+                
+                socket.on('health_logs_update', (data) => {
+                    addLog(`📋 Health logs update: ${JSON.stringify(data)}`, 'success');
+                });
+                
+                socket.on('health_monitor_response', (data) => {
+                    addLog(`🔧 Health monitor response: ${JSON.stringify(data)}`, 'success');
+                });
+                
+                socket.on('health_check_response', (data) => {
+                    addLog(`✅ Health check response: ${JSON.stringify(data)}`, 'success');
+                });
+                
+                // Test events
+                setTimeout(() => {
+                    addLog('Emitting health_status_request...', 'info');
+                    socket.emit('health_status_request');
+                }, 1000);
+                
+                setTimeout(() => {
+                    addLog('Emitting health_check_run...', 'info');
+                    socket.emit('health_check_run');
+                }, 2000);
+                
+            } catch (error) {
+                addLog(`❌ Error creating Health WebSocket: ${error}`, 'error');
+            }
+        }
+        
+        function testCameraWebSocket() {
+            addLog('Testing Camera WebSocket connection...', 'info');
+            
+            try {
+                const socket = io('/camera');
+                
+                socket.on('connect', () => {
+                    addLog('✅ Camera WebSocket connected successfully', 'success');
+                    socket.emit('camera_status_request');
+                });
+                
+                socket.on('connect_error', (error) => {
+                    addLog(`❌ Camera WebSocket connection error: ${error}`, 'error');
+                });
+                
+                socket.on('disconnect', (reason) => {
+                    addLog(`⚠️ Camera WebSocket disconnected: ${reason}`, 'info');
+                });
+                
+                socket.on('camera_status_update', (data) => {
+                    addLog(`📸 Camera status update: ${JSON.stringify(data)}`, 'success');
+                });
+                
+                // Test events
+                setTimeout(() => {
+                    addLog('Emitting camera_status_request...', 'info');
+                    socket.emit('camera_status_request');
+                }, 1000);
+                
+            } catch (error) {
+                addLog(`❌ Error creating Camera WebSocket: ${error}`, 'error');
+            }
+        }
+        
+        function testDetectionWebSocket() {
+            addLog('Testing Detection WebSocket connection...', 'info');
+            
+            try {
+                const socket = io();
+                
+                socket.on('connect', () => {
+                    addLog('✅ Detection WebSocket connected successfully', 'success');
+                    socket.emit('detection_status_request');
+                });
+                
+                socket.on('connect_error', (error) => {
+                    addLog(`❌ Detection WebSocket connection error: ${error}`, 'error');
+                });
+                
+                socket.on('disconnect', (reason) => {
+                    addLog(`⚠️ Detection WebSocket disconnected: ${reason}`, 'info');
+                });
+                
+                socket.on('detection_status_update', (data) => {
+                    addLog(`🎯 Detection status update: ${JSON.stringify(data)}`, 'success');
+                });
+                
+                // Test events
+                setTimeout(() => {
+                    addLog('Emitting detection_status_request...', 'info');
+                    socket.emit('detection_status_request');
+                }, 1000);
+                
+            } catch (error) {
+                addLog(`❌ Error creating Detection WebSocket: ${error}`, 'error');
+            }
+        }
+        
+        // Auto-test on load
+        window.addEventListener('load', () => {
+            addLog('WebSocket Debug Tool loaded', 'info');
+            addLog('Click buttons to test different WebSocket connections', 'info');
+        });
+    </script>
+</body>
+</html>

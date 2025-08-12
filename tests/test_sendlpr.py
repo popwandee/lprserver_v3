@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 # สร้าง Socket.IO client
 sio = socketio.Client(reconnection=True, reconnection_attempts=5, reconnection_delay=2)
-SAVE_DIR = "/home/camuser/hailo/lpr_images"
+SAVE_DIR = "/home/camuser/aicamera/captured_images"
 
 def capture_image():
     """
