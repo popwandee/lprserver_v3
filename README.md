@@ -1,378 +1,449 @@
-# LPR Server v3
+# LPR Server v3 - Enhanced Architecture
 
-ระบบ LPR Server v3 เป็นระบบจัดการข้อมูลการอ่านป้ายทะเบียนรถยนต์ ที่รับข้อมูลจาก Edge Camera ผ่าน WebSocket และแสดงผลในรูปแบบตาราง
+## ภาพรวม (Overview)
 
-## คุณสมบัติหลัก
+LPR Server v3 ได้รับการปรับปรุงสถาปัตยกรรมให้เป็นไปตามมาตรฐานที่กำหนดไว้ใน DEVELOPMENT_GUIDE.md โดยใช้แนวคิดหลัก 3 ประการ:
 
-- ✅ รับข้อมูลจาก Edge Camera ผ่าน WebSocket (Port 8765)
-- ✅ บันทึกข้อมูลลงฐานข้อมูล SQLite
-- ✅ บันทึกภาพลงใน storage directory
-- ✅ แสดงผลในรูปแบบตารางพร้อมการกรองข้อมูล
-- ✅ แดชบอร์ดแสดงสถิติการใช้งาน
-- ✅ REST API สำหรับการเข้าถึงข้อมูล
-- ✅ Real-time updates ผ่าน WebSocket
-- ✅ ระบบจัดการด้วย systemd service
-- ✅ Reverse proxy ด้วย nginx
-- ✅ ระบบจัดการ Blacklist สำหรับป้ายทะเบียน
-- ✅ การตรวจจับและแจ้งเตือนป้ายทะเบียนที่อยู่ใน blacklist
-- ✅ สถิติการใช้งานแบบ real-time
-- ✅ Health monitoring system
+1. **Absolute Imports Pattern** - จัดการ import paths ให้ชัดเจน
+2. **Dependency Injection (DI)** - ลด coupling ระหว่าง components
+3. **Flask Blueprints** - Modular design สำหรับ Web UI
 
-## โครงสร้างโปรเจกต์
+## การติดตั้ง (Installation)
 
-```
-lprserver_v3/
-├── src/                    # Source code
-│   ├── app.py             # Flask application factory
-│   ├── web/               # Web application
-│   │   └── blueprints/    # Flask blueprints
-│   │       ├── main.py    # Main web routes
-│   │       └── api.py     # API routes
-│   ├── services/          # Business logic services
-│   │   ├── websocket_service.py  # WebSocket handling
-│   │   ├── blacklist_service.py  # Blacklist management
-│   │   ├── health_service.py     # Health monitoring
-│   │   └── database_service.py   # Database operations
-│   └── core/              # Core components
-│       ├── models/        # Database models
-│       │   ├── lpr_record.py     # LPR Record model
-│       │   ├── blacklist_plate.py # Blacklist model
-│       │   ├── camera.py         # Camera model
-│       │   └── health_check.py   # Health check model
-│       ├── dependency_container.py # Dependency injection
-│       └── import_helper.py      # Import utilities
-├── templates/             # HTML templates
-│   ├── base.html          # Base template
-│   ├── index.html         # Home page
-│   ├── dashboard.html     # Dashboard page
-│   ├── records.html       # Records table page
-│   └── blacklist.html     # Blacklist management page
-├── storage/               # File storage
-│   └── images/            # LPR images
-├── logs/                  # Application logs
-├── database/              # Database files
-├── nginx/                 # Nginx configuration
-│   └── lprserver.conf     # Nginx config
-├── config.py              # Application configuration
-├── requirements.txt       # Python dependencies
-├── run.py                 # Development server
-├── wsgi.py                # Production WSGI entry
-├── websocket_server.py    # WebSocket server
-├── setup.sh               # Setup script
-├── lprserver.service      # Main service
-├── lprserver-websocket.service  # WebSocket service
-└── README.md              # This file
+### 1. Prerequisites
+```bash
+# Ubuntu/Debian
+sudo apt update
+sudo apt install python3 python3-pip python3-venv nginx
+
+# CentOS/RHEL
+sudo yum install python3 python3-pip nginx
 ```
 
-## การติดตั้ง
+### 2. Clone และ Setup
+```bash
+# Clone repository
+git clone <repository-url>
+cd lprserver_v3
 
-### ข้อกำหนดระบบ
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
 
-- Ubuntu 20.04 หรือใหม่กว่า
-- Python 3.8 หรือใหม่กว่า
-- nginx
-- systemd
+# Install dependencies
+pip install -r requirements.txt
+```
 
-### ขั้นตอนการติดตั้ง
+### 3. Configuration
+```bash
+# Copy environment configuration
+cp env.example .env
 
-1. **Clone โปรเจกต์**
-   ```bash
-   git clone <repository-url>
-   cd lprserver_v3
-   ```
+# Edit configuration
+nano .env
+```
 
-2. **รัน setup script**
-   ```bash
-   chmod +x setup.sh
-   ./setup.sh
-   ```
+**Configuration Options:**
+```bash
+# Flask Configuration
+FLASK_CONFIG=production
+SECRET_KEY=your-secret-key-here
+FLASK_DEBUG=False
 
-   Script นี้จะ:
-   - สร้าง virtual environment
-   - ติดตั้ง dependencies
-   - สร้างฐานข้อมูล
-   - ตั้งค่า systemd services
-   - ตั้งค่า nginx
-   - เริ่มต้นระบบ
+# Database Configuration
+DATABASE_URL=sqlite:///lprserver.db
 
-3. **ตรวจสอบสถานะ**
-   ```bash
-   sudo systemctl status lprserver.service
-   sudo systemctl status lprserver-websocket.service
-   sudo systemctl status nginx
-   ```
+# File Storage
+IMAGE_STORAGE_PATH=storage/images
 
-## การใช้งาน
+# Health Monitoring
+HEALTH_CHECK_INTERVAL_MINUTES=5
+DATA_RETENTION_DAYS=30
+```
+
+## การใช้งาน (Usage)
+
+### Development Mode
+```bash
+# Activate virtual environment
+source venv/bin/activate
+
+# Run development server
+python run.py
+```
+
+### Production Deployment
+```bash
+# Setup systemd services
+sudo ./setup.sh
+
+# Start services
+sudo systemctl start lprserver
+sudo systemctl start lprserver-websocket
+sudo systemctl start nginx
+
+# Enable auto-start
+sudo systemctl enable lprserver
+sudo systemctl enable lprserver-websocket
+sudo systemctl enable nginx
+```
+
+## สถาปัตยกรรม (Architecture)
+
+### Service Layer
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  WebSocket      │    │   Blacklist     │    │     Health      │
+│   Service       │    │    Service      │    │    Service      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+                    ┌─────────────────┐
+                    │   Database      │
+                    │   Service       │
+                    └─────────────────┘
+```
 
 ### Web Interface
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Main          │    │      API        │    │     Health      │
+│  Blueprint      │    │   Blueprint     │    │   Blueprint     │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+                    ┌─────────────────┐
+                    │   Flask App     │
+                    └─────────────────┘
+```
 
-- **หน้าแรก**: http://localhost
-- **แดชบอร์ด**: http://localhost/dashboard
-- **รายการบันทึก**: http://localhost/records
-- **จัดการ Blacklist**: http://localhost/blacklist
+## API Endpoints
 
-### WebSocket Server
+### Main Routes (`/`)
+- `GET /` - Dashboard
+- `GET /records` - LPR Records
+- `GET /cameras` - Camera Management
 
-- **Port**: 8765
-- **Protocol**: WebSocket
-- **Events**:
-  - `camera_register`: ลงทะเบียนกล้อง
-  - `lpr_data`: ส่งข้อมูล LPR
+### API Routes (`/api`)
+- `GET /api/records` - Get LPR records (with pagination)
+- `POST /api/records` - Create new LPR record
+- `GET /api/cameras` - Get camera list
+- `POST /api/cameras` - Register new camera
+- `GET /api/blacklist` - Get blacklist entries
+- `POST /api/blacklist` - Add to blacklist
+- `DELETE /api/blacklist/<id>` - Remove from blacklist
 
-### API Endpoints
+### Health Routes (`/health`)
+- `GET /health/status` - System health status
+- `POST /health/check` - Perform health check
+- `GET /health/history` - Health check history
+- `GET /health/database/stats` - Database statistics
+- `POST /health/database/cleanup` - Clean old data
+- `POST /health/database/optimize` - Optimize database
 
-#### LPR Records
-- `GET /api/records` - ดึงรายการบันทึก
-- `GET /api/records/<id>` - ดึงบันทึกเฉพาะ
-- `POST /api/records` - สร้างบันทึกใหม่
-- `GET /api/statistics` - ดึงสถิติระบบ
+## WebSocket Events
 
-#### Blacklist Management
-- `GET /api/blacklist` - ดึงรายการ blacklist
-- `POST /api/blacklist` - เพิ่มป้ายทะเบียนใน blacklist
-- `DELETE /api/blacklist/<id>` - ลบป้ายทะเบียนจาก blacklist
-- `GET /api/blacklist/statistics` - ดึงสถิติ blacklist
-- `GET /api/blacklist/detections` - ดึงการตรวจจับ blacklist
-
-## การส่งข้อมูลจาก Edge Camera
-
-### การเชื่อมต่อ WebSocket
-
+### Camera Communication (Port 8765)
 ```javascript
-const socket = io('ws://your-server:8765');
+// Connect to WebSocket server
+const socket = io('ws://localhost:8765');
 
-// ลงทะเบียนกล้อง
+// Register camera
 socket.emit('camera_register', {
     camera_id: 'CAM001'
 });
 
-// ส่งข้อมูล LPR
+// Send LPR data
 socket.emit('lpr_data', {
     camera_id: 'CAM001',
     plate_number: 'กข1234',
-    confidence: 85.5,
-    image_data: 'base64_encoded_image_data',
-    location: 'ประตูหน้า'
+    confidence: 0.95,
+    image_data: 'base64_encoded_image',
+    location_lat: 13.7563,
+    location_lon: 100.5018
 });
 ```
 
-### ตัวอย่างข้อมูล JSON
+### Dashboard Updates
+```javascript
+// Join dashboard room
+socket.emit('join_dashboard');
 
-```json
-{
-    "camera_id": "CAM001",
-    "plate_number": "กข1234",
-    "confidence": 85.5,
-    "image_data": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ...",
-    "location": "ประตูหน้า"
-}
+// Listen for updates
+socket.on('new_lpr_record', (data) => {
+    console.log('New LPR record:', data);
+});
+
+socket.on('blacklist_alert', (data) => {
+    console.log('Blacklist alert:', data);
+});
+
+socket.on('health_update', (data) => {
+    console.log('Health update:', data);
+});
 ```
 
-## การจัดการระบบ
+### Health Monitoring
+```javascript
+// Join health monitoring room
+socket.emit('join_health_room');
 
-### ตรวจสอบสถานะ
+// Request health check
+socket.emit('request_health_check');
+
+// Listen for health updates
+socket.on('health_check_result', (data) => {
+    console.log('Health check result:', data);
+});
+```
+
+## Health Monitoring
+
+### Real-time Monitoring
+ระบบจะตรวจสอบสถานะทุก 5 นาที (ปรับได้ใน configuration):
+
+1. **Database Connectivity** - ตรวจสอบการเชื่อมต่อฐานข้อมูล
+2. **Disk Space** - ตรวจสอบพื้นที่จัดเก็บไฟล์
+3. **System Resources** - ตรวจสอบ CPU และ Memory
+4. **Camera Connectivity** - ตรวจสอบการเชื่อมต่อกล้อง
+5. **Service Status** - ตรวจสอบสถานะ services
+
+### Health Status Levels
+- **PASS** - ระบบทำงานปกติ
+- **WARNING** - มีปัญหาเล็กน้อย
+- **FAIL** - มีปัญหาสำคัญ
+
+### Monitoring Dashboard
+```bash
+# Check system status
+curl http://localhost/health/status
+
+# Perform health check
+curl -X POST http://localhost/health/check
+
+# Get health history
+curl http://localhost/health/history?hours=24
+```
+
+## Database Management
+
+### Automatic Cleanup
+ระบบจะทำความสะอาดข้อมูลเก่าอัตโนมัติ:
 
 ```bash
-# ตรวจสอบสถานะ services
-sudo systemctl status lprserver.service
-sudo systemctl status lprserver-websocket.service
+# Clean old data (default: 30 days)
+curl -X POST http://localhost/health/database/cleanup \
+  -H "Content-Type: application/json" \
+  -d '{"days": 30}'
+
+# Optimize database
+curl -X POST http://localhost/health/database/optimize
+
+# Get database statistics
+curl http://localhost/health/database/stats
+```
+
+### Manual Maintenance
+```bash
+# Backup database
+cp lprserver.db backup/lprserver_$(date +%Y%m%d_%H%M%S).db
+
+# Check database size
+ls -lh lprserver.db
+
+# View recent records
+sqlite3 lprserver.db "SELECT * FROM lpr_records ORDER BY timestamp DESC LIMIT 10;"
+```
+
+## Logging
+
+### Log Files
+- **Application Logs**: `logs/lprserver.log`
+- **Nginx Logs**: `/var/log/nginx/`
+- **System Logs**: `journalctl -u lprserver`
+
+### Log Levels
+- **DEBUG**: รายละเอียดสำหรับการพัฒนา
+- **INFO**: ข้อมูลทั่วไป
+- **WARNING**: คำเตือน
+- **ERROR**: ข้อผิดพลาด
+
+### Log Rotation
+- ขนาดไฟล์สูงสุด: 10MB
+- จำนวนไฟล์: 10 ไฟล์
+- การหมุนเวียน: อัตโนมัติ
+
+## Troubleshooting
+
+### Common Issues
+
+#### 1. WebSocket Connection Failed
+```bash
+# Check WebSocket service
+sudo systemctl status lprserver-websocket
+
+# Check port availability
+netstat -tlnp | grep 8765
+
+# Check firewall
+sudo ufw status
+```
+
+#### 2. Database Connection Error
+```bash
+# Check database file
+ls -la lprserver.db
+
+# Check permissions
+sudo chown www-data:www-data lprserver.db
+
+# Recreate database
+rm lprserver.db
+python -c "from src.app import create_app; app = create_app(); app.app_context().push(); from src.app import db; db.create_all()"
+```
+
+#### 3. Health Check Failures
+```bash
+# Check system resources
+htop
+df -h
+
+# Check service status
+sudo systemctl status lprserver
 sudo systemctl status nginx
 
-# ดู logs
-sudo journalctl -u lprserver.service -f
-sudo journalctl -u lprserver-websocket.service -f
-sudo tail -f /var/log/nginx/lprserver_access.log
+# View health logs
+tail -f logs/lprserver.log | grep health
 ```
 
-### การรีสตาร์ท
+### Performance Optimization
 
+#### 1. Database Optimization
 ```bash
-# รีสตาร์ท services
-sudo systemctl restart lprserver.service
-sudo systemctl restart lprserver-websocket.service
-sudo systemctl restart nginx
-```
-
-### การอัปเดต
-
-```bash
-# Pull โค้ดใหม่
-git pull
-
-# รีสตาร์ท services
-sudo systemctl restart lprserver.service
-sudo systemctl restart lprserver-websocket.service
-```
-
-## การกำหนดค่า
-
-### Environment Variables
-
-- `FLASK_CONFIG`: การกำหนดค่า (development/production)
-- `SECRET_KEY`: Flask secret key
-- `DATABASE_URL`: URL ฐานข้อมูล
-- `IMAGE_STORAGE_PATH`: Path สำหรับเก็บภาพ
-- `LOG_LEVEL`: ระดับ logging
-
-### การกำหนดค่า Nginx
-
-ไฟล์: `/etc/nginx/sites-available/lprserver`
-
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-    
-    location / {
-        proxy_pass http://unix:/tmp/lprserver.sock;
-        # ... other settings
-    }
-}
-```
-
-## การพัฒนา
-
-### Development Mode
-
-```bash
-# เปิดใช้งาน development mode
-export FLASK_CONFIG=development
-export FLASK_DEBUG=true
-
-# รัน development server
-python run.py
-```
-
-### การทดสอบ
-
-#### ทดสอบ WebSocket Connection
-```bash
-# ทดสอบ WebSocket connection
-python -c "
-import socketio
-sio = socketio.Client()
-sio.connect('http://localhost:8765')
-sio.emit('camera_register', {'camera_id': 'TEST_CAM'})
-sio.disconnect()
+# Add indexes for better performance
+sqlite3 lprserver.db "
+CREATE INDEX IF NOT EXISTS idx_lpr_records_timestamp ON lpr_records(timestamp);
+CREATE INDEX IF NOT EXISTS idx_lpr_records_camera_id ON lpr_records(camera_id);
+CREATE INDEX IF NOT EXISTS idx_lpr_records_plate_number ON lpr_records(plate_number);
 "
 ```
 
-#### ทดสอบ API Endpoints
+#### 2. System Optimization
 ```bash
-# ทดสอบการเพิ่ม blacklist
-curl -X POST http://localhost:5000/api/blacklist \
-  -H "Content-Type: application/json" \
-  -d '{"license_plate_text": "กข1234", "reason": "ทดสอบระบบ", "added_by": "admin"}'
+# Increase file descriptors
+echo "* soft nofile 65536" >> /etc/security/limits.conf
+echo "* hard nofile 65536" >> /etc/security/limits.conf
 
-# ทดสอบการดึงข้อมูล blacklist
-curl http://localhost:5000/api/blacklist
-
-# ทดสอบการสร้าง LPR record
-curl -X POST http://localhost:5000/api/records \
-  -H "Content-Type: application/json" \
-  -d '{"camera_id": "CAM001", "plate_number": "กข1234", "confidence": 0.95, "location": "หน้าหอพัก"}'
-
-# ทดสอบการดึงสถิติ
-curl http://localhost:5000/api/statistics
-curl http://localhost:5000/api/blacklist/statistics
+# Optimize nginx
+sudo nano /etc/nginx/nginx.conf
+# Add: worker_connections 1024;
 ```
 
-#### ทดสอบระบบอัตโนมัติ
+## Development
+
+### Code Structure
+```
+src/
+├── core/                    # Core functionality
+│   ├── import_helper.py     # Absolute imports
+│   ├── dependency_container.py  # DI container
+│   └── models/              # Database models
+├── services/                # Business logic
+│   ├── websocket_service.py
+│   ├── blacklist_service.py
+│   ├── health_service.py
+│   └── database_service.py
+└── web/                     # Web interface
+    └── blueprints/          # Flask blueprints
+```
+
+### Adding New Features
+
+#### 1. New Service
+```python
+# src/services/new_service.py
+from core.import_helper import setup_absolute_imports
+
+setup_absolute_imports()
+
+class NewService:
+    def __init__(self):
+        self.db_session = None
+    
+    def initialize(self, db_session):
+        self.db_session = db_session
+```
+
+#### 2. Register Service
+```python
+# src/core/dependency_container.py
+def register_services():
+    from services.new_service import NewService
+    container.register('new_service', NewService)
+```
+
+#### 3. New Blueprint
+```python
+# src/web/blueprints/new_feature.py
+from flask import Blueprint
+from core.import_helper import setup_absolute_imports
+
+setup_absolute_imports()
+
+new_feature_bp = Blueprint('new_feature', __name__)
+
+@new_feature_bp.route('/new-endpoint')
+def new_endpoint():
+    return {'message': 'New feature'}
+```
+
+### Testing
 ```bash
-# รัน test script
+# Run unit tests
+python -m pytest tests/
+
+# Run integration tests
 python test_system.py
+
+# Test WebSocket connection
+python test_client.py
 ```
 
-## การแก้ไขปัญหา
+## Security
 
-### ปัญหาที่พบบ่อย
+### Best Practices
+1. **Environment Variables**: ใช้ .env files สำหรับ sensitive data
+2. **Input Validation**: ตรวจสอบข้อมูล input ทุกครั้ง
+3. **SQL Injection Prevention**: ใช้ parameterized queries
+4. **File Upload Security**: ตรวจสอบไฟล์ที่อัปโหลด
+5. **HTTPS**: ใช้ SSL/TLS ใน production
 
-1. **Service ไม่เริ่มต้น**
-   ```bash
-   sudo journalctl -u lprserver.service -f
-   ```
+### Firewall Configuration
+```bash
+# Allow HTTP and WebSocket
+sudo ufw allow 80/tcp
+sudo ufw allow 8765/tcp
 
-2. **WebSocket Connection Errors**
-   ```bash
-   # ตรวจสอบ WebSocket service
-   sudo journalctl -u lprserver-websocket.service -f
-   
-   # ตรวจสอบ port 8765
-   netstat -tlnp | grep 8765
-   ```
+# Allow SSH (if needed)
+sudo ufw allow 22/tcp
 
-3. **API Endpoint Errors**
-   ```bash
-   # ตรวจสอบ Flask application logs
-   tail -f logs/app.log
-   
-   # ทดสอบ API endpoints
-   curl -v http://localhost:5000/api/blacklist
-   ```
+# Enable firewall
+sudo ufw enable
+```
 
-4. **Database error**
-   ```bash
-   # ตรวจสอบฐานข้อมูล
-   sqlite3 database/lprserver.db ".tables"
-   
-   # ตรวจสอบ database permissions
-   ls -la database/
-   ```
+## Support
 
-5. **Nginx error**
-   ```bash
-   sudo nginx -t
-   sudo tail -f /var/log/nginx/error.log
-   ```
+### Documentation
+- **Development Guide**: `DEVELOPMENT_GUIDE.md`
+- **Architecture Overview**: `ARCHITECTURE_OVERVIEW.md`
+- **API Documentation**: ดูใน code comments
 
-6. **Permission error**
-   ```bash
-   sudo chown -R www-data:www-data /home/devuser/lprserver_v3
-   sudo chmod -R 755 /home/devuser/lprserver_v3
-   ```
+### Logs and Monitoring
+- **Application Logs**: `logs/lprserver.log`
+- **Health Status**: `http://localhost/health/status`
+- **System Status**: `sudo systemctl status lprserver`
 
-7. **Blacklist System Issues**
-   ```bash
-   # ตรวจสอบ blacklist service
-   python -c "from src.services.blacklist_service import BlacklistService; print('BlacklistService imported successfully')"
-   
-   # ตรวจสอบ database models
-   python -c "from core.models.blacklist_plate import BlacklistPlate; print('BlacklistPlate model loaded')"
-   ```
-
-## สถานะระบบล่าสุด
-
-### ✅ ระบบทำงานได้อย่างสมบูรณ์ (อัปเดตล่าสุด: 12 สิงหาคม 2025)
-
-#### การแก้ไขปัญหาที่สำคัญ:
-1. **WebSocket Event Handlers** - แก้ไขปัญหา parameter mismatch ใน `handle_connect` และ `handle_disconnect`
-2. **BlacklistService Methods** - เพิ่ม class method `get_active_blacklist` และแก้ไขการเรียกใช้ instance methods
-3. **API Endpoints** - แก้ไขการเรียกใช้ services ผ่าน dependency container
-4. **Database Operations** - เพิ่ม imports ที่จำเป็นสำหรับ `db`, `timedelta`, และ `db.func`
-
-#### ฟีเจอร์ที่ทำงานได้:
-- ✅ **WebSocket Server** - รับข้อมูลจาก Edge Camera
-- ✅ **LPR Data Processing** - บันทึกและประมวลผลข้อมูลป้ายทะเบียน
-- ✅ **Blacklist System** - จัดการและตรวจจับป้ายทะเบียนที่อยู่ใน blacklist
-- ✅ **Real-time Dashboard** - แสดงสถิติแบบ real-time
-- ✅ **REST API** - ทุก endpoints ทำงานได้ปกติ
-- ✅ **Web Interface** - หน้าเว็บทุกหน้าทำงานได้
-
-#### การทดสอบที่ผ่าน:
-- ✅ การเพิ่มข้อมูล blacklist
-- ✅ การตรวจจับป้ายทะเบียนที่อยู่ใน blacklist
-- ✅ การอัปเดตสถิติการตรวจจับ
-- ✅ WebSocket connections
-- ✅ API responses
-
-### 🚀 พร้อมใช้งานสำหรับ Production
-
-ระบบพร้อมใช้งานสำหรับการรับข้อมูลจาก Edge Camera และการจัดการ blacklist อย่างสมบูรณ์
-
-## การสนับสนุน
-
-หากพบปัญหาหรือต้องการความช่วยเหลือ กรุณาเปิด issue ใน repository หรือติดต่อทีมพัฒนา
-
-## License
-
-MIT License
+### Contact
+สำหรับคำถามหรือปัญหาการใช้งาน กรุณาติดต่อทีมพัฒนา
