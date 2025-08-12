@@ -100,6 +100,7 @@ const DashboardManager = {
      */
     updateSystemStatus: function() {
         // Update camera status
+        console.log('Making camera status API request...');
         AICameraUtils.apiRequest('/camera/status')
             .then(data => {
                 if (data.success) {
@@ -327,6 +328,9 @@ const DashboardManager = {
                 element.textContent = 'Error';
                 element.className = 'status-badge error';
             });
+
+        // Update WebSocket sender status
+        this.updateServerStatus();
     },
 
     /**

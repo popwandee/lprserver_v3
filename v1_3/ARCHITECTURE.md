@@ -1596,3 +1596,4 @@ AI Camera v1.3 ใช้ Dependency Injection, Flask Blueprints และ **Abso
 - **Config-Managed**: จัดการ configuration ผ่าน environment variables และ import helper
 
 Architecture นี้ทำให้ระบบมีความยืดหยุ่นและสามารถพัฒนาเพิ่มเติมได้อย่างมีประสิทธิภาพ พร้อมกับความชัดเจนในการจัดการ dependencies และ imports รวมถึงการจัดการ startup sequence, error prevention, comprehensive health monitoring system, optimized user interface layout และ robust offline mode support
+

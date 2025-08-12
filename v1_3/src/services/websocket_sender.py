@@ -86,11 +86,10 @@ class WebSocketSender:
         self.connection_timeout = WEBSOCKET_CONNECTION_TIMEOUT
         self.retry_interval = WEBSOCKET_RETRY_INTERVAL
         self.max_retries = WEBSOCKET_MAX_RETRIES
-        
+
         # AI Camera Identification
         self.aicamera_id = AICAMERA_ID
         self.checkpoint_id = CHECKPOINT_ID
-        
         self.logger.info(f"WebSocketSender initialized - AI Camera ID: {self.aicamera_id}, Checkpoint ID: {self.checkpoint_id}")
     
     def initialize(self) -> bool:
@@ -121,7 +120,6 @@ class WebSocketSender:
                 self.logger.info(f"WebSocket sender initialized for server: {self.server_url}")
             else:
                 self.logger.info("WebSocket sender initialized in offline mode (no server URL configured)")
-            
             return True
             
         except Exception as e:

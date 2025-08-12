@@ -828,6 +828,7 @@ class DatabaseManager:
                            data_type: str = None, record_count: int = 0, 
                            server_response: str = None, aicamera_id: str = None,
                            checkpoint_id: str = None) -> Optional[int]:
+
         """
         Log WebSocket sender action to database.
         
@@ -840,6 +841,7 @@ class DatabaseManager:
             server_response: Server response text
             aicamera_id: AI Camera ID
             checkpoint_id: Checkpoint ID
+
             
         Returns:
             Optional[int]: ID of inserted log record, None if failed
@@ -855,6 +857,7 @@ class DatabaseManager:
                 (timestamp, action, status, message, data_type, record_count, server_response, aicamera_id, checkpoint_id)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (timestamp, action, status, message, data_type, record_count, server_response, aicamera_id, checkpoint_id))
+
             
             self.connection.commit()
             record_id = cursor.lastrowid
