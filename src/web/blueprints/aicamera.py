@@ -72,9 +72,55 @@ def camera_settings(camera_id):
 def api_get_cameras():
     """Get all cameras API"""
     try:
-        from src.services.camera_service import get_camera_service
-        camera_service = get_camera_service()
-        cameras = camera_service.get_all_cameras()
+        # Mock data for demonstration
+        cameras = [
+            {
+                'camera_id': 'CAM001',
+                'name': 'Main Entrance Camera',
+                'location': 'Main Gate',
+                'ip_address': '192.168.1.100',
+                'port': 8765,
+                'is_online': True,
+                'last_detection': '2024-01-15 14:30:25',
+                'total_detections': 1250,
+                'settings': {
+                    'resolution': '1920x1080',
+                    'fps': 30,
+                    'sensitivity': 0.8
+                }
+            },
+            {
+                'camera_id': 'CAM002',
+                'name': 'Parking Lot Camera',
+                'location': 'Parking Area A',
+                'ip_address': '192.168.1.101',
+                'port': 8765,
+                'is_online': True,
+                'last_detection': '2024-01-15 14:28:10',
+                'total_detections': 890,
+                'settings': {
+                    'resolution': '1920x1080',
+                    'fps': 25,
+                    'sensitivity': 0.7
+                }
+            },
+            {
+                'camera_id': 'CAM003',
+                'name': 'Exit Camera',
+                'location': 'Exit Gate',
+                'ip_address': '192.168.1.102',
+                'port': 8765,
+                'is_online': False,
+                'last_detection': '2024-01-15 12:15:30',
+                'total_detections': 567,
+                'settings': {
+                    'resolution': '1920x1080',
+                    'fps': 30,
+                    'sensitivity': 0.9
+                }
+            }
+        ]
+        
         return jsonify({
             'success': True,
             'cameras': cameras
@@ -179,17 +225,64 @@ def api_delete_camera(camera_id):
             'error': str(e)
         }), 500
 
-@aicamera_bp.route('/api/cameras/<camera_id>/status')
-def api_get_camera_status(camera_id):
-    """Get camera status API"""
+@aicamera_bp.route('/api/cameras/statistics', methods=['GET'])
+def api_get_camera_statistics():
+    """Get camera statistics API"""
     try:
-        from src.services.camera_service import get_camera_service
-        camera_service = get_camera_service()
-        status = camera_service.get_camera_status(camera_id)
+        # Mock statistics data
+        stats = {
+            'total_cameras': 3,
+            'online_cameras': 2,
+            'offline_cameras': 1,
+            'total_detections': 2707,
+            'today_detections': 45,
+            'avg_confidence': 0.87,
+            'detection_rate': 0.92
+        }
         
         return jsonify({
             'success': True,
-            'status': status
+            'statistics': stats
+        })
+    except Exception as e:
+        logger.error(f"API Error getting camera statistics: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@aicamera_bp.route('/api/cameras/status', methods=['GET'])
+def api_get_camera_status():
+    """Get camera status API"""
+    try:
+        # Mock status data
+        cameras = [
+            {
+                'camera_id': 'CAM001',
+                'is_online': True,
+                'ip_address': '192.168.1.100',
+                'last_detection': '2024-01-15 14:30:25',
+                'status': 'online'
+            },
+            {
+                'camera_id': 'CAM002',
+                'is_online': True,
+                'ip_address': '192.168.1.101',
+                'last_detection': '2024-01-15 14:28:10',
+                'status': 'online'
+            },
+            {
+                'camera_id': 'CAM003',
+                'is_online': False,
+                'ip_address': '192.168.1.102',
+                'last_detection': '2024-01-15 12:15:30',
+                'status': 'offline'
+            }
+        ]
+        
+        return jsonify({
+            'success': True,
+            'cameras': cameras
         })
     except Exception as e:
         logger.error(f"API Error getting camera status: {str(e)}")
@@ -212,25 +305,6 @@ def api_test_camera_connection(camera_id):
         })
     except Exception as e:
         logger.error(f"API Error testing camera connection: {str(e)}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
-
-@aicamera_bp.route('/api/cameras/<camera_id>/statistics')
-def api_get_camera_statistics(camera_id):
-    """Get camera statistics API"""
-    try:
-        from src.services.camera_service import get_camera_service
-        camera_service = get_camera_service()
-        stats = camera_service.get_camera_statistics(camera_id)
-        
-        return jsonify({
-            'success': True,
-            'statistics': stats
-        })
-    except Exception as e:
-        logger.error(f"API Error getting camera statistics: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e)

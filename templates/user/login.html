@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}เข้าสู่ระบบ - User Manager{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-4">
+            <div class="card mt-5">
+                <div class="card-header text-center">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-sign-in-alt text-primary"></i> เข้าสู่ระบบ
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form id="loginForm" method="POST" action="{{ url_for('user.login') }}">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">ชื่อผู้ใช้</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-user"></i>
+                                </span>
+                                <input type="text" class="form-control" id="username" name="username" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="password" class="form-label">รหัสผ่าน</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-lock"></i>
+                                </span>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword()">
+                                    <i class="fas fa-eye" id="passwordToggle"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="rememberMe" name="remember_me">
+                            <label class="form-check-label" for="rememberMe">
+                                จดจำฉัน
+                            </label>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-sign-in-alt me-2"></i>เข้าสู่ระบบ
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <hr>
+                    
+                    <div class="text-center">
+                        <a href="#" onclick="forgotPassword()" class="text-decoration-none">
+                            <i class="fas fa-key me-1"></i>ลืมรหัสผ่าน?
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Demo Credentials -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-info-circle text-info"></i> ข้อมูลทดสอบ
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <strong>ผู้ดูแลระบบ:</strong><br>
+                            <small class="text-muted">admin / admin123</small>
+                        </div>
+                        <div class="col-6">
+                            <strong>ผู้ใช้ทั่วไป:</strong><br>
+                            <small class="text-muted">user / user123</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-fill demo credentials for testing
+    const urlParams = new URLSearchParams(window.location.search);
+    const demo = urlParams.get('demo');
+    
+    if (demo === 'admin') {
+        document.getElementById('username').value = 'admin';
+        document.getElementById('password').value = 'admin123';
+    } else if (demo === 'user') {
+        document.getElementById('username').value = 'user';
+        document.getElementById('password').value = 'user123';
+    }
+});
+
+function togglePassword() {
+    const passwordField = document.getElementById('password');
+    const toggleIcon = document.getElementById('passwordToggle');
+    
+    if (passwordField.type === 'password') {
+        passwordField.type = 'text';
+        toggleIcon.className = 'fas fa-eye-slash';
+    } else {
+        passwordField.type = 'password';
+        toggleIcon.className = 'fas fa-eye';
+    }
+}
+
+function forgotPassword() {
+    alert('ฟีเจอร์ลืมรหัสผ่านจะพร้อมใช้งานในเวอร์ชันถัดไป');
+}
+
+// Handle form submission
+document.getElementById('loginForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const rememberMe = document.getElementById('rememberMe').checked;
+    
+    showLoading();
+    
+    // Simulate login process
+    setTimeout(() => {
+        hideLoading();
+        
+        if (username === 'admin' && password === 'admin123') {
+            alert('เข้าสู่ระบบสำเร็จ! ยินดีต้อนรับผู้ดูแลระบบ');
+            window.location.href = '/user/profile';
+        } else if (username === 'user' && password === 'user123') {
+            alert('เข้าสู่ระบบสำเร็จ! ยินดีต้อนรับผู้ใช้');
+            window.location.href = '/user/profile';
+        } else {
+            alert('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
+        }
+    }, 1500);
+});
+</script>
+{% endblock %}

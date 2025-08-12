@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}รายการบันทึก - Detection Manager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-table text-primary"></i> รายการบันทึก
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="exportData()">
+                <i class="fas fa-download"></i> ส่งออก
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+                <i class="fas fa-sync-alt"></i> รีเฟรช
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-filter text-info"></i> ตัวกรองข้อมูล
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="cameraFilter" class="form-label">กล้อง</label>
+                        <select class="form-select" id="cameraFilter">
+                            <option value="">ทั้งหมด</option>
+                            <option value="CAM001">CAM001 - Main Entrance</option>
+                            <option value="CAM002">CAM002 - Parking Lot</option>
+                            <option value="CAM003">CAM003 - Exit</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="plateFilter" class="form-label">ป้ายทะเบียน</label>
+                        <input type="text" class="form-control" id="plateFilter" placeholder="ค้นหาป้ายทะเบียน">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="startDate" class="form-label">วันที่เริ่มต้น</label>
+                        <input type="date" class="form-control" id="startDate">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="endDate" class="form-label">วันที่สิ้นสุด</label>
+                        <input type="date" class="form-control" id="endDate">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <button class="btn btn-primary" onclick="applyFilters()">
+                            <i class="fas fa-search me-2"></i>ค้นหา
+                        </button>
+                        <button class="btn btn-outline-secondary ms-2" onclick="clearFilters()">
+                            <i class="fas fa-times me-2"></i>ล้างตัวกรอง
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Records Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list text-info"></i> รายการบันทึกการตรวจจับ
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="recordsTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>ป้ายทะเบียน</th>
+                                <th>กล้อง</th>
+                                <th>ความเชื่อมั่น</th>
+                                <th>วันที่/เวลา</th>
+                                <th>ตำแหน่ง</th>
+                                <th>สถานะ</th>
+                                <th>การดำเนินการ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>#1001</strong></td>
+                                <td><span class="badge bg-primary">กข-1234</span></td>
+                                <td>CAM001</td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar bg-success" style="width: 95%">95%</div>
+                                    </div>
+                                </td>
+                                <td>2024-01-15 14:30:25</td>
+                                <td>Main Gate</td>
+                                <td><span class="badge bg-success">ปกติ</span></td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button class="btn btn-outline-info" onclick="viewRecord('1001')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-outline-warning" onclick="addToBlacklist('กข-1234')">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>#1002</strong></td>
+                                <td><span class="badge bg-primary">ขค-5678</span></td>
+                                <td>CAM002</td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar bg-warning" style="width: 78%">78%</div>
+                                    </div>
+                                </td>
+                                <td>2024-01-15 14:28:10</td>
+                                <td>Parking Area A</td>
+                                <td><span class="badge bg-success">ปกติ</span></td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button class="btn btn-outline-info" onclick="viewRecord('1002')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-outline-warning" onclick="addToBlacklist('ขค-5678')">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>#1003</strong></td>
+                                <td><span class="badge bg-danger">คง-9999</span></td>
+                                <td>CAM001</td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar bg-success" style="width: 92%">92%</div>
+                                    </div>
+                                </td>
+                                <td>2024-01-15 14:25:45</td>
+                                <td>Main Gate</td>
+                                <td><span class="badge bg-danger">Blacklist</span></td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button class="btn btn-outline-info" onclick="viewRecord('1003')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-outline-success" onclick="removeFromBlacklist('คง-9999')">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>#1004</strong></td>
+                                <td><span class="badge bg-primary">งจ-1111</span></td>
+                                <td>CAM003</td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar bg-danger" style="width: 45%">45%</div>
+                                    </div>
+                                </td>
+                                <td>2024-01-15 14:22:30</td>
+                                <td>Exit Gate</td>
+                                <td><span class="badge bg-warning">ต่ำ</span></td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button class="btn btn-outline-info" onclick="viewRecord('1004')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-outline-warning" onclick="addToBlacklist('งจ-1111')">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize DataTable
+    $('#recordsTable').DataTable({
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/th.json'
+        },
+        responsive: true,
+        order: [[4, 'desc']],
+        pageLength: 25
+    });
+});
+
+function applyFilters() {
+    const camera = document.getElementById('cameraFilter').value;
+    const plate = document.getElementById('plateFilter').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    // Simulate filter application
+    showLoading();
+    setTimeout(() => {
+        hideLoading();
+        alert('ใช้ตัวกรองเรียบร้อยแล้ว');
+    }, 1000);
+}
+
+function clearFilters() {
+    document.getElementById('cameraFilter').value = '';
+    document.getElementById('plateFilter').value = '';
+    document.getElementById('startDate').value = '';
+    document.getElementById('endDate').value = '';
+    
+    // Reload table
+    $('#recordsTable').DataTable().ajax.reload();
+}
+
+function exportData() {
+    showLoading();
+    setTimeout(() => {
+        hideLoading();
+        alert('ส่งออกข้อมูลเรียบร้อยแล้ว');
+    }, 2000);
+}
+
+function viewRecord(recordId) {
+    window.open(`/detection/records/${recordId}`, '_blank');
+}
+
+function addToBlacklist(plateNumber) {
+    if (confirm(`คุณต้องการเพิ่มป้ายทะเบียน ${plateNumber} ลงใน Blacklist หรือไม่?`)) {
+        showLoading();
+        setTimeout(() => {
+            hideLoading();
+            alert('เพิ่มลงใน Blacklist เรียบร้อยแล้ว');
+        }, 1000);
+    }
+}
+
+function removeFromBlacklist(plateNumber) {
+    if (confirm(`คุณต้องการลบป้ายทะเบียน ${plateNumber} ออกจาก Blacklist หรือไม่?`)) {
+        showLoading();
+        setTimeout(() => {
+            hideLoading();
+            alert('ลบออกจาก Blacklist เรียบร้อยแล้ว');
+        }, 1000);
+    }
+}
+</script>
+{% endblock %}

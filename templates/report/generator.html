@@ -1,0 +1,426 @@
+{% extends "base.html" %}
+
+{% block title %}สร้างรายงาน - Report Manager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-file-alt text-primary"></i> สร้างรายงาน
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="generateReport()">
+                <i class="fas fa-magic"></i> สร้างรายงาน
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="saveTemplate()">
+                <i class="fas fa-save"></i> บันทึกเทมเพลต
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mb-4">
+        <!-- Report Configuration -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-cogs text-info"></i> การตั้งค่ารายงาน
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="reportForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="reportType" class="form-label">ประเภทรายงาน</label>
+                            <select class="form-select" id="reportType" required>
+                                <option value="">เลือกประเภทรายงาน</option>
+                                <option value="detection_summary">สรุปการตรวจจับ</option>
+                                <option value="camera_performance">ประสิทธิภาพกล้อง</option>
+                                <option value="blacklist_report">รายงาน Blacklist</option>
+                                <option value="system_health">สถานะระบบ</option>
+                                <option value="user_activity">กิจกรรมผู้ใช้</option>
+                                <option value="custom">รายงานแบบกำหนดเอง</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="reportFormat" class="form-label">รูปแบบไฟล์</label>
+                            <select class="form-select" id="reportFormat" required>
+                                <option value="pdf">PDF</option>
+                                <option value="excel">Excel</option>
+                                <option value="csv">CSV</option>
+                                <option value="html">HTML</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="startDate" class="form-label">วันที่เริ่มต้น</label>
+                            <input type="date" class="form-control" id="startDate" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="endDate" class="form-label">วันที่สิ้นสุด</label>
+                            <input type="date" class="form-control" id="endDate" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="cameraFilter" class="form-label">กรองตามกล้อง</label>
+                            <select class="form-select" id="cameraFilter">
+                                <option value="">ทั้งหมด</option>
+                                <option value="CAM001">CAM001 - Main Entrance</option>
+                                <option value="CAM002">CAM002 - Parking Lot</option>
+                                <option value="CAM003">CAM003 - Exit</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="timeRange" class="form-label">ช่วงเวลา</label>
+                            <select class="form-select" id="timeRange">
+                                <option value="all">ตลอด 24 ชั่วโมง</option>
+                                <option value="morning">06:00 - 12:00</option>
+                                <option value="afternoon">12:00 - 18:00</option>
+                                <option value="evening">18:00 - 24:00</option>
+                                <option value="night">00:00 - 06:00</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Report Options -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list-check text-warning"></i> ตัวเลือกรายงาน
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <h6>ข้อมูลที่ต้องการ</h6>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="includeSummary" checked>
+                            <label class="form-check-label" for="includeSummary">
+                                สรุปข้อมูล
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="includeCharts" checked>
+                            <label class="form-check-label" for="includeCharts">
+                                กราฟและแผนภูมิ
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="includeTables" checked>
+                            <label class="form-check-label" for="includeTables">
+                                ตารางข้อมูล
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="includeImages">
+                            <label class="form-check-label" for="includeImages">
+                                ภาพตัวอย่าง
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <h6>การจัดรูปแบบ</h6>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="includeHeader" checked>
+                            <label class="form-check-label" for="includeHeader">
+                                หัวรายงาน
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="includeFooter" checked>
+                            <label class="form-check-label" for="includeFooter">
+                                ท้ายรายงาน
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="includePageNumbers" checked>
+                            <label class="form-check-label" for="includePageNumbers">
+                                หมายเลขหน้า
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="includeTimestamp" checked>
+                            <label class="form-check-label" for="includeTimestamp">
+                                วันที่สร้างรายงาน
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Report Preview -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-eye text-success"></i> ตัวอย่างรายงาน
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="reportPreview" style="min-height: 300px; background: #f8f9fa; border-radius: 0.5rem; padding: 1rem;">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-file-alt fa-3x mb-3"></i>
+                        <h5>ตัวอย่างรายงาน</h5>
+                        <p>เลือกประเภทรายงานและตัวเลือกเพื่อดูตัวอย่าง</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <!-- Quick Templates -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-layer-group text-info"></i> เทมเพลตด่วน
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary" onclick="loadTemplate('daily_summary')">
+                        <i class="fas fa-calendar-day me-2"></i>รายงานประจำวัน
+                    </button>
+                    <button class="btn btn-outline-success" onclick="loadTemplate('weekly_summary')">
+                        <i class="fas fa-calendar-week me-2"></i>รายงานประจำสัปดาห์
+                    </button>
+                    <button class="btn btn-outline-warning" onclick="loadTemplate('monthly_summary')">
+                        <i class="fas fa-calendar-alt me-2"></i>รายงานประจำเดือน
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="loadTemplate('blacklist_alert')">
+                        <i class="fas fa-ban me-2"></i>รายงาน Blacklist
+                    </button>
+                    <button class="btn btn-outline-info" onclick="loadTemplate('system_health')">
+                        <i class="fas fa-heartbeat me-2"></i>รายงานสถานะระบบ
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Report History -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history text-warning"></i> ประวัติรายงาน
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>รายงานประจำวัน</strong><br>
+                            <small class="text-muted">15 ม.ค. 2024</small>
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary" onclick="downloadReport('1')">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>รายงาน Blacklist</strong><br>
+                            <small class="text-muted">14 ม.ค. 2024</small>
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary" onclick="downloadReport('2')">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>รายงานสถานะระบบ</strong><br>
+                            <small class="text-muted">13 ม.ค. 2024</small>
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary" onclick="downloadReport('3')">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Report Statistics -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-pie text-success"></i> สถิติรายงาน
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="h4 text-primary">24</div>
+                        <small class="text-muted">รายงานที่สร้าง</small>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="h4 text-success">18</div>
+                        <small class="text-muted">รายงานที่ดาวน์โหลด</small>
+                    </div>
+                    <div class="col-6">
+                        <div class="h4 text-info">5</div>
+                        <small class="text-muted">เทมเพลตที่บันทึก</small>
+                    </div>
+                    <div class="col-6">
+                        <div class="h4 text-warning">3</div>
+                        <small class="text-muted">รายงานที่แชร์</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default dates
+    const today = new Date();
+    const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
+    document.getElementById('endDate').value = today.toISOString().split('T')[0];
+    document.getElementById('startDate').value = lastWeek.toISOString().split('T')[0];
+    
+    // Update preview when form changes
+    const formElements = document.querySelectorAll('#reportForm select, #reportForm input');
+    formElements.forEach(element => {
+        element.addEventListener('change', updatePreview);
+    });
+});
+
+function updatePreview() {
+    const reportType = document.getElementById('reportType').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    if (reportType && startDate && endDate) {
+        const preview = document.getElementById('reportPreview');
+        preview.innerHTML = `
+            <div class="text-center">
+                <h5>${getReportTypeName(reportType)}</h5>
+                <p class="text-muted">ช่วงเวลา: ${startDate} ถึง ${endDate}</p>
+                <hr>
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>ข้อมูลที่จะรวม:</strong><br>
+                        <small class="text-muted">
+                            • สรุปการตรวจจับ<br>
+                            • สถิติตามกล้อง<br>
+                            • กราฟและแผนภูมิ<br>
+                            • ตารางข้อมูล
+                        </small>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>รูปแบบ:</strong><br>
+                        <small class="text-muted">
+                            • ${document.getElementById('reportFormat').value.toUpperCase()}<br>
+                            • หัวรายงาน<br>
+                            • ท้ายรายงาน<br>
+                            • หมายเลขหน้า
+                        </small>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function getReportTypeName(type) {
+    const names = {
+        'detection_summary': 'สรุปการตรวจจับ',
+        'camera_performance': 'ประสิทธิภาพกล้อง',
+        'blacklist_report': 'รายงาน Blacklist',
+        'system_health': 'สถานะระบบ',
+        'user_activity': 'กิจกรรมผู้ใช้',
+        'custom': 'รายงานแบบกำหนดเอง'
+    };
+    return names[type] || 'รายงาน';
+}
+
+function generateReport() {
+    const reportType = document.getElementById('reportType').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    if (!reportType || !startDate || !endDate) {
+        alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+        return;
+    }
+    
+    showLoading();
+    setTimeout(() => {
+        hideLoading();
+        alert('สร้างรายงานเรียบร้อยแล้ว! ไฟล์จะถูกดาวน์โหลดโดยอัตโนมัติ');
+    }, 3000);
+}
+
+function saveTemplate() {
+    const templateName = prompt('ป้อนชื่อเทมเพลต:');
+    if (templateName) {
+        showLoading();
+        setTimeout(() => {
+            hideLoading();
+            alert(`บันทึกเทมเพลต "${templateName}" เรียบร้อยแล้ว`);
+        }, 1000);
+    }
+}
+
+function loadTemplate(templateType) {
+    const templates = {
+        'daily_summary': {
+            type: 'detection_summary',
+            format: 'pdf',
+            startDate: new Date().toISOString().split('T')[0],
+            endDate: new Date().toISOString().split('T')[0]
+        },
+        'weekly_summary': {
+            type: 'detection_summary',
+            format: 'excel',
+            startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            endDate: new Date().toISOString().split('T')[0]
+        },
+        'monthly_summary': {
+            type: 'detection_summary',
+            format: 'pdf',
+            startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            endDate: new Date().toISOString().split('T')[0]
+        },
+        'blacklist_alert': {
+            type: 'blacklist_report',
+            format: 'pdf',
+            startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            endDate: new Date().toISOString().split('T')[0]
+        },
+        'system_health': {
+            type: 'system_health',
+            format: 'html',
+            startDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            endDate: new Date().toISOString().split('T')[0]
+        }
+    };
+    
+    const template = templates[templateType];
+    if (template) {
+        document.getElementById('reportType').value = template.type;
+        document.getElementById('reportFormat').value = template.format;
+        document.getElementById('startDate').value = template.startDate;
+        document.getElementById('endDate').value = template.endDate;
+        updatePreview();
+    }
+}
+
+function downloadReport(reportId) {
+    showLoading();
+    setTimeout(() => {
+        hideLoading();
+        alert('ดาวน์โหลดรายงานเรียบร้อยแล้ว');
+    }, 1500);
+}
+</script>
+{% endblock %}

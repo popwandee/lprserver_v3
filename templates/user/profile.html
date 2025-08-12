@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+
+{% block title %}โปรไฟล์ - User Manager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-user text-primary"></i> โปรไฟล์
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="editProfile()">
+                <i class="fas fa-edit"></i> แก้ไข
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-warning" onclick="changePassword()">
+                <i class="fas fa-key"></i> เปลี่ยนรหัสผ่าน
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-4 mb-4">
+        <!-- Profile Card -->
+        <div class="card">
+            <div class="card-header text-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-user-circle text-info"></i> ข้อมูลผู้ใช้
+                </h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <img src="https://via.placeholder.com/150x150/007bff/ffffff?text=AD" 
+                         class="rounded-circle" alt="Profile Picture" style="width: 120px; height: 120px;">
+                </div>
+                <h5 class="card-title">ผู้ดูแลระบบ</h5>
+                <p class="text-muted">admin@lprserver.com</p>
+                <span class="badge bg-success">ผู้ดูแลระบบ</span>
+                <hr>
+                <div class="row text-start">
+                    <div class="col-6">
+                        <small class="text-muted">สถานะ:</small><br>
+                        <strong class="text-success">ออนไลน์</strong>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">เข้าร่วมเมื่อ:</small><br>
+                        <strong>15 ม.ค. 2024</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-chart-bar text-warning"></i> สถิติการใช้งาน
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="h4 text-primary">127</div>
+                        <small class="text-muted">การเข้าสู่ระบบ</small>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="h4 text-success">45</div>
+                        <small class="text-muted">วันใช้งาน</small>
+                    </div>
+                    <div class="col-6">
+                        <div class="h4 text-info">2.8</div>
+                        <small class="text-muted">ครั้ง/วัน</small>
+                    </div>
+                    <div class="col-6">
+                        <div class="h4 text-warning">15</div>
+                        <small class="text-muted">นาที/ครั้ง</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-8 mb-4">
+        <!-- Profile Details -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle text-info"></i> รายละเอียดโปรไฟล์
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="profileForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="firstName" class="form-label">ชื่อ</label>
+                            <input type="text" class="form-control" id="firstName" value="ผู้ดูแล" readonly>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="lastName" class="form-label">นามสกุล</label>
+                            <input type="text" class="form-control" id="lastName" value="ระบบ" readonly>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="username" class="form-label">ชื่อผู้ใช้</label>
+                            <input type="text" class="form-control" id="username" value="admin" readonly>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">อีเมล</label>
+                            <input type="email" class="form-control" id="email" value="admin@lprserver.com" readonly>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="phone" class="form-label">เบอร์โทรศัพท์</label>
+                            <input type="tel" class="form-control" id="phone" value="081-234-5678" readonly>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="department" class="form-label">แผนก</label>
+                            <input type="text" class="form-control" id="department" value="IT" readonly>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="bio" class="form-label">ข้อมูลเพิ่มเติม</label>
+                        <textarea class="form-control" id="bio" rows="3" readonly>ผู้ดูแลระบบ LPR Server v3 รับผิดชอบการจัดการระบบและการบำรุงรักษา</textarea>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Recent Activity -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history text-warning"></i> กิจกรรมล่าสุด
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>วันที่/เวลา</th>
+                                <th>กิจกรรม</th>
+                                <th>รายละเอียด</th>
+                                <th>IP Address</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>2024-01-15 14:30:25</td>
+                                <td><span class="badge bg-success">เข้าสู่ระบบ</span></td>
+                                <td>เข้าสู่ระบบสำเร็จ</td>
+                                <td>192.168.1.100</td>
+                            </tr>
+                            <tr>
+                                <td>2024-01-15 14:25:10</td>
+                                <td><span class="badge bg-info">ดูรายงาน</span></td>
+                                <td>ดูรายงานสถิติการตรวจจับ</td>
+                                <td>192.168.1.100</td>
+                            </tr>
+                            <tr>
+                                <td>2024-01-15 14:20:45</td>
+                                <td><span class="badge bg-warning">แก้ไขการตั้งค่า</span></td>
+                                <td>แก้ไขการตั้งค่ากล้อง CAM001</td>
+                                <td>192.168.1.100</td>
+                            </tr>
+                            <tr>
+                                <td>2024-01-15 14:15:30</td>
+                                <td><span class="badge bg-danger">ออกจากระบบ</span></td>
+                                <td>ออกจากระบบ</td>
+                                <td>192.168.1.100</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Security Settings -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-shield-alt text-danger"></i> การตั้งค่าความปลอดภัย
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>การยืนยันตัวตน 2 ขั้นตอน</strong><br>
+                                <small class="text-muted">เพิ่มความปลอดภัยด้วย SMS หรือ Email</small>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="twoFactorAuth">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>แจ้งเตือนการเข้าสู่ระบบ</strong><br>
+                                <small class="text-muted">รับการแจ้งเตือนเมื่อมีการเข้าสู่ระบบใหม่</small>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="loginNotification" checked>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>เซสชันอัตโนมัติ</strong><br>
+                                <small class="text-muted">ออกจากระบบอัตโนมัติหลัง 30 นาที</small>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="autoLogout" checked>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>บันทึกกิจกรรม</strong><br>
+                                <small class="text-muted">บันทึกการใช้งานทั้งหมด</small>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="activityLogging" checked>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function editProfile() {
+    // Enable form fields for editing
+    const fields = ['firstName', 'lastName', 'email', 'phone', 'department', 'bio'];
+    fields.forEach(field => {
+        const element = document.getElementById(field);
+        element.readOnly = false;
+        element.classList.add('border-primary');
+    });
+    
+    // Change button text
+    const editBtn = event.target;
+    editBtn.innerHTML = '<i class="fas fa-save"></i> บันทึก';
+    editBtn.onclick = saveProfile;
+}
+
+function saveProfile() {
+    showLoading();
+    setTimeout(() => {
+        hideLoading();
+        alert('บันทึกโปรไฟล์เรียบร้อยแล้ว');
+        
+        // Disable form fields
+        const fields = ['firstName', 'lastName', 'email', 'phone', 'department', 'bio'];
+        fields.forEach(field => {
+            const element = document.getElementById(field);
+            element.readOnly = true;
+            element.classList.remove('border-primary');
+        });
+        
+        // Change button back
+        const saveBtn = event.target;
+        saveBtn.innerHTML = '<i class="fas fa-edit"></i> แก้ไข';
+        saveBtn.onclick = editProfile;
+    }, 1000);
+}
+
+function changePassword() {
+    const newPassword = prompt('ป้อนรหัสผ่านใหม่:');
+    if (newPassword) {
+        const confirmPassword = prompt('ยืนยันรหัสผ่านใหม่:');
+        if (newPassword === confirmPassword) {
+            showLoading();
+            setTimeout(() => {
+                hideLoading();
+                alert('เปลี่ยนรหัสผ่านเรียบร้อยแล้ว');
+            }, 1000);
+        } else {
+            alert('รหัสผ่านไม่ตรงกัน');
+        }
+    }
+}
+</script>
+{% endblock %}

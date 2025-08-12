@@ -8,38 +8,96 @@
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <!-- DataTables -->
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     
-    <style>
-        :root {
-            --primary-color: #667eea;
-            --secondary-color: #764ba2;
-            --success-color: #28a745;
-            --info-color: #17a2b8;
-            --warning-color: #ffc107;
-            --danger-color: #dc3545;
-        }
+            <style>
+            :root {
+                /* Base Palette: Soft Neutrals */
+                --bg-primary: #F4F6F8;
+                --bg-secondary: #ECECEC;
+                --bg-card: #FFFFFF;
+                --bg-dark: #2E2E2E;
+                --bg-dark-card: #3A3A3A;
+                
+                /* Text Colors */
+                --text-primary: #333333;
+                --text-secondary: #4A4A4A;
+                --text-muted: #6E6E6E;
+                --text-light: #DADADA;
+                
+                /* Accent Colors: Gentle & Functional */
+                --status-success: #A3D9A5;
+                --status-warning: #FCE38A;
+                --status-error: #F38181;
+                --status-info: #A8DADC;
+                
+                /* Interactive Elements */
+                --btn-primary: #A8DADC;
+                --btn-hover: #FFB085;
+                --btn-text: #2E2E2E;
+                
+                /* Dark Mode Accents */
+                --dark-accent: #5FB3B3;
+                --dark-accent-alt: #C3B1E1;
+                
+                /* Legacy Colors (for compatibility) */
+                --primary-color: #A8DADC;
+                --secondary-color: #5FB3B3;
+                --success-color: #A3D9A5;
+                --info-color: #A8DADC;
+                --warning-color: #FCE38A;
+                --danger-color: #F38181;
+            }
+            
+            /* Dark Mode Support */
+            @media (prefers-color-scheme: dark) {
+                :root {
+                    --bg-primary: #2E2E2E;
+                    --bg-secondary: #3A3A3A;
+                    --bg-card: #3A3A3A;
+                    --text-primary: #DADADA;
+                    --text-secondary: #B8B8B8;
+                    --text-muted: #9E9E9E;
+                }
+            }
+            
+            /* Manual Dark Mode Toggle */
+            body.dark-mode {
+                --bg-primary: #2E2E2E;
+                --bg-secondary: #3A3A3A;
+                --bg-card: #3A3A3A;
+                --text-primary: #DADADA;
+                --text-secondary: #B8B8B8;
+                --text-muted: #9E9E9E;
+            }
         
         body {
-            background-color: #f8f9fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            transition: all 0.3s ease;
         }
         
         /* Responsive Navigation */
         .navbar {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background: var(--bg-card);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-bottom: 1px solid var(--bg-secondary);
         }
         
         .navbar-brand {
             font-weight: 600;
-            color: white !important;
+            color: var(--text-primary) !important;
         }
         
         .navbar-nav .nav-link {
-            color: rgba(255,255,255,0.9) !important;
+            color: var(--text-secondary) !important;
             font-weight: 500;
             padding: 0.5rem 1rem;
             border-radius: 0.375rem;
@@ -49,14 +107,14 @@
         
         .navbar-nav .nav-link:hover,
         .navbar-nav .nav-link.active {
-            color: white !important;
-            background-color: rgba(255,255,255,0.2);
+            color: var(--text-primary) !important;
+            background-color: var(--btn-primary);
             transform: translateY(-1px);
         }
         
         .navbar-toggler {
             border: none;
-            color: white;
+            color: var(--text-primary);
         }
         
         .navbar-toggler:focus {
@@ -73,6 +131,7 @@
         .card {
             border: none;
             border-radius: 0.75rem;
+            background: var(--bg-card);
             box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
@@ -83,8 +142,21 @@
         }
         
         .stat-card {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            color: white;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border-left: 4px solid var(--status-info);
+        }
+        
+        .stat-card.success {
+            border-left-color: var(--status-success);
+        }
+        
+        .stat-card.warning {
+            border-left-color: var(--status-warning);
+        }
+        
+        .stat-card.error {
+            border-left-color: var(--status-error);
         }
         
         /* Tables */
@@ -148,15 +220,165 @@
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background-color: var(--success-color);
+            background-color: var(--status-success);
             margin-right: 0.5rem;
             animation: pulse 2s infinite;
+        }
+        
+        .status-indicator.warning {
+            background-color: var(--status-warning);
+        }
+        
+        .status-indicator.error {
+            background-color: var(--status-error);
+        }
+        
+        .status-indicator.info {
+            background-color: var(--status-info);
         }
         
         @keyframes pulse {
             0% { opacity: 1; }
             50% { opacity: 0.5; }
             100% { opacity: 1; }
+        }
+        
+        /* Modular Architecture Components */
+        .module-card {
+            background: var(--bg-card);
+            border: 1px solid var(--bg-secondary);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .module-card:hover {
+            border-color: var(--btn-primary);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .module-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .module-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+        
+        .module-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .flow-diagram {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 2rem 0;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 0.75rem;
+        }
+        
+        .flow-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            background: var(--bg-card);
+            border-radius: 0.5rem;
+            min-width: 120px;
+            position: relative;
+        }
+        
+        .flow-node::after {
+            content: '→';
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.5rem;
+            color: var(--text-muted);
+        }
+        
+        .flow-node:last-child::after {
+            display: none;
+        }
+        
+        .flow-node.online {
+            border-left: 4px solid var(--status-success);
+        }
+        
+        .flow-node.warning {
+            border-left: 4px solid var(--status-warning);
+        }
+        
+        .flow-node.offline {
+            border-left: 4px solid var(--status-error);
+        }
+        
+        /* Dark Mode Toggle */
+        .theme-toggle {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            z-index: 1000;
+            background: var(--bg-card);
+            border: 1px solid var(--bg-secondary);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .theme-toggle:hover {
+            transform: scale(1.1);
+        }
+        
+        /* Data-Centric UI */
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .data-card {
+            background: var(--bg-card);
+            border: 1px solid var(--bg-secondary);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .data-card:hover {
+            border-color: var(--btn-primary);
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            font-family: 'Roboto Mono', monospace;
+        }
+        
+        .metric-label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
         /* Loading Spinner */
@@ -294,14 +516,19 @@
         </div>
     </nav>
     
-    <!-- Main Content -->
-    <div class="container-fluid main-content">
-        <div class="row">
-            <div class="col-12">
-                {% block content %}{% endblock %}
+            <!-- Dark Mode Toggle -->
+        <div class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode">
+            <i class="fas fa-moon" id="theme-icon"></i>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="container-fluid main-content">
+            <div class="row">
+                <div class="col-12">
+                    {% block content %}{% endblock %}
+                </div>
             </div>
         </div>
-    </div>
     
     <!-- Loading Spinner -->
     <div class="loading-spinner" id="loadingSpinner">
@@ -330,8 +557,33 @@
             document.getElementById('loadingSpinner').style.display = 'none';
         }
         
-        // Auto-hide alerts after 5 seconds
+        // Dark Mode Toggle
+        function toggleTheme() {
+            const body = document.body;
+            const themeIcon = document.getElementById('theme-icon');
+            
+            if (body.classList.contains('dark-mode')) {
+                body.classList.remove('dark-mode');
+                themeIcon.className = 'fas fa-moon';
+                localStorage.setItem('theme', 'light');
+            } else {
+                body.classList.add('dark-mode');
+                themeIcon.className = 'fas fa-sun';
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+        
+        // Load saved theme
         document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme');
+            const themeIcon = document.getElementById('theme-icon');
+            
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                themeIcon.className = 'fas fa-sun';
+            }
+            
+            // Auto-hide alerts after 5 seconds
             setTimeout(function() {
                 const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
                 alerts.forEach(function(alert) {

@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+
+{% block title %}สถิติ - Detection Manager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-chart-bar text-primary"></i> สถิติการตรวจจับ
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="exportReport()">
+                <i class="fas fa-download"></i> ส่งออกรายงาน
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+                <i class="fas fa-sync-alt"></i> รีเฟรช
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Overview -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="data-card">
+            <div class="metric-value" id="totalDetections">2,707</div>
+            <div class="metric-label">การตรวจจับทั้งหมด</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="data-card">
+            <div class="metric-value" id="todayDetections">45</div>
+            <div class="metric-label">การตรวจจับวันนี้</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="data-card">
+            <div class="metric-value" id="avgConfidence">87.5%</div>
+            <div class="metric-label">ความเชื่อมั่นเฉลี่ย</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="data-card">
+            <div class="metric-value" id="blacklistDetections">12</div>
+            <div class="metric-label">การตรวจจับ Blacklist</div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <div class="col-lg-8 mb-3">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-line text-info"></i> การตรวจจับรายวัน (7 วันล่าสุด)
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="dailyChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 mb-3">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-pie text-warning"></i> การตรวจจับตามกล้อง
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="cameraChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Statistics -->
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-clock text-success"></i> สถิติตามช่วงเวลา
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>ช่วงเวลา</th>
+                                <th>จำนวน</th>
+                                <th>เปอร์เซ็นต์</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>06:00 - 12:00</td>
+                                <td>1,245</td>
+                                <td>46.0%</td>
+                            </tr>
+                            <tr>
+                                <td>12:00 - 18:00</td>
+                                <td>987</td>
+                                <td>36.5%</td>
+                            </tr>
+                            <tr>
+                                <td>18:00 - 24:00</td>
+                                <td>345</td>
+                                <td>12.7%</td>
+                            </tr>
+                            <tr>
+                                <td>00:00 - 06:00</td>
+                                <td>130</td>
+                                <td>4.8%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-trophy text-warning"></i> ป้ายทะเบียนที่พบมากที่สุด
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>ป้ายทะเบียน</th>
+                                <th>จำนวนครั้ง</th>
+                                <th>ครั้งล่าสุด</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="badge bg-primary">กข-1234</span></td>
+                                <td>15</td>
+                                <td>2024-01-15 14:30</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-primary">ขค-5678</span></td>
+                                <td>12</td>
+                                <td>2024-01-15 14:28</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-danger">คง-9999</span></td>
+                                <td>8</td>
+                                <td>2024-01-15 14:25</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-primary">งจ-1111</span></td>
+                                <td>6</td>
+                                <td>2024-01-15 14:22</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Performance Metrics -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-tachometer-alt text-info"></i> ตัวชี้วัดประสิทธิภาพ
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <div class="text-center">
+                            <div class="h3 text-success">95.2%</div>
+                            <div class="text-muted">อัตราการตรวจจับสำเร็จ</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="text-center">
+                            <div class="h3 text-info">1.2s</div>
+                            <div class="text-muted">เวลาตอบสนองเฉลี่ย</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="text-center">
+                            <div class="h3 text-warning">2.1%</div>
+                            <div class="text-muted">อัตราการตรวจจับผิดพลาด</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="text-center">
+                            <div class="h3 text-danger">0.8%</div>
+                            <div class="text-muted">อัตราการพลาดการตรวจจับ</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let dailyChart = null;
+let cameraChart = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCharts();
+    loadStatistics();
+    
+    // Auto-refresh every 30 seconds
+    setInterval(function() {
+        loadStatistics();
+    }, 30000);
+});
+
+function initializeCharts() {
+    // Daily Chart
+    const dailyCtx = document.getElementById('dailyChart').getContext('2d');
+    dailyChart = new Chart(dailyCtx, {
+        type: 'line',
+        data: {
+            labels: ['9 ม.ค.', '10 ม.ค.', '11 ม.ค.', '12 ม.ค.', '13 ม.ค.', '14 ม.ค.', '15 ม.ค.'],
+            datasets: [{
+                label: 'การตรวจจับ',
+                data: [65, 78, 92, 85, 73, 89, 45],
+                borderColor: '#A8DADC',
+                backgroundColor: 'rgba(168, 218, 220, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    
+    // Camera Chart
+    const cameraCtx = document.getElementById('cameraChart').getContext('2d');
+    cameraChart = new Chart(cameraCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['CAM001', 'CAM002', 'CAM003'],
+            datasets: [{
+                data: [1250, 890, 567],
+                backgroundColor: [
+                    '#A3D9A5',
+                    '#FCE38A',
+                    '#F38181'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+function loadStatistics() {
+    // Simulate loading statistics
+    console.log('Loading statistics...');
+}
+
+function exportReport() {
+    showLoading();
+    setTimeout(() => {
+        hideLoading();
+        alert('ส่งออกรายงานเรียบร้อยแล้ว');
+    }, 2000);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+
+{% block title %}System Logs - System Manager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-file-alt text-primary"></i> System Logs
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearLogs()">
+                <i class="fas fa-trash"></i> ล้าง Logs
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="exportLogs()">
+                <i class="fas fa-download"></i> ส่งออก
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+                <i class="fas fa-sync-alt"></i> รีเฟรช
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Log Statistics -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="data-card">
+            <div class="metric-value" id="totalLogs">1,247</div>
+            <div class="metric-label">Logs ทั้งหมด</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="data-card">
+            <div class="metric-value" id="errorLogs">23</div>
+            <div class="metric-label">Error Logs</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="data-card">
+            <div class="metric-value" id="warningLogs">45</div>
+            <div class="metric-label">Warning Logs</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="data-card">
+            <div class="metric-value" id="infoLogs">1,179</div>
+            <div class="metric-label">Info Logs</div>
+        </div>
+    </div>
+</div>
+
+<!-- Log Filters -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-filter text-info"></i> ตัวกรอง Logs
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="logLevel" class="form-label">ระดับ</label>
+                        <select class="form-select" id="logLevel">
+                            <option value="">ทั้งหมด</option>
+                            <option value="ERROR">ERROR</option>
+                            <option value="WARNING">WARNING</option>
+                            <option value="INFO">INFO</option>
+                            <option value="DEBUG">DEBUG</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="logModule" class="form-label">โมดูล</label>
+                        <select class="form-select" id="logModule">
+                            <option value="">ทั้งหมด</option>
+                            <option value="camera">Camera</option>
+                            <option value="detection">Detection</option>
+                            <option value="database">Database</option>
+                            <option value="websocket">WebSocket</option>
+                            <option value="system">System</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="logStartDate" class="form-label">วันที่เริ่มต้น</label>
+                        <input type="date" class="form-control" id="logStartDate">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="logEndDate" class="form-label">วันที่สิ้นสุด</label>
+                        <input type="date" class="form-control" id="logEndDate">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <button class="btn btn-primary" onclick="applyLogFilters()">
+                            <i class="fas fa-search me-2"></i>ค้นหา
+                        </button>
+                        <button class="btn btn-outline-secondary ms-2" onclick="clearLogFilters()">
+                            <i class="fas fa-times me-2"></i>ล้างตัวกรอง
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Logs Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list text-info"></i> รายการ System Logs
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="logsTable">
+                        <thead>
+                            <tr>
+                                <th>วันที่/เวลา</th>
+                                <th>ระดับ</th>
+                                <th>โมดูล</th>
+                                <th>ข้อความ</th>
+                                <th>รายละเอียด</th>
+                                <th>การดำเนินการ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="table-danger">
+                                <td>2024-01-15 14:25:45</td>
+                                <td><span class="badge bg-danger">ERROR</span></td>
+                                <td>Camera</td>
+                                <td>CAM003 connection failed</td>
+                                <td>Connection timeout after 30 seconds</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-info" onclick="viewLogDetails('1')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="table-warning">
+                                <td>2024-01-15 14:22:30</td>
+                                <td><span class="badge bg-warning">WARNING</span></td>
+                                <td>Detection</td>
+                                <td>Low confidence detection</td>
+                                <td>Plate number: งจ-1111, Confidence: 45%</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-info" onclick="viewLogDetails('2')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="table-info">
+                                <td>2024-01-15 14:20:15</td>
+                                <td><span class="badge bg-info">INFO</span></td>
+                                <td>System</td>
+                                <td>System startup completed</td>
+                                <td>All services are running normally</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-info" onclick="viewLogDetails('3')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>2024-01-15 14:18:30</td>
+                                <td><span class="badge bg-success">INFO</span></td>
+                                <td>Database</td>
+                                <td>Record saved successfully</td>
+                                <td>Plate: กข-1234, Camera: CAM001</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-info" onclick="viewLogDetails('4')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>2024-01-15 14:15:45</td>
+                                <td><span class="badge bg-success">INFO</span></td>
+                                <td>WebSocket</td>
+                                <td>Client connected</td>
+                                <td>Client ID: WS_001, IP: 192.168.1.100</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-info" onclick="viewLogDetails('5')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Log Details Modal -->
+<div class="modal fade" id="logDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">รายละเอียด Log</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="logDetailsContent">
+                    <!-- Log details will be loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize DataTable
+    $('#logsTable').DataTable({
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/th.json'
+        },
+        responsive: true,
+        order: [[0, 'desc']],
+        pageLength: 50
+    });
+});
+
+function applyLogFilters() {
+    const level = document.getElementById('logLevel').value;
+    const module = document.getElementById('logModule').value;
+    const startDate = document.getElementById('logStartDate').value;
+    const endDate = document.getElementById('logEndDate').value;
+    
+    // Simulate filter application
+    showLoading();
+    setTimeout(() => {
+        hideLoading();
+        alert('ใช้ตัวกรองเรียบร้อยแล้ว');
+    }, 1000);
+}
+
+function clearLogFilters() {
+    document.getElementById('logLevel').value = '';
+    document.getElementById('logModule').value = '';
+    document.getElementById('logStartDate').value = '';
+    document.getElementById('logEndDate').value = '';
+    
+    // Reload table
+    $('#logsTable').DataTable().ajax.reload();
+}
+
+function clearLogs() {
+    if (confirm('คุณต้องการล้าง System Logs ทั้งหมดหรือไม่? การดำเนินการนี้ไม่สามารถยกเลิกได้')) {
+        showLoading();
+        setTimeout(() => {
+            hideLoading();
+            alert('ล้าง System Logs เรียบร้อยแล้ว');
+        }, 2000);
+    }
+}
+
+function exportLogs() {
+    showLoading();
+    setTimeout(() => {
+        hideLoading();
+        alert('ส่งออก System Logs เรียบร้อยแล้ว');
+    }, 2000);
+}
+
+function viewLogDetails(logId) {
+    // Simulate loading log details
+    const logDetails = {
+        '1': {
+            timestamp: '2024-01-15 14:25:45',
+            level: 'ERROR',
+            module: 'Camera',
+            message: 'CAM003 connection failed',
+            details: 'Connection timeout after 30 seconds',
+            stackTrace: 'at CameraService.connect()\nat WebSocketServer.handleConnection()\nat EventEmitter.emit()',
+            additionalInfo: {
+                'Camera ID': 'CAM003',
+                'IP Address': '192.168.1.102',
+                'Port': '8765',
+                'Timeout': '30 seconds'
+            }
+        },
+        '2': {
+            timestamp: '2024-01-15 14:22:30',
+            level: 'WARNING',
+            module: 'Detection',
+            message: 'Low confidence detection',
+            details: 'Plate number: งจ-1111, Confidence: 45%',
+            stackTrace: 'at DetectionService.processImage()\nat OCRService.recognize()',
+            additionalInfo: {
+                'Plate Number': 'งจ-1111',
+                'Confidence': '45%',
+                'Camera': 'CAM003',
+                'Image Path': '/storage/images/2024/01/15/14_22_30_001.jpg'
+            }
+        }
+    };
+    
+    const log = logDetails[logId] || {
+        timestamp: 'N/A',
+        level: 'N/A',
+        module: 'N/A',
+        message: 'N/A',
+        details: 'N/A',
+        stackTrace: 'N/A',
+        additionalInfo: {}
+    };
+    
+    document.getElementById('logDetailsContent').innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <strong>วันที่/เวลา:</strong> ${log.timestamp}<br>
+                <strong>ระดับ:</strong> <span class="badge bg-${log.level === 'ERROR' ? 'danger' : log.level === 'WARNING' ? 'warning' : 'info'}">${log.level}</span><br>
+                <strong>โมดูล:</strong> ${log.module}<br>
+                <strong>ข้อความ:</strong> ${log.message}
+            </div>
+            <div class="col-md-6">
+                <strong>รายละเอียด:</strong><br>
+                ${log.details}
+            </div>
+        </div>
+        <hr>
+        <div class="row">
+            <div class="col-12">
+                <strong>ข้อมูลเพิ่มเติม:</strong><br>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <tbody>
+                            ${Object.entries(log.additionalInfo).map(([key, value]) => `<tr><td>${key}</td><td>${value}</td></tr>`).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <hr>
+        <div class="row">
+            <div class="col-12">
+                <strong>Stack Trace:</strong><br>
+                <pre class="bg-light p-2 rounded">${log.stackTrace}</pre>
+            </div>
+        </div>
+    `;
+    
+    new bootstrap.Modal(document.getElementById('logDetailsModal')).show();
+}
+</script>
+{% endblock %}
