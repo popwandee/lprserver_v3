@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% set active_page = "detection" %}
+{% set fluid_container = true %}
+{% set use_socketio = true %}
+
+{% block title %}Detection Dashboard{% endblock %}
+
+{% block additional_css %}
+<link href="{{ url_for('static', filename='css/detection.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block container_class %}mt-4{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1><i class="fas fa-robot"></i> Detection Dashboard</h1>
+        <p class="text-muted">AI Detection Control and Monitoring</p>
+    </div>
+</div>
+
+<!-- Service Status and Controls -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card status-card" id="service-status-card">
+            <div class="card-header">
+                <h5><i class="fas fa-cog"></i> Service Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span>Detection Service:</span>
+                    <span id="service-status" class="badge bg-secondary">Unknown</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span>Models Loaded:</span>
+                    <span id="models-status" class="badge bg-secondary">Unknown</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span>Detection Interval:</span>
+                    <span id="detection-interval" class="badge bg-info">0.1s</span>
+                </div>
+                <div class="btn-group w-100" role="group">
+                    <button id="start-detection" class="btn btn-success btn-control">
+                        <i class="fas fa-play"></i> Start
+                    </button>
+                    <button id="stop-detection" class="btn btn-danger btn-control">
+                        <i class="fas fa-stop"></i> Stop
+                    </button>
+                    <button id="process-frame" class="btn btn-primary btn-control">
+                        <i class="fas fa-camera"></i> Process Frame
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-brain"></i> Model Status</h5>
+            </div>
+            <div class="card-body" id="model-status">
+                <div class="mb-2">
+                    <span class="model-status not-loaded" id="vehicle-model-status"></span>
+                    <span>Vehicle Detection Model</span>
+                </div>
+                <div class="mb-2">
+                    <span class="model-status not-loaded" id="lp-detection-model-status"></span>
+                    <span>License Plate Detection Model</span>
+                </div>
+                <div class="mb-2">
+                    <span class="model-status not-loaded" id="lp-ocr-model-status"></span>
+                    <span>License Plate OCR Model</span>
+                </div>
+                <div class="mb-2">
+                    <span class="model-status not-loaded" id="easyocr-status"></span>
+                    <span>EasyOCR Fallback</span>
+                </div>
+                <hr>
+                <small class="text-muted">
+                    <div>Detection Resolution: <span id="detection-resolution">640x640</span></div>
+                    <div>Vehicle Confidence: <span id="vehicle-confidence">0.5</span></div>
+                    <div>Plate Confidence: <span id="plate-confidence">0.3</span></div>
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-bar"></i> Detection Statistics</h5>
+                <small class="text-muted">Real-time detection performance metrics</small>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-2 col-sm-6">
+                        <div class="stat-item">
+                            <div class="stat-number" id="stat-frames">0</div>
+                            <div class="stat-label">Frames Processed</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-sm-6">
+                        <div class="stat-item">
+                            <div class="stat-number" id="stat-vehicles">0</div>
+                            <div class="stat-label">Vehicles Detected</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-sm-6">
+                        <div class="stat-item">
+                            <div class="stat-number" id="stat-plates">0</div>
+                            <div class="stat-label">Plates Detected</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-sm-6">
+                        <div class="stat-item">
+                            <div class="stat-number" id="stat-ocr">0</div>
+                            <div class="stat-label">OCR Success</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-sm-6">
+                        <div class="stat-item">
+                            <div class="stat-number" id="stat-rate">0%</div>
+                            <div class="stat-label">Detection Rate</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-sm-6">
+                        <div class="stat-item">
+                            <div class="stat-number" id="stat-time">0ms</div>
+                            <div class="stat-label">Avg Process Time</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small class="text-muted">Started At: <span id="started-at">-</span></small>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <small class="text-muted">Last Detection: <span id="last-detection">-</span></small>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Recent Detection Results -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-list"></i> Recent Detection Results</h5>
+                <button class="btn btn-sm btn-outline-primary" id="refresh-results-btn">
+                    <i class="fas fa-refresh"></i> Refresh
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="recent-results" style="max-height: 400px; overflow-y: auto;">
+                    <p class="text-muted text-center">No detection results available</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-terminal"></i> Detection Log</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="log-container" id="detection-log">
+                    <div class="text-muted">Detection log will appear here...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Configuration -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-sliders-h"></i> Configuration</h5>
+            </div>
+            <div class="card-body">
+                <form id="detection-config-form">
+                    <div class="mb-3">
+                        <label for="interval-setting" class="form-label">Detection Interval (seconds)</label>
+                        <input type="number" class="form-control" id="interval-setting" 
+                               min="0.01" max="10.0" step="0.01" value="0.1">
+                        <div class="form-text">Time between detection cycles (0.01 - 10.0 seconds)</div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="auto-start-setting">
+                            <label class="form-check-label" for="auto-start-setting">
+                                Auto-start detection on system startup
+                            </label>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Configuration
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle"></i> Help & Information</h5>
+            </div>
+            <div class="card-body">
+                <h6>Detection Workflow:</h6>
+                <ol class="small">
+                    <li>Receive images from camera service</li>
+                    <li>Validate and enhance image frames</li>
+                    <li>Perform vehicle detection</li>
+                    <li>If vehicles found, detect license plates</li>
+                    <li>Perform OCR on detected plates</li>
+                    <li>Save annotated images and cropped plates</li>
+                    <li>Store results in database</li>
+                </ol>
+                
+                <h6 class="mt-3">API Endpoints:</h6>
+                <ul class="small">
+                    <li><code>GET /detection/status</code> - Get service status</li>
+                    <li><code>POST /detection/start</code> - Start detection</li>
+                    <li><code>POST /detection/stop</code> - Stop detection</li>
+                    <li><code>GET /detection/statistics</code> - Get statistics</li>
+                    <li><code>GET /detection/models/status</code> - Model status</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block additional_js %}
+<script src="{{ url_for('static', filename='js/detection.js') }}"></script>
+{% endblock %}
+

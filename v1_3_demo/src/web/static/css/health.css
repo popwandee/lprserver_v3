@@ -1,0 +1,956 @@
+/**
+ * Health Dashboard CSS for AI Camera v1.3
+ * 
+ * This file contains styles for the health monitoring dashboard
+ * including cards, status indicators, and responsive design.
+ */
+
+/* Health Dashboard Container - Updated for progress bar spacing v1.3.4 */
+.health-dashboard {
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Header Section */
+.health-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding: 25px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 15px;
+    color: white;
+    box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+}
+
+.health-title {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin: 0 0 5px 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.health-header p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 1.1rem;
+}
+
+.health-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* Button Styles */
+.btn-health {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-health:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.btn-health:active {
+    transform: translateY(0);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #45a049, #3d8b40);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, #2196F3, #1976D2);
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(135deg, #1976D2, #1565C0);
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, #ff9800, #f57c00);
+    color: white;
+}
+
+.btn-warning:hover {
+    background: linear-gradient(135deg, #f57c00, #ef6c00);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #f44336, #d32f2f);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #d32f2f, #c62828);
+}
+
+/* Health Grid */
+.health-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 25px;
+    margin-bottom: 40px;
+}
+
+/* Health Cards */
+.health-card {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    position: relative;
+    overflow: hidden;
+}
+
+.health-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.health-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+.health-card:hover::before {
+    opacity: 1;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f8f9fa;
+}
+
+.card-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin: 0;
+    color: #2c3e50;
+}
+
+/* Status Indicators */
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+    min-width: auto;
+    width: fit-content;
+    height: 32px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+.status-indicator::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s;
+}
+
+.status-indicator:hover::before {
+    left: 100%;
+}
+
+.status-healthy {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: white;
+    border: 2px solid #4CAF50;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.status-unhealthy {
+    background: linear-gradient(135deg, #ff9800, #f57c00);
+    color: white;
+    border: 2px solid #ff9800;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.status-critical {
+    background: linear-gradient(135deg, #f44336, #d32f2f);
+    color: white;
+    border: 2px solid #f44336;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.status-unknown {
+    background: linear-gradient(135deg, #9e9e9e, #757575);
+    color: white;
+    border: 2px solid #9e9e9e;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Status indicator size variations based on text length */
+.status-indicator.status-healthy {
+    min-width: 80px;
+}
+
+.status-indicator.status-unhealthy {
+    min-width: 100px;
+}
+
+.status-indicator.status-critical {
+    min-width: 90px;
+}
+
+.status-indicator.status-unknown {
+    min-width: 85px;
+}
+
+/* Status indicator with better text fitting */
+.status-indicator {
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+}
+
+/* Hover effect for better UX */
+.status-indicator:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Health Metrics */
+.health-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+}
+
+.metric-item {
+    text-align: center;
+    padding: 12px;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: 10px;
+    border: 1px solid #dee2e6;
+    transition: all 0.3s ease;
+    min-width: 120px;
+}
+
+.metric-item:hover {
+    background: linear-gradient(135deg, #e9ecef, #dee2e6);
+    transform: translateY(-2px);
+}
+
+.metric-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 6px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.metric-label {
+    font-size: 0.75rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+/* Progress Bars */
+.progress-bar {
+    width: 100%;
+    height: 10px;
+    background: #e9ecef;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-top: 8px;
+    margin-bottom: 4px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    min-width: 120px;
+}
+
+.progress-fill {
+    height: 100%;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 8px;
+    position: relative;
+    min-width: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.progress-healthy {
+    background: linear-gradient(90deg, #4CAF50, #66bb6a);
+}
+
+.progress-unhealthy {
+    background: linear-gradient(90deg, #ff9800, #ffb74d);
+}
+
+.progress-critical {
+    background: linear-gradient(90deg, #f44336, #ef5350);
+}
+
+/* System Resources Progress Bars - Compact Design */
+.system-resources .progress-bar {
+    height: 4px; /* Reduced height for compact design */
+    border-radius: 3px;
+    margin-top: 3px;
+    margin-bottom: 8px; /* Reduced bottom margin */
+    width: 90%; /* Use 90% width to prevent overflow */
+    max-width: 90%; /* Never exceed 90% of parent width */
+    position: relative;
+    display: block;
+    box-sizing: border-box;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.system-resources .progress-fill {
+    border-radius: 3px;
+    min-width: 8px;
+    position: relative;
+    height: 100%;
+}
+
+/* Ensure metric items have proper spacing and width constraints */
+.system-resources .metric-item {
+    margin-bottom: 15px; /* Reduced space between metric items */
+    padding-bottom: 8px; /* Reduced padding */
+    padding-left: 8px; /* Reduced left padding */
+    padding-right: 8px; /* Reduced right padding */
+    display: block;
+    position: relative;
+    min-height: 45px; /* Reduced minimum height */
+    width: 100%; /* Use full available width */
+    box-sizing: border-box;
+    overflow: hidden; /* Prevent any overflow */
+}
+
+/* Ensure progress bars don't overlap with tooltips */
+.progress-bar::after {
+    z-index: 1000; /* Higher z-index to prevent overlap */
+}
+
+/* Additional spacing rules to prevent overlap */
+.health-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px; /* Reduced gap between metric items */
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px; /* Reduced padding to container */
+}
+
+.metric-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px; /* Reduced spacing */
+    width: 100%;
+    box-sizing: border-box;
+    padding: 6px; /* Reduced padding */
+}
+
+/* Ensure progress bars are properly contained */
+.progress-bar {
+    overflow: hidden; /* Prevent any overflow */
+    box-sizing: border-box; /* Include padding in width calculation */
+}
+
+.progress-fill {
+    box-sizing: border-box; /* Include padding in width calculation */
+}
+
+/* Large Progress Bars for Key Metrics - Compact Design */
+.progress-bar-large {
+    height: 6px; /* Reduced height for compact design */
+    border-radius: 4px;
+    margin-top: 4px;
+    margin-bottom: 12px; /* Reduced bottom margin */
+    width: 90%; /* Use 90% width to prevent overflow */
+    max-width: 90%; /* Never exceed 90% of parent width */
+    display: block;
+    box-sizing: border-box;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.progress-fill-large {
+    border-radius: 6px;
+    min-width: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Further reduced shadow */
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 100%;
+}
+
+/* Hover effects for progress bars */
+.progress-bar:hover .progress-fill {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transform: scaleY(1.05);
+}
+
+.progress-bar:hover .progress-fill-large {
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.25);
+    transform: scaleY(1.08);
+}
+
+/* Metric item hover effects */
+.metric-item:hover .progress-bar {
+    transform: scaleX(1.02);
+    transition: transform 0.3s ease;
+}
+
+/* Progress bar tooltip - Improved positioning */
+.progress-bar {
+    position: relative;
+}
+
+.progress-bar::after {
+    content: attr(data-value);
+    position: absolute;
+    top: -30px; /* Increased distance from bar */
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.9); /* Darker background */
+    color: white;
+    padding: 6px 10px; /* Increased padding */
+    border-radius: 6px;
+    font-size: 0.7rem; /* Slightly smaller font */
+    font-weight: 600;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    white-space: nowrap;
+    z-index: 1000; /* Higher z-index */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); /* Add shadow */
+}
+
+.progress-bar:hover::after {
+    opacity: 1;
+}
+
+/* Pagination Controls */
+.pagination-controls {
+    margin-top: 20px;
+    padding: 15px;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: 10px;
+    border: 1px solid #dee2e6;
+}
+
+.pagination-info {
+    text-align: center;
+    margin-bottom: 15px;
+    color: #6c757d;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.pagination-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.pagination-buttons .btn-health {
+    min-width: 40px;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+}
+
+.pagination-buttons .btn-health:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-buttons .btn-health:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Health Logs Section */
+.health-logs {
+    background: white;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.logs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #f8f9fa;
+}
+
+.logs-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.logs-controls {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.log-level-filter {
+    padding: 10px 16px;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    background: white;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #495057;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.log-level-filter:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Logs Table */
+.logs-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.95rem;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.logs-table th,
+.logs-table td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.logs-table th {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    font-weight: 700;
+    color: #2c3e50;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.85rem;
+}
+
+.logs-table tr:hover {
+    background: #f8f9fa;
+}
+
+.logs-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Log Level Badges */
+.log-level {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.log-pass {
+    background: linear-gradient(135deg, #e8f5e8, #c8e6c9);
+    color: #2e7d32;
+    border: 1px solid #a5d6a7;
+}
+
+.log-fail {
+    background: linear-gradient(135deg, #ffebee, #ffcdd2);
+    color: #c62828;
+    border: 1px solid #ef9a9a;
+}
+
+.log-warning {
+    background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+    color: #f57c00;
+    border: 1px solid #ffcc02;
+}
+
+/* Loading and Error States */
+.loading {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6c757d;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.loading::before {
+    content: '⏳';
+    display: block;
+    font-size: 2rem;
+    margin-bottom: 15px;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.error-message {
+    background: linear-gradient(135deg, #ffebee, #ffcdd2);
+    color: #c62828;
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px 0;
+    border-left: 5px solid #f44336;
+    box-shadow: 0 4px 12px rgba(244, 67, 54, 0.1);
+}
+
+.success-message {
+    background: linear-gradient(135deg, #e8f5e8, #c8e6c9);
+    color: #2e7d32;
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px 0;
+    border-left: 5px solid #4CAF50;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.1);
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .health-grid {
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .health-dashboard {
+        padding: 15px;
+    }
+    
+    .health-header {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+        padding: 20px;
+    }
+    
+    .health-title {
+        font-size: 1.8rem;
+    }
+    
+    .health-actions {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+    }
+    
+    .btn-health {
+        padding: 10px 18px;
+        font-size: 0.9rem;
+    }
+    
+    .health-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .health-card {
+        padding: 20px;
+    }
+    
+    .health-metrics {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 10px;
+    }
+    
+    .progress-bar-large {
+        width: 90%;
+        max-width: 90%;
+        height: 5px;
+        margin-bottom: 10px;
+    }
+    
+    .system-resources .progress-bar {
+        width: 90%;
+        max-width: 90%;
+        height: 4px;
+        margin-bottom: 8px;
+    }
+    
+    .status-indicator {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        height: 28px;
+        border-radius: 16px;
+    }
+    
+    .logs-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .logs-controls {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .logs-table {
+        font-size: 0.85rem;
+    }
+    
+    .logs-table th,
+    .logs-table td {
+        padding: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .health-metrics {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .metric-item {
+        min-width: auto;
+        padding: 8px;
+        margin-bottom: 8px;
+    }
+    
+    .progress-bar {
+        min-width: 100px;
+        height: 8px;
+    }
+    
+    .progress-bar-large {
+        width: 90%;
+        max-width: 90%;
+        height: 4px;
+        margin-bottom: 8px;
+    }
+    
+    .system-resources .progress-bar {
+        width: 90%;
+        max-width: 90%;
+        height: 3px;
+        margin-bottom: 6px;
+    }
+    
+    .metric-item {
+        padding: 8px;
+    }
+    
+    .metric-value {
+        font-size: 1.2rem;
+    }
+    
+    .logs-table {
+        font-size: 0.8rem;
+    }
+    
+    .logs-table th,
+    .logs-table td {
+        padding: 8px;
+    }
+    
+    .pagination-controls {
+        padding: 10px;
+    }
+    
+    .pagination-info {
+        font-size: 0.8rem;
+        margin-bottom: 10px;
+    }
+    
+    .pagination-buttons {
+        gap: 5px;
+    }
+    
+    .pagination-buttons .btn-health {
+        min-width: 35px;
+        padding: 6px 8px;
+        font-size: 0.8rem;
+    }
+    
+    .status-indicator {
+        padding: 5px 10px;
+        font-size: 0.75rem;
+        height: 24px;
+        border-radius: 12px;
+        letter-spacing: 0.3px;
+    }
+}
+
+/* Animation Classes */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.slide-in {
+    animation: slideIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(-30px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+/* Progress Bar Animations */
+.progress-fill {
+    animation: progressFill 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.progress-fill-large {
+    animation: progressFillLarge 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes progressFill {
+    from { 
+        width: 0% !important;
+        opacity: 0.7;
+    }
+    to { 
+        opacity: 1;
+    }
+}
+
+@keyframes progressFillLarge {
+    from { 
+        width: 0% !important;
+        opacity: 0.6;
+        transform: scaleY(0.8);
+    }
+    to { 
+        opacity: 1;
+        transform: scaleY(1);
+    }
+}
+
+/* Metric Item Animations */
+.metric-item {
+    animation: metricItemFadeIn 0.6s ease-out;
+}
+
+.metric-item:nth-child(1) { animation-delay: 0.1s; }
+.metric-item:nth-child(2) { animation-delay: 0.2s; }
+.metric-item:nth-child(3) { animation-delay: 0.3s; }
+.metric-item:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes metricItemFadeIn {
+    from { 
+        opacity: 0; 
+        transform: translateY(15px) scale(0.95);
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Utility Classes */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.mb-0 { margin-bottom: 0; }
+.mb-1 { margin-bottom: 0.5rem; }
+.mb-2 { margin-bottom: 1rem; }
+.mb-3 { margin-bottom: 1.5rem; }
+
+.mt-0 { margin-top: 0; }
+.mt-1 { margin-top: 0.5rem; }
+.mt-2 { margin-top: 1rem; }
+.mt-3 { margin-top: 1.5rem; }
+
+.hidden { display: none; }
+.visible { display: block; }
+
+/* Print Styles */
+@media print {
+    .health-actions,
+    .logs-controls {
+        display: none;
+    }
+    
+    .health-card {
+        break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+    
+    .health-logs {
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+}

@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+
+{% set active_page = "main" %}
+{% set use_socketio = true %}
+
+{% block title %}Main Dashboard{% endblock %}
+
+{% block additional_css %}
+<link href="{{ url_for('static', filename='css/dashboard.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block page_header %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container text-center">
+        <h1 class="display-4 mb-4">
+            <i class="fas fa-camera"></i> AI Camera System
+        </h1>
+        <p class="lead mb-4">
+            Advanced camera management system with real-time video streaming,
+            AI detection capabilities, and comprehensive monitoring.
+        </p>
+        <!--- 
+        <div class="mt-4">
+            <a href="/camera" class="btn btn-light btn-lg me-3">
+                <i class="fas fa-video"></i> Camera Dashboard
+            </a>
+            <a href="/health" class="btn btn-outline-light btn-lg">
+                <i class="fas fa-heartbeat"></i> System Health
+            </a>
+        </div>
+        -->
+    </div>
+</section>
+{% endblock %}
+
+{% block container_class %}my-5{% endblock %}
+
+{% block content %}
+
+<!-- Quick Actions -->
+<div class="row mb-5">
+    <div class="col-12">
+        <h2 class="mb-4">
+            <i class="fas fa-bolt"></i> Quick Actions
+        </h2>
+    </div>
+
+    <div class="col-12 text-center">
+        <a href="/camera" class="quick-action-btn btn btn-primary" onclick="handleQuickAction('camera-control')">
+            <i class="fas fa-video"></i><br>
+            <strong>Camera Control</strong><br>
+            <small>Start/Stop streaming, adjust settings</small>
+        </a>
+
+        <a href="#" class="quick-action-btn btn btn-success" onclick="handleQuickAction('capture-image')">
+            <i class="fas fa-camera"></i><br>
+            <strong>Capture Image</strong><br>
+            <small>Take a photo</small>
+        </a>
+
+        <a href="/health" class="quick-action-btn btn btn-info" onclick="handleQuickAction('system-health')">
+            <i class="fas fa-heartbeat"></i><br>
+            <strong>System Health</strong><br>
+            <small>Monitor system status</small>
+        </a>
+
+        <a href="/detection" class="quick-action-btn btn btn-warning" onclick="handleQuickAction('ai-detection')">
+            <i class="fas fa-brain"></i><br>
+            <strong>AI Detection</strong><br>
+            <small>Configure AI models</small>
+        </a>
+    </div>
+</div>
+
+<!-- System Status -->
+<div class="row mb-5">
+    <div class="col-12">
+        <h2 class="mb-4">
+            <i class="fas fa-info-circle"></i> System Status
+        </h2>
+    </div>
+
+    <div class="col-md-3">
+        <div class="status-card text-center">
+            <i class="fas fa-camera feature-icon text-primary"></i>
+            <h5>Camera Status</h5>
+            <span id="main-camera-status" class="status-indicator status-offline"></span>
+            <span id="main-camera-status-text">Offline</span>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="status-card text-center">
+            <i class="fas fa-brain feature-icon text-success"></i>
+            <h5>AI Detection</h5>
+            <span id="main-detection-status" class="status-indicator status-offline"></span>
+            <span id="main-detection-status-text">Inactive</span>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="status-card text-center">
+            <i class="fas fa-server feature-icon text-info"></i>
+            <h5>System Health</h5>
+            <span id="main-system-status" class="status-indicator status-online"></span>
+            <span id="main-system-status-text">Healthy</span>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="status-card text-center">
+            <i class="fas fa-database feature-icon text-warning"></i>
+            <h5>Database</h5>
+            <span id="main-database-status" class="status-indicator status-online"></span>
+            <span id="main-database-status-text">Connected</span>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-5">
+    <div class="col-12">
+        <h2 class="mb-4">
+            <i class="fas fa-share-alt"></i> Server Communication
+        </h2>
+    </div>
+
+    <div class="col-md-4">
+        <div class="status-card text-center">
+            <i class="fas fa-globe feature-icon text-info"></i>
+            <h5>Server Connection</h5>
+            <span id="main-server-connection-status" class="status-indicator status-offline"></span>
+            <span id="main-server-connection-text">Disconnected</span>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="status-card text-center">
+            <i class="fas fa-upload feature-icon text-success"></i>
+            <h5>Data Sending</h5>
+            <span id="main-data-sending-status" class="status-indicator status-offline"></span>
+            <span id="main-data-sending-text">Inactive</span>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="status-card text-center">
+            <i class="fas fa-clock feature-icon text-secondary"></i>
+            <h5>Last Sync</h5>
+            <span id="main-last-sync-time">Never</span>
+        </div>
+    </div>
+</div>
+
+<!-- System and Server Communication Logs -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-terminal"></i> Server Communication Log</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="log-container" id="main-server-logs" style="height: 300px;">
+                                <div class="text-muted p-3">Server communication logs will appear here...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-terminal"></i> System Log</h5>
+                            <p><strong>System Uptime:</strong> <span id="main-system-uptime">Loading...</span></p>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="log-container" id="main-system-log" style="height: 200px;">
+                                <div class="text-muted p-3">System log will appear here...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features -->
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">
+            <i class="fas fa-star"></i> System Features
+        </h2>
+    </div>
+
+    <div class="col-md-4 mb-4">
+        <div class="card feature-card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-video feature-icon text-primary"></i>
+                <h5 class="card-title">Real-time Video Streaming</h5>
+                <p class="card-text">
+                    High-quality video streaming with configurable resolution,
+                    frame rate, and camera settings. Support for both main and
+                    low-resolution streams.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-4">
+        <div class="card feature-card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-brain feature-icon text-success"></i>
+                <h5 class="card-title">AI Detection Pipeline</h5>
+                <p class="card-text">
+                    Advanced AI detection capabilities using Hailo AI models.
+                    Support for vehicle detection, license plate recognition,
+                    and custom object detection.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-4">
+        <div class="card feature-card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-cogs feature-icon text-info"></i>
+                <h5 class="card-title">Advanced Configuration</h5>
+                <p class="card-text">
+                    Comprehensive camera configuration including exposure,
+                    white balance, focus controls, and image processing parameters.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-4">
+        <div class="card feature-card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-chart-line feature-icon text-warning"></i>
+                <h5 class="card-title">System Monitoring</h5>
+                <p class="card-text">
+                    Real-time system health monitoring with performance metrics,
+                    error tracking, and automated health checks.
+                </p>
+                <a href="{{ url_for('health.health_dashboard') }}" class="btn btn-warning btn-sm mt-2">
+                    <i class="fas fa-heartbeat"></i> View Health Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-4">
+        <div class="card feature-card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-database feature-icon text-danger"></i>
+                <h5 class="card-title">Data Management</h5>
+                <p class="card-text">
+                    Efficient data storage and management for captured images,
+                    detection results, and system logs.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-4">
+        <div class="card feature-card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-network-wired feature-icon text-secondary"></i>
+                <h5 class="card-title">WebSocket Communication</h5>
+                <p class="card-text">
+                    Real-time bidirectional communication for instant updates,
+                    remote control, and live status monitoring.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Information -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle"></i> System Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Row 1: Single centered column with left-aligned text -->
+                <div class="row justify-content-center mb-4">
+                    <div class="col-md-8">
+                        <h6 class="text-center">System Information</h6>
+                        <ul class="list-unstyled text-start">
+                            <li><strong>CPU Architecture:</strong> <span id="system-info-cpu">Loading...</span></li>
+                            <li><strong>AI Accelerator:</strong> <span id="system-info-ai-accelerator">Loading...</span></li>
+                            <li><strong>OS & Kernel:</strong> <span id="system-info-os">Loading...</span></li>
+                        </ul>
+                        <hr class="my-3">
+                    </div>
+                </div>
+                
+                <!-- Row 2: Three columns -->
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6>Hardware Information</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Main Board:</strong> Raspberry Pi 5</li>
+                            <li><strong>RAM:</strong> <span id="system-info-ram">Loading...</span></li>
+                            <li><strong>Disk:</strong> <span id="system-info-disk">Loading...</span></li>
+                            <li><strong>Camera Model:</strong> <span id="feature-camera-model">Loading...</span></li>
+                            <li><strong>Resolution:</strong> <span id="feature-camera-resolution">Loading...</span></li>
+                            <li><strong>Frame Rate:</strong> <span id="feature-camera-fps">Loading...</span></li>
+                            <li><strong>Status:</strong> <span id="feature-camera-status">Loading...</span></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <h6>Development Information</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Application:</strong> AI Camera v1.3</li>
+                            <li><strong>Framework:</strong> Flask + Blueprints</li>
+                            <li><strong>Architecture:</strong> Dependency Injection + Services</li>
+                            <li><strong>Camera:</strong> Picamera2 + Hailo AI</li>
+                            <li><strong>Database:</strong> SQLite + SQLAlchemy</li>
+                            <li><strong>Communication:</strong> WebSocket + REST API</li>
+                            <li><strong>Deployment:</strong> Gunicorn + Nginx</li>
+                            <li><strong>Version Control:</strong> Git</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Component and Services</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>*</strong> Flask Streaming</li>
+                            <li><strong>*</strong> Camera Component</li>
+                            <li><strong>*</strong> Detection Component</li>
+                            <li><strong>*</strong> Health Monitor</li>
+                            <li><strong>*</strong> WebSocket Sender</li>
+                            <li><strong>*</strong> Database Manager</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block additional_js %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

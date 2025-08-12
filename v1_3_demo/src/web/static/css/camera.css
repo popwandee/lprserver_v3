@@ -1,0 +1,49 @@
+/* AI Camera v1.3 - Camera Dashboard Specific Styles */
+
+/* Video Container and Feed */
+.video-container {
+    position: relative;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.video-feed {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Camera Controls */
+.camera-controls {
+    display: none; /* Hide old overlay controls */
+}
+
+.camera-controls-above {
+    background: #f8f9fa;
+    border-radius: 8px 8px 0 0;
+}
+
+/* Configuration Forms */
+.config-form {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+/* Camera specific responsive design */
+@media (max-width: 768px) {
+    .video-container {
+        border-radius: 4px;
+    }
+    
+    .camera-controls-above {
+        border-radius: 4px 4px 0 0;
+    }
+    
+    .control-btn {
+        min-width: 60px;
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+}

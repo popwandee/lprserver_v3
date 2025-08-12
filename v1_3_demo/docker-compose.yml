@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  aicamera-demo:
+    build: .
+    container_name: aicamera-v1.3-demo
+    ports:
+      - "5000:5000"
+    environment:
+      - DEMO_MODE=true
+      - FLASK_ENV=development
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/demo/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
