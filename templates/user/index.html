@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}User Manager - LPR Server v3{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-users text-primary"></i> User Manager
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+                <i class="fas fa-sync-alt"></i> รีเฟรช
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle text-info"></i> User Manager
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    User Manager เป็นระบบจัดการผู้ใช้และสิทธิ์การเข้าถึง 
+                    ที่รองรับการจัดการโปรไฟล์ การจัดการผู้ใช้ และการติดตามกิจกรรม
+                </p>
+                <div class="row">
+                    <div class="col-md-3">
+                        <a href="{{ url_for('user.profile') }}" class="btn btn-primary btn-lg w-100 mb-3">
+                            <i class="fas fa-user me-2"></i>โปรไฟล์
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('user.users') }}" class="btn btn-success btn-lg w-100 mb-3">
+                            <i class="fas fa-users me-2"></i>จัดการผู้ใช้
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('user.roles') }}" class="btn btn-info btn-lg w-100 mb-3">
+                            <i class="fas fa-user-shield me-2"></i>จัดการสิทธิ์
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('user.activities') }}" class="btn btn-warning btn-lg w-100 mb-3">
+                            <i class="fas fa-history me-2"></i>กิจกรรม
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

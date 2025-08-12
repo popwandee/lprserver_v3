@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Detection Manager - LPR Server v3{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-search text-primary"></i> Detection Manager
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+                <i class="fas fa-sync-alt"></i> รีเฟรช
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle text-info"></i> Detection Manager
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    Detection Manager เป็นระบบจัดการข้อมูลการตรวจจับป้ายทะเบียนรถยนต์ 
+                    ที่รองรับการดูข้อมูลสถิติ การตั้งค่า และการแจ้งเตือนต่างๆ
+                </p>
+                <div class="row">
+                    <div class="col-md-4">
+                        <a href="{{ url_for('detection.records') }}" class="btn btn-primary btn-lg w-100 mb-3">
+                            <i class="fas fa-table me-2"></i>รายการบันทึก
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="{{ url_for('detection.statistics') }}" class="btn btn-success btn-lg w-100 mb-3">
+                            <i class="fas fa-chart-bar me-2"></i>สถิติ
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="{{ url_for('detection.alerts') }}" class="btn btn-warning btn-lg w-100 mb-3">
+                            <i class="fas fa-bell me-2"></i>การแจ้งเตือน
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

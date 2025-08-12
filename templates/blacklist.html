@@ -1,0 +1,374 @@
+{% extends "base.html" %}
+
+{% block title %}จัดการ Blacklist - LPR Server v3{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-ban text-danger"></i> จัดการ Blacklist
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#addBlacklistModal">
+                <i class="fas fa-plus"></i> เพิ่ม Blacklist
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <div class="h1" id="total-blacklist">0</div>
+                <div class="h6">รายการ Blacklist</div>
+                <small><i class="fas fa-list"></i></small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <div class="h1" id="total-detections">0</div>
+                <div class="h6">การตรวจจับทั้งหมด</div>
+                <small><i class="fas fa-search"></i></small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <div class="h1" id="recent-detections">0</div>
+                <div class="h6">การตรวจจับ 24 ชม.</div>
+                <small><i class="fas fa-clock"></i></small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <div class="h1" id="active-alerts">0</div>
+                <div class="h6">การแจ้งเตือน</div>
+                <small><i class="fas fa-bell"></i></small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Blacklist Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-list text-primary"></i> รายการ Blacklist
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover" id="blacklist-table">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>ป้ายทะเบียน</th>
+                        <th>เหตุผล</th>
+                        <th>เพิ่มโดย</th>
+                        <th>วันที่เพิ่ม</th>
+                        <th>วันหมดอายุ</th>
+                        <th>สถานะ</th>
+                        <th>การดำเนินการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Data will be loaded dynamically -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Detections Table -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-exclamation-triangle text-warning"></i> การตรวจจับล่าสุด
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover" id="detections-table">
+                <thead class="table-dark">
+                    <tr>
+                        <th>เวลา</th>
+                        <th>ป้ายทะเบียน</th>
+                        <th>กล้อง</th>
+                        <th>ตำแหน่ง</th>
+                        <th>เหตุผล</th>
+                        <th>การดำเนินการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Data will be loaded dynamically -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Blacklist Modal -->
+<div class="modal fade" id="addBlacklistModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">เพิ่ม Blacklist</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addBlacklistForm">
+                    <div class="mb-3">
+                        <label for="licensePlate" class="form-label">ป้ายทะเบียน *</label>
+                        <input type="text" class="form-control" id="licensePlate" name="license_plate_text" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="reason" class="form-label">เหตุผล *</label>
+                        <textarea class="form-control" id="reason" name="reason" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="expiryDate" class="form-label">วันหมดอายุ (ไม่บังคับ)</label>
+                        <input type="datetime-local" class="form-control" id="expiryDate" name="expiry_date">
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">หมายเหตุ</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                <button type="button" class="btn btn-danger" onclick="addBlacklist()">เพิ่ม Blacklist</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alert Container -->
+<div id="alertContainer" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Initialize DataTables
+    $('#blacklist-table').DataTable({
+        pageLength: 10,
+        order: [[4, 'desc']], // Sort by added date descending
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/th.json'
+        }
+    });
+    
+    $('#detections-table').DataTable({
+        pageLength: 10,
+        order: [[0, 'desc']], // Sort by timestamp descending
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/th.json'
+        }
+    });
+    
+    // Load initial data
+    loadBlacklistData();
+    loadDetectionsData();
+    loadStatistics();
+    
+    // Initialize Socket.IO for real-time updates
+    const socket = io();
+    
+    socket.on('connect', function() {
+        console.log('Connected to blacklist page');
+        socket.emit('join_dashboard');
+    });
+    
+    socket.on('blacklist_alert', function(data) {
+        showBlacklistAlert(data);
+        loadDetectionsData(); // Refresh detections
+        loadStatistics(); // Refresh statistics
+    });
+    
+    // Auto-refresh every 30 seconds
+    setInterval(function() {
+        loadStatistics();
+    }, 30000);
+});
+
+function loadBlacklistData() {
+    fetch('/api/blacklist')
+        .then(response => response.json())
+        .then(data => {
+            const table = $('#blacklist-table').DataTable();
+            table.clear();
+            
+            data.blacklist.forEach(item => {
+                const expiryDate = item.expiry_date ? new Date(item.expiry_date).toLocaleString('th-TH') : '-';
+                const status = item.is_active ? 
+                    '<span class="badge bg-danger">Active</span>' : 
+                    '<span class="badge bg-secondary">Inactive</span>';
+                
+                table.row.add([
+                    item.id,
+                    `<span class="badge bg-dark">${item.license_plate_text}</span>`,
+                    item.reason,
+                    item.added_by,
+                    new Date(item.added_timestamp).toLocaleString('th-TH'),
+                    expiryDate,
+                    status,
+                    `<button class="btn btn-sm btn-outline-danger" onclick="removeBlacklist(${item.id})">
+                        <i class="fas fa-trash"></i> ลบ
+                    </button>`
+                ]);
+            });
+            
+            table.draw();
+        })
+        .catch(error => {
+            console.error('Error loading blacklist data:', error);
+            showAlert('เกิดข้อผิดพลาดในการโหลดข้อมูล Blacklist', 'danger');
+        });
+}
+
+function loadDetectionsData() {
+    fetch('/api/blacklist/detections?hours=24')
+        .then(response => response.json())
+        .then(data => {
+            const table = $('#detections-table').DataTable();
+            table.clear();
+            
+            data.detections.forEach(detection => {
+                table.row.add([
+                    new Date(detection.timestamp).toLocaleString('th-TH'),
+                    `<span class="badge bg-danger">${detection.plate_number}</span>`,
+                    `<i class="fas fa-video text-info"></i> ${detection.camera_id}`,
+                    detection.location || '-',
+                    detection.blacklist_reason || '-',
+                    `<button class="btn btn-sm btn-outline-info" onclick="viewRecord(${detection.id})">
+                        <i class="fas fa-eye"></i> ดูรายละเอียด
+                    </button>`
+                ]);
+            });
+            
+            table.draw();
+        })
+        .catch(error => {
+            console.error('Error loading detections data:', error);
+        });
+}
+
+function loadStatistics() {
+    fetch('/api/blacklist/statistics')
+        .then(response => response.json())
+        .then(data => {
+            $('#total-blacklist').text(data.total_blacklist_entries);
+            $('#total-detections').text(data.total_blacklist_detections);
+            $('#recent-detections').text(data.recent_detections_24h);
+        })
+        .catch(error => {
+            console.error('Error loading statistics:', error);
+        });
+}
+
+function addBlacklist() {
+    const formData = new FormData(document.getElementById('addBlacklistForm'));
+    const data = Object.fromEntries(formData.entries());
+    
+    // Convert expiry date if provided
+    if (data.expiry_date) {
+        data.expiry_date = new Date(data.expiry_date).toISOString();
+    }
+    
+    fetch('/api/blacklist', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showAlert(result.message, 'success');
+            $('#addBlacklistModal').modal('hide');
+            document.getElementById('addBlacklistForm').reset();
+            loadBlacklistData();
+            loadStatistics();
+        } else {
+            showAlert(result.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error adding blacklist:', error);
+        showAlert('เกิดข้อผิดพลาดในการเพิ่ม Blacklist', 'danger');
+    });
+}
+
+function removeBlacklist(blacklistId) {
+    if (confirm('คุณแน่ใจหรือไม่ที่จะลบรายการ Blacklist นี้?')) {
+        fetch(`/api/blacklist/${blacklistId}?removed_by=admin`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                showAlert(result.message, 'success');
+                loadBlacklistData();
+                loadStatistics();
+            } else {
+                showAlert(result.message, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error removing blacklist:', error);
+            showAlert('เกิดข้อผิดพลาดในการลบ Blacklist', 'danger');
+        });
+    }
+}
+
+function showBlacklistAlert(data) {
+    const alertHtml = `
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong><i class="fas fa-exclamation-triangle"></i> ตรวจพบรถ Blacklist!</strong><br>
+            ป้ายทะเบียน: <strong>${data.plate_number}</strong><br>
+            กล้อง: ${data.camera_id}<br>
+            ตำแหน่ง: ${data.location || 'ไม่ระบุ'}<br>
+            เหตุผล: ${data.reason}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    $('#alertContainer').append(alertHtml);
+    
+    // Auto-remove after 10 seconds
+    setTimeout(() => {
+        $('#alertContainer .alert').first().remove();
+    }, 10000);
+}
+
+function showAlert(message, type) {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    $('#alertContainer').append(alertHtml);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        $('#alertContainer .alert').first().remove();
+    }, 5000);
+}
+
+function viewRecord(recordId) {
+    // Redirect to records page with filter
+    window.location.href = `/records?record_id=${recordId}`;
+}
+</script>
+{% endblock %}

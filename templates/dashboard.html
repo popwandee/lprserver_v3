@@ -1,0 +1,479 @@
+{% extends "base.html" %}
+
+{% block title %}แดชบอร์ด - LPR Server v3{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-chart-bar text-primary"></i> แดชบอร์ด
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+                <i class="fas fa-sync-alt"></i> รีเฟรช
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <div class="h1 mb-0">{{ today_records }}</div>
+                <div class="h6 mb-0">บันทึกวันนี้</div>
+                <small class="text-white-50"><i class="fas fa-calendar-day"></i></small>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <div class="h1 mb-0">{{ total_records }}</div>
+                <div class="h6 mb-0">บันทึกทั้งหมด</div>
+                <small class="text-white-50"><i class="fas fa-database"></i></small>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <div class="h1 mb-0">{{ unique_cameras }}</div>
+                <div class="h6 mb-0">กล้องที่ใช้งาน</div>
+                <small class="text-white-50"><i class="fas fa-video"></i></small>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <div class="h1 mb-0" id="connected-cameras">0</div>
+                <div class="h6 mb-0">กล้องที่เชื่อมต่อ</div>
+                <small class="text-white-50"><i class="fas fa-wifi"></i></small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <div class="col-lg-8 mb-3">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-line text-info"></i> สถิติรายวัน (7 วันล่าสุด)
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="dailyChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 mb-3">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-pie text-warning"></i> สถิติตามกล้อง
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="cameraChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Records Table -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-clock text-warning"></i> บันทึกล่าสุด
+        </h5>
+        <div>
+            <button class="btn btn-sm btn-outline-primary me-2" onclick="loadRecentRecords()">
+                <i class="fas fa-sync-alt"></i> รีเฟรช
+            </button>
+            <a href="{{ url_for('main.records') }}" class="btn btn-sm btn-primary">
+                <i class="fas fa-table"></i> ดูทั้งหมด
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover" id="recent-records-table">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>ป้ายทะเบียน</th>
+                        <th>กล้อง</th>
+                        <th>ความแม่นยำ</th>
+                        <th>เวลา</th>
+                        <th>ตำแหน่ง</th>
+                        <th>การดำเนินการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in recent_records %}
+                    <tr>
+                        <td>{{ record.id }}</td>
+                        <td>
+                            <span class="badge bg-primary">{{ record.plate_number }}</span>
+                        </td>
+                        <td>
+                            <i class="fas fa-video text-info"></i> {{ record.camera_id }}
+                        </td>
+                        <td>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar {% if record.confidence >= 80 %}bg-success{% elif record.confidence >= 60 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                     style="width: {{ record.confidence }}%">
+                                    {{ "%.1f"|format(record.confidence) }}%
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <small>{{ record.timestamp.strftime('%d/%m/%Y %H:%M:%S') }}</small>
+                        </td>
+                        <td>
+                            <small>{{ record.location or 'N/A' }}</small>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-info" onclick="viewImage({{ record.id }})">
+                                    <i class="fas fa-image"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-success" onclick="viewDetails({{ record.id }})">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Camera Status -->
+<div class="row mt-4">
+    <div class="col-lg-6 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-video text-success"></i> สถานะกล้อง
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="camera-status">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-spinner fa-spin"></i> กำลังโหลดข้อมูล...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-exclamation-triangle text-warning"></i> การแจ้งเตือนล่าสุด
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="recent-alerts">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-spinner fa-spin"></i> กำลังโหลดข้อมูล...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// Global variables
+let dailyChart = null;
+let cameraChart = null;
+let socket = null;
+
+// Initialize dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCharts();
+    loadCameraStatus();
+    loadRecentAlerts();
+    initializeWebSocket();
+    
+    // Auto-refresh every 30 seconds
+    setInterval(function() {
+        loadCameraStatus();
+        loadRecentAlerts();
+    }, 30000);
+});
+
+function initializeCharts() {
+    // Daily Chart
+    const dailyCtx = document.getElementById('dailyChart').getContext('2d');
+    dailyChart = new Chart(dailyCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'จำนวนบันทึก',
+                data: [],
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    
+    // Camera Chart
+    const cameraCtx = document.getElementById('cameraChart').getContext('2d');
+    cameraChart = new Chart(cameraCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [],
+            datasets: [{
+                data: [],
+                backgroundColor: [
+                    '#667eea',
+                    '#764ba2',
+                    '#f093fb',
+                    '#f5576c',
+                    '#4facfe',
+                    '#00f2fe'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    
+    // Load chart data
+    loadChartData();
+}
+
+function loadChartData() {
+    fetch('/api/statistics/daily')
+        .then(response => response.json())
+        .then(data => {
+            if (data.daily_stats) {
+                dailyChart.data.labels = data.daily_stats.map(item => item.date);
+                dailyChart.data.datasets[0].data = data.daily_stats.map(item => item.count);
+                dailyChart.update();
+            }
+        })
+        .catch(error => console.error('Error loading daily stats:', error));
+    
+    fetch('/api/statistics/camera')
+        .then(response => response.json())
+        .then(data => {
+            if (data.camera_stats) {
+                cameraChart.data.labels = data.camera_stats.map(item => item.camera_id);
+                cameraChart.data.datasets[0].data = data.camera_stats.map(item => item.count);
+                cameraChart.update();
+            }
+        })
+        .catch(error => console.error('Error loading camera stats:', error));
+}
+
+function loadCameraStatus() {
+    fetch('/api/cameras/status')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('camera-status');
+            if (data.cameras && data.cameras.length > 0) {
+                let html = '';
+                data.cameras.forEach(camera => {
+                    const statusClass = camera.is_online ? 'text-success' : 'text-danger';
+                    const statusIcon = camera.is_online ? 'fa-circle' : 'fa-circle';
+                    html += `
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <i class="fas fa-video me-2"></i>
+                                <strong>${camera.camera_id}</strong>
+                            </div>
+                            <div>
+                                <i class="fas ${statusIcon} ${statusClass}"></i>
+                                <small class="${statusClass}">${camera.is_online ? 'ออนไลน์' : 'ออฟไลน์'}</small>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<div class="text-center text-muted">ไม่มีข้อมูลกล้อง</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading camera status:', error);
+            document.getElementById('camera-status').innerHTML = 
+                '<div class="text-center text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</div>';
+        });
+}
+
+function loadRecentAlerts() {
+    fetch('/api/alerts/recent')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('recent-alerts');
+            if (data.alerts && data.alerts.length > 0) {
+                let html = '';
+                data.alerts.forEach(alert => {
+                    const alertClass = alert.type === 'blacklist' ? 'alert-danger' : 'alert-warning';
+                    html += `
+                        <div class="alert ${alertClass} alert-sm mb-2">
+                            <small>
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                ${alert.message}
+                            </small>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<div class="text-center text-muted">ไม่มีการแจ้งเตือน</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading alerts:', error);
+            document.getElementById('recent-alerts').innerHTML = 
+                '<div class="text-center text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</div>';
+        });
+}
+
+function loadRecentRecords() {
+    showLoading();
+    fetch('/api/records?limit=10')
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.querySelector('#recent-records-table tbody');
+            if (data.records && data.records.length > 0) {
+                let html = '';
+                data.records.forEach(record => {
+                    html += `
+                        <tr>
+                            <td>${record.id}</td>
+                            <td><span class="badge bg-primary">${record.plate_number}</span></td>
+                            <td><i class="fas fa-video text-info"></i> ${record.camera_id}</td>
+                            <td>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar ${record.confidence >= 80 ? 'bg-success' : record.confidence >= 60 ? 'bg-warning' : 'bg-danger'}" 
+                                         style="width: ${record.confidence}%">
+                                        ${record.confidence.toFixed(1)}%
+                                    </div>
+                                </div>
+                            </td>
+                            <td><small>${new Date(record.timestamp).toLocaleString('th-TH')}</small></td>
+                            <td><small>${record.location || 'N/A'}</small></td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-outline-info" onclick="viewImage(${record.id})">
+                                        <i class="fas fa-image"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-success" onclick="viewDetails(${record.id})">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = html;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading recent records:', error);
+        })
+        .finally(() => {
+            hideLoading();
+        });
+}
+
+function initializeWebSocket() {
+    socket = io();
+    
+    socket.on('connect', function() {
+        console.log('Connected to LPR Server');
+        document.getElementById('connected-cameras').textContent = '1';
+    });
+    
+    socket.on('disconnect', function() {
+        console.log('Disconnected from LPR Server');
+        document.getElementById('connected-cameras').textContent = '0';
+    });
+    
+    socket.on('new_lpr_record', function(data) {
+        // Update statistics
+        loadChartData();
+        
+        // Show notification
+        showNotification('บันทึกใหม่', `ป้ายทะเบียน: ${data.plate_number} จาก Camera: ${data.camera_id}`);
+    });
+    
+    socket.on('camera_status_update', function(data) {
+        loadCameraStatus();
+    });
+}
+
+function showNotification(title, message) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = 'toast';
+    notification.setAttribute('role', 'alert');
+    notification.innerHTML = `
+        <div class="toast-header">
+            <strong class="me-auto">${title}</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body">${message}</div>
+    `;
+    
+    // Add to page and show
+    document.body.appendChild(notification);
+    const toast = new bootstrap.Toast(notification);
+    toast.show();
+    
+    // Remove after showing
+    setTimeout(() => {
+        notification.remove();
+    }, 5000);
+}
+
+function viewImage(recordId) {
+    window.open(`/api/records/${recordId}/image`, '_blank');
+}
+
+function viewDetails(recordId) {
+    window.open(`/api/records/${recordId}`, '_blank');
+}
+</script>
+{% endblock %}

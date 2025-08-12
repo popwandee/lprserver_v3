@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+
+{% block title %}หน้าแรก - LPR Server v3{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-home text-primary"></i> ยินดีต้อนรับสู่ LPR Server v3
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+                <i class="fas fa-sync-alt"></i> รีเฟรช
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Stats Row -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <div class="h1 mb-0">
+                    <i class="fas fa-car"></i>
+                </div>
+                <div class="h4 mb-0" id="totalRecords">0</div>
+                <div class="text-white-50">รายการทั้งหมด</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <div class="h1 mb-0">
+                    <i class="fas fa-video"></i>
+                </div>
+                <div class="h4 mb-0" id="activeCameras">0</div>
+                <div class="text-white-50">กล้องที่ใช้งาน</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <div class="h1 mb-0">
+                    <i class="fas fa-calendar-day"></i>
+                </div>
+                <div class="h4 mb-0" id="todayRecords">0</div>
+                <div class="text-white-50">รายการวันนี้</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <div class="h1 mb-0">
+                    <i class="fas fa-ban"></i>
+                </div>
+                <div class="h4 mb-0" id="blacklistCount">0</div>
+                <div class="text-white-50">Blacklist</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content Row -->
+<div class="row">
+    <div class="col-lg-8 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle text-info"></i> เกี่ยวกับระบบ
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    ระบบ LPR Server v3 เป็นระบบจัดการข้อมูลการอ่านป้ายทะเบียนรถยนต์ 
+                    ที่รับข้อมูลจาก Edge Camera ผ่าน WebSocket และแสดงผลในรูปแบบตาราง
+                </p>
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>รับข้อมูลจาก Edge Camera ผ่าน WebSocket</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>บันทึกข้อมูลลงฐานข้อมูล SQLite</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>บันทึกภาพลงใน storage directory</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>แสดงผลในรูปแบบตารางพร้อมการกรองข้อมูล</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>แดชบอร์ดแสดงสถิติการใช้งาน</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>ระบบจัดการรถ Blacklist</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-cogs text-warning"></i> การใช้งาน
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-3">
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-chart-bar me-2"></i>แดชบอร์ด
+                    </a>
+                    <a href="{{ url_for('main.records') }}" class="btn btn-success btn-lg">
+                        <i class="fas fa-table me-2"></i>รายการบันทึก
+                    </a>
+                    <a href="{{ url_for('main.blacklist') }}" class="btn btn-warning btn-lg">
+                        <i class="fas fa-ban me-2"></i>จัดการ Blacklist
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tips and Status Row -->
+<div class="row">
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-lightbulb text-info"></i> เคล็ดลับการใช้งาน
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-plug"></i> การเชื่อมต่อ:</h6>
+                            <ul class="mb-0 small">
+                                <li>ใช้ WebSocket port 8765 สำหรับรับข้อมูลจาก Edge Camera</li>
+                                <li>ระบบจะบันทึกภาพอัตโนมัติเมื่อได้รับข้อมูล</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="alert alert-success">
+                            <h6><i class="fas fa-search"></i> การค้นหา:</h6>
+                            <ul class="mb-0 small">
+                                <li>สามารถกรองข้อมูลตาม Camera ID, ป้ายทะเบียน, และวันที่</li>
+                                <li>ใช้ DataTables สำหรับการค้นหาและจัดเรียงข้อมูล</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-plug text-success"></i> สถานะการเชื่อมต่อ
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="h4 text-success">
+                            <i class="fas fa-server"></i>
+                        </div>
+                        <div class="small">WebSocket Server</div>
+                        <small class="text-success">Port 8765</small>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="h4 text-primary">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <div class="small">ฐานข้อมูล</div>
+                        <small class="text-primary">SQLite</small>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="h4 text-info">
+                            <i class="fas fa-globe"></i>
+                        </div>
+                        <div class="small">Web Server</div>
+                        <small class="text-info">Port 80</small>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="h4 text-warning">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="small">ระบบรักษาความปลอดภัย</div>
+                        <small class="text-warning">เปิดใช้งาน</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-clock text-secondary"></i> กิจกรรมล่าสุด
+                </h5>
+                <button class="btn btn-sm btn-outline-primary" onclick="loadRecentActivity()">
+                    <i class="fas fa-sync-alt"></i> รีเฟรช
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="recentActivity">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-spinner fa-spin"></i> กำลังโหลดข้อมูล...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Load initial data
+document.addEventListener('DOMContentLoaded', function() {
+    loadStatistics();
+    loadRecentActivity();
+    
+    // Auto-refresh every 30 seconds
+    setInterval(function() {
+        loadStatistics();
+        loadRecentActivity();
+    }, 30000);
+});
+
+function loadStatistics() {
+    fetch('/api/statistics')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('totalRecords').textContent = data.total_records || 0;
+            document.getElementById('activeCameras').textContent = data.unique_cameras || 0;
+            document.getElementById('todayRecords').textContent = data.today_records || 0;
+            document.getElementById('blacklistCount').textContent = data.blacklist_count || 0;
+        })
+        .catch(error => {
+            console.error('Error loading statistics:', error);
+        });
+}
+
+function loadRecentActivity() {
+    fetch('/api/records?limit=5')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('recentActivity');
+            if (data.records && data.records.length > 0) {
+                let html = '<div class="table-responsive"><table class="table table-sm">';
+                html += '<thead><tr><th>เวลา</th><th>ป้ายทะเบียน</th><th>กล้อง</th><th>ความมั่นใจ</th></tr></thead><tbody>';
+                
+                data.records.forEach(record => {
+                    const time = new Date(record.timestamp).toLocaleString('th-TH');
+                    html += `<tr>
+                        <td><small>${time}</small></td>
+                        <td><span class="badge bg-primary">${record.plate_number}</span></td>
+                        <td><small>${record.camera_id || 'N/A'}</small></td>
+                        <td><small>${record.confidence ? record.confidence.toFixed(1) + '%' : 'N/A'}</small></td>
+                    </tr>`;
+                });
+                
+                html += '</tbody></table></div>';
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<div class="text-center text-muted">ไม่มีข้อมูลล่าสุด</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading recent activity:', error);
+            document.getElementById('recentActivity').innerHTML = 
+                '<div class="text-center text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</div>';
+        });
+}
+</script>
+{% endblock %}

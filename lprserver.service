@@ -1,0 +1,22 @@
+[Unit]
+Description=LPR Server v3 - Main Flask Application
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=devuser
+Group=devgroup
+WorkingDirectory=/home/devuser/lprserver_v3
+Environment=PATH=/home/devuser/lprserver_v3/venv/bin
+Environment=FLASK_CONFIG=production
+Environment=PYTHONPATH=/home/devuser/lprserver_v3:/home/devuser/lprserver_v3/src
+ExecStart=/home/devuser/lprserver_v3/venv/bin/gunicorn --workers 4 --bind unix:/tmp/lprserver.sock --access-logfile /var/log/lprserver/access.log --error-logfile /var/log/lprserver/error.log wsgi:app
+ExecReload=/bin/kill -s HUP $MAINPID
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

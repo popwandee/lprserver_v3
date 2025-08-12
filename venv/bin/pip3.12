@@ -1,4 +1,4 @@
-#!/home/devuser/lprserver_v2/websocket_server/venv/bin/python3.12
+#!/home/devuser/lprserver_v3/venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys
