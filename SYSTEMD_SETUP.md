@@ -3,8 +3,15 @@
 ## ภาพรวม
 
 ระบบ LPR Server v3 ใช้ systemd services 2 ตัว:
-1. **lprserver.service** - Main Flask application (Gunicorn)
-2. **lprserver-websocket.service** - WebSocket server
+1. **lprserver.service** - Main Flask application (Gunicorn) - รับผิดชอบ Web UI และ REST API
+2. **lprserver-websocket.service** - WebSocket server - รับผิดชอบการสื่อสารกับ Edge AI Cameras
+
+### สถานะระบบล่าสุด (อัปเดต: 12 สิงหาคม 2025)
+- ✅ **ระบบทำงานได้อย่างสมบูรณ์**
+- ✅ **WebSocket Event Handlers** - แก้ไขปัญหา parameter mismatch
+- ✅ **BlacklistService Methods** - เพิ่ม class method และแก้ไขการเรียกใช้
+- ✅ **API Endpoints** - แก้ไขการเรียกใช้ services ผ่าน dependency container
+- ✅ **Database Operations** - เพิ่ม imports ที่จำเป็น
 
 ## การติดตั้งและตั้งค่า Auto Start
 

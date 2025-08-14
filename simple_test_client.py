@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Simple Test Client for LPR Server WebSocket
-ใช้สำหรับทดสอบการเชื่อมต่อและส่งข้อมูล LPR
+Simple Test Client for LPR WebSocket Server
+ใช้สำหรับทดสอบการส่งข้อมูลไปยัง WebSocket Server
 """
 
 import socketio
@@ -23,30 +23,30 @@ test_image_data = base64.b64encode(b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x0
 
 @sio.event
 def connect():
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Connected to LPR WebSocket Server")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ เชื่อมต่อสำเร็จ")
 
 @sio.event
 def disconnect():
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Disconnected from LPR WebSocket Server")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ ตัดการเชื่อมต่อ")
 
 @sio.event
 def status(data):
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 📊 Status: {data}")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] 📊 สถานะ: {data}")
 
 @sio.event
 def lpr_response(data):
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 📝 LPR Response: {data}")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] 📝 ตอบกลับ LPR: {data}")
 
 @sio.event
 def error(data):
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Error: {data}")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ ข้อผิดพลาด: {data}")
 
 @sio.event
 def pong(data):
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🏓 Pong received: {data}")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🏓 ได้รับ pong: {data}")
 
 def send_test_data():
-    """Send test LPR data"""
+    """ส่งข้อมูลทดสอบ LPR"""
     import random
     
     camera_id = random.choice(test_cameras)
@@ -62,56 +62,56 @@ def send_test_data():
         'location': location
     }
     
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 📤 Sending LPR data: {plate_number} from {camera_id}")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] 📤 ส่งข้อมูล LPR: {plate_number} จาก {camera_id}")
     sio.emit('lpr_data', data)
 
 def test_ping():
-    """Test ping functionality"""
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🏓 Sending ping...")
+    """ทดสอบ ping"""
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🏓 ส่ง ping...")
     sio.emit('ping')
 
 def main():
-    """Main test function"""
-    print("=== LPR Server WebSocket Test Client ===")
-    print("Connecting to ws://localhost:8765")
+    """ฟังก์ชันหลัก"""
+    print("=== ทดสอบ WebSocket Client ===")
+    print("เชื่อมต่อไปยัง ws://localhost:8765")
     
     try:
-        # Connect to WebSocket server
+        # เชื่อมต่อ WebSocket server
         sio.connect('http://localhost:8765')
         
-        # Wait a moment for connection
+        # รอสักครู่
         time.sleep(1)
         
-        # Test ping
+        # ทดสอบ ping
         test_ping()
         time.sleep(1)
         
-        # Register camera
+        # ลงทะเบียนกล้อง
         camera_id = 'TEST_CAM'
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] 📹 Registering camera: {camera_id}")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] 📹 ลงทะเบียนกล้อง: {camera_id}")
         sio.emit('camera_register', {'camera_id': camera_id})
         time.sleep(1)
         
-        # Join dashboard
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] 📊 Joining dashboard...")
+        # เข้าร่วม dashboard
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] 📊 เข้าร่วม dashboard...")
         sio.emit('join_dashboard')
         time.sleep(1)
         
-        # Send test data every 5 seconds
-        print("📤 Sending test data every 5 seconds... (Press Ctrl+C to stop)")
+        # ส่งข้อมูลทดสอบทุก 3 วินาที
+        print("📤 ส่งข้อมูลทดสอบทุก 3 วินาที... (กด Ctrl+C เพื่อหยุด)")
         
         while True:
-            time.sleep(5)
+            time.sleep(3)
             send_test_data()
             
     except KeyboardInterrupt:
-        print("\n🛑 Stopping test client...")
+        print("\n🛑 หยุดการทดสอบ...")
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"❌ ข้อผิดพลาด: {e}")
     finally:
         if sio.connected:
             sio.disconnect()
-        print("✅ Test client stopped")
+        print("✅ หยุดการทดสอบแล้ว")
 
 if __name__ == '__main__':
     main()

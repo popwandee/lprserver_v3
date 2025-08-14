@@ -2,11 +2,30 @@
 
 ## ภาพรวมและแนวคิดหลัก (Context Engineering)
 
-ระบบ LPR Server นี้จะทำหน้าที่เป็นศูนย์กลางในการรวบรวม จัดการ วิเคราะห์ และแสดงผลข้อมูลที่ได้จากกล้อง AI Camera หลายตัวที่ติดตั้งอยู่ในพื้นที่ต่างๆ
+ระบบ LPR Server v3 นี้จะทำหน้าที่เป็นศูนย์กลางในการรวบรวม จัดการ วิเคราะห์ และแสดงผลข้อมูลที่ได้จากกล้อง AI Camera หลายตัวที่ติดตั้งอยู่ในพื้นที่ต่างๆ
+
+### สถาปัตยกรรมที่ปรับปรุงแล้ว (Enhanced Architecture)
+
+ระบบ LPR Server v3 ได้รับการปรับปรุงให้เป็นไปตามมาตรฐานที่กำหนดไว้ โดยใช้แนวคิดหลัก 3 ประการ:
 
 1. **Dependency Injection (DI)** - สำหรับการจัดการ Dependencies ระหว่าง Components
 2. **Flask Blueprints** - สำหรับการแบ่งส่วนการทำงานของ Web UI
 3. **Absolute Imports** - สำหรับการจัดการ imports ที่ชัดเจนและสม่ำเสมอ
+
+### 1. Absolute Imports Pattern
+- **ไฟล์**: `src/core/import_helper.py`
+- **หน้าที่**: จัดการ import paths ให้ชัดเจนและสม่ำเสมอ
+- **ประโยชน์**: ลดปัญหา circular imports, ง่ายต่อการ refactor
+
+### 2. Dependency Injection (DI)
+- **ไฟล์**: `src/core/dependency_container.py`
+- **หน้าที่**: จัดการ dependencies ระหว่าง components
+- **ประโยชน์**: ลด coupling, ง่ายต่อการ testing
+
+### 3. Flask Blueprints
+- **โครงสร้าง**: `src/web/blueprints/`
+- **หน้าที่**: แบ่งส่วนการทำงานของ Web UI ตามหน้าที่
+- **ประโยชน์**: Modular design, ง่ายต่อการ maintain
 
 โปรเจกต์นี้จะใช้ Design Pattern แบบ Dependency Injection เพื่อจัดการ Class ต่างๆ และใช้ Flask Blueprints สำหรับการแบ่งส่วนการทำงานของ Web UI เพื่อเพิ่ม Modularization โดยมี `/core/dependency_container.py` กำกับ module dependencies และใช้ absolute imports ผ่าน `import_helper.py`
 
@@ -29,6 +48,86 @@ Dependency Injection ช่วยให้เราสามารถ:
 - ทำให้ Testing ง่ายขึ้น
 - ลดการ Coupling ระหว่าง Components
 - จัดการ Lifecycle ของ Services ได้ดีขึ้น
+
+## โครงสร้างไฟล์ (File Structure)
+
+```
+lprserver_v3/
+├── src/
+│   ├── core/
+│   │   ├── import_helper.py          # Absolute imports management
+│   │   ├── dependency_container.py   # DI container
+│   │   ├── models/                   # Database models
+│   │   │   ├── __init__.py
+│   │   │   ├── lpr_record.py
+│   │   │   ├── camera.py
+│   │   │   ├── blacklist_plate.py
+│   │   │   └── health_check.py
+│   │   └── utils/                    # Utility functions
+│   ├── services/                     # Business logic layer
+│   │   ├── __init__.py
+│   │   ├── websocket_service.py      # WebSocket communication
+│   │   ├── blacklist_service.py      # Blacklist management
+│   │   ├── health_service.py         # Health monitoring
+│   │   └── database_service.py       # Database operations
+│   ├── web/                          # Web interface layer
+│   │   ├── blueprints/
+│   │   │   ├── main.py               # Main routes
+│   │   │   ├── api.py                # API endpoints
+│   │   │   └── health.py             # Health monitoring endpoints
+│   │   └── static/                   # Static files
+│   ├── constants.py                  # Application constants
+│   └── app.py                        # Application factory
+├── config.py                         # Configuration management
+├── wsgi.py                          # WSGI entry point
+├── requirements.txt                  # Python dependencies
+└── README.md                        # Project documentation
+```
+
+## Service Layer Architecture
+
+### 1. WebSocket Service (`websocket_service.py`)
+**หน้าที่**: จัดการการสื่อสารกับ Edge AI Cameras
+- รับข้อมูล LPR จากกล้องผ่าน WebSocket port 8765
+- จัดการการลงทะเบียนกล้อง
+- บันทึกข้อมูลลงฐานข้อมูล
+- ส่งข้อมูล real-time ไปยัง dashboard
+
+### 2. Blacklist Service (`blacklist_service.py`)
+**หน้าที่**: จัดการรถ Blacklist
+- เพิ่ม/ลบรถจาก blacklist
+- ตรวจสอบรถที่ตรวจจับได้กับ blacklist
+- ส่งการแจ้งเตือนเมื่อพบรถ blacklist
+- สถิติ blacklist
+
+### 3. Health Service (`health_service.py`)
+**หน้าที่**: ตรวจสอบสถานะระบบ
+- ตรวจสอบฐานข้อมูล
+- ตรวจสอบพื้นที่จัดเก็บไฟล์
+- ตรวจสอบทรัพยากรระบบ
+- ตรวจสอบการเชื่อมต่อกล้อง
+- ตรวจสอบสถานะ services
+
+### 4. Database Service (`database_service.py`)
+**หน้าที่**: จัดการฐานข้อมูล
+- การเชื่อมต่อฐานข้อมูล
+- การทำความสะอาดข้อมูลเก่า
+- การ optimize ฐานข้อมูล
+- การ backup และ restore
+
+## Health Monitoring System
+
+### Real-time Monitoring
+- **WebSocket Events**: ส่งข้อมูลสถานะแบบ real-time
+- **Periodic Checks**: ตรวจสอบทุก 5 นาที
+- **Dashboard Integration**: แสดงผลบน Web UI
+
+### Health Check Components
+1. **Database Connectivity**: ตรวจสอบการเชื่อมต่อฐานข้อมูล
+2. **Disk Space**: ตรวจสอบพื้นที่จัดเก็บไฟล์
+3. **System Resources**: ตรวจสอบ CPU และ Memory
+4. **Camera Connectivity**: ตรวจสอบการเชื่อมต่อกล้อง
+5. **Service Status**: ตรวจสอบสถานะ services
 
 ### Service Layer
 Services เป็นชั้นกลางที่จัดการ Business Logic ใช้ absolute imports:

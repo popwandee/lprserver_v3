@@ -1,7 +1,15 @@
 # Developer Documentation: AI Camera (ALPR)
 
 เวอร์ชัน: 3.0  
-สถานะ: Onboarding Guide สำหรับนักพัฒนาใหม่
+สถานะ: อัปเดตล่าสุด 12 สิงหาคม 2025  
+ระบบ: LPR Server v3 
+
+### สถานะระบบล่าสุด
+- ✅ **ระบบทำงานได้อย่างสมบูรณ์**
+- ✅ **WebSocket Event Handlers** - แก้ไขปัญหา parameter mismatch
+- ✅ **BlacklistService Methods** - เพิ่ม class method และแก้ไขการเรียกใช้
+- ✅ **API Endpoints** - แก้ไขการเรียกใช้ services ผ่าน dependency container
+- ✅ **Database Operations** - เพิ่ม imports ที่จำเป็น
 
 ---
 
@@ -32,7 +40,7 @@ Edge Cameras ──WebSocket──> WebSocket Server ──> Flask App ──> D
 ```bash
 # Clone repo
 cd /path/to
-git clone https://your-repo/lprserver_v3.git
+git clone https://github.com/popwandee/lprserver_v3.git
 cd lprserver_v3
 
 # Python venv

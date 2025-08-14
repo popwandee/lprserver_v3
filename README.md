@@ -4,64 +4,139 @@
 
 ## คุณสมบัติหลัก
 
+### ระบบหลัก
 - ✅ รับข้อมูลจาก Edge Camera ผ่าน WebSocket (Port 8765)
 - ✅ บันทึกข้อมูลลงฐานข้อมูล SQLite
 - ✅ บันทึกภาพลงใน storage directory
 - ✅ แสดงผลในรูปแบบตารางพร้อมการกรองข้อมูล
-- ✅ แดชบอร์ดแสดงสถิติการใช้งาน
+- ✅ แดชบอร์ดแสดงสถิติการใช้งานแบบ real-time
 - ✅ REST API สำหรับการเข้าถึงข้อมูล
 - ✅ Real-time updates ผ่าน WebSocket
+
+### ระบบจัดการ
 - ✅ ระบบจัดการด้วย systemd service
 - ✅ Reverse proxy ด้วย nginx
+- ✅ Service management script (`manage_services.sh`)
+- ✅ Health monitoring system
+
+### ระบบ Blacklist
 - ✅ ระบบจัดการ Blacklist สำหรับป้ายทะเบียน
 - ✅ การตรวจจับและแจ้งเตือนป้ายทะเบียนที่อยู่ใน blacklist
-- ✅ สถิติการใช้งานแบบ real-time
-- ✅ Health monitoring system
+- ✅ สถิติการตรวจจับ blacklist แบบ real-time
+- ✅ การจัดการ blacklist ผ่าน Web Interface และ API
+
+### โมดูลเพิ่มเติม
+- ✅ AI Camera Management
+- ✅ Detection Management
+- ✅ Map and Tracking
+- ✅ System Management
+- ✅ User Management
+- ✅ Report Generation
+- ✅ Health Monitoring
+
+### การทดสอบ
+- ✅ ระบบทดสอบอัตโนมัติ (`test_system.py`)
+- ✅ WebSocket test client (`test_client.py`, `simple_test_client.py`)
+- ✅ API test client (`test_api.py`)
+- ✅ Performance testing
+- ✅ Database integrity checking
+
+## สถาปัตยกรรมระบบ
+
+### WebSocket Server Architecture
+```
+WebSocket Server (Port 8765)
+├── Flask Application
+├── SocketIO Server
+├── REST API Endpoints
+└── In-Memory Data Storage
+```
+
+### เทคโนโลยีที่ใช้
+- **Flask**: Web framework สำหรับ HTTP endpoints
+- **Flask-SocketIO**: WebSocket server สำหรับ real-time communication
+- **In-Memory Storage**: เก็บข้อมูลในหน่วยความจำ (สำหรับ demo)
+
+### การรองรับ Client Types
+- ✅ **Socket.IO Clients**: Real-time communication สำหรับ cameras และ dashboards
+- ✅ **REST API Clients**: HTTP endpoints สำหรับ data retrieval และ monitoring
+- ✅ **Unified Architecture**: ใช้ Flask + SocketIO ร่วมกัน
+- ✅ **Comprehensive Endpoints**: ครอบคลุมการใช้งานหลักทั้งหมด
 
 ## โครงสร้างโปรเจกต์
 
 ```
 lprserver_v3/
-├── src/                    # Source code
-│   ├── app.py             # Flask application factory
-│   ├── web/               # Web application
-│   │   └── blueprints/    # Flask blueprints
-│   │       ├── main.py    # Main web routes
-│   │       └── api.py     # API routes
-│   ├── services/          # Business logic services
-│   │   ├── websocket_service.py  # WebSocket handling
-│   │   ├── blacklist_service.py  # Blacklist management
-│   │   ├── health_service.py     # Health monitoring
-│   │   └── database_service.py   # Database operations
-│   └── core/              # Core components
-│       ├── models/        # Database models
-│       │   ├── lpr_record.py     # LPR Record model
+├── src/                           # Source code
+│   ├── app.py                     # Flask application factory
+│   ├── web/                       # Web application
+│   │   └── blueprints/            # Flask blueprints
+│   │       ├── __init__.py        # Blueprints package
+│   │       ├── main.py            # Main web routes
+│   │       ├── api.py             # API routes
+│   │       ├── aicamera.py        # AI Camera management
+│   │       ├── detection.py       # Detection management
+│   │       ├── map.py             # Map and tracking
+│   │       ├── system.py          # System management
+│   │       ├── user.py            # User management
+│   │       ├── report.py          # Report generation
+│   │       └── health.py          # Health monitoring
+│   ├── services/                  # Business logic services
+│   │   ├── __init__.py            # Services package
+│   │   ├── websocket_service.py   # WebSocket handling
+│   │   ├── blacklist_service.py   # Blacklist management
+│   │   ├── health_service.py      # Health monitoring
+│   │   └── database_service.py    # Database operations
+│   └── core/                      # Core components
+│       ├── models/                # Database models
+│       │   ├── __init__.py        # Models package
+│       │   ├── lpr_record.py      # LPR Record model
 │       │   ├── blacklist_plate.py # Blacklist model
-│       │   ├── camera.py         # Camera model
-│       │   └── health_check.py   # Health check model
+│       │   ├── camera.py          # Camera model
+│       │   └── health_check.py    # Health check model
 │       ├── dependency_container.py # Dependency injection
-│       └── import_helper.py      # Import utilities
-├── templates/             # HTML templates
-│   ├── base.html          # Base template
-│   ├── index.html         # Home page
-│   ├── dashboard.html     # Dashboard page
-│   ├── records.html       # Records table page
-│   └── blacklist.html     # Blacklist management page
-├── storage/               # File storage
-│   └── images/            # LPR images
-├── logs/                  # Application logs
-├── database/              # Database files
-├── nginx/                 # Nginx configuration
-│   └── lprserver.conf     # Nginx config
-├── config.py              # Application configuration
-├── requirements.txt       # Python dependencies
-├── run.py                 # Development server
-├── wsgi.py                # Production WSGI entry
-├── websocket_server.py    # WebSocket server
-├── setup.sh               # Setup script
-├── lprserver.service      # Main service
-├── lprserver-websocket.service  # WebSocket service
-└── README.md              # This file
+│       ├── import_helper.py       # Import utilities
+│       └── utils/                 # Utility functions
+├── templates/                     # HTML templates
+│   ├── base.html                  # Base template
+│   ├── index.html                 # Home page
+│   ├── dashboard.html             # Dashboard page
+│   ├── records.html               # Records table page
+│   ├── blacklist.html             # Blacklist management page
+│   ├── aicamera/                  # AI Camera templates
+│   ├── detection/                 # Detection templates
+│   ├── map/                       # Map templates
+│   ├── system/                    # System templates
+│   ├── user/                      # User templates
+│   └── report/                    # Report templates
+├── storage/                       # File storage
+│   └── images/                    # LPR images
+├── logs/                          # Application logs
+├── database/                      # Database files
+├── config.py                      # Application configuration
+├── requirements.txt               # Python dependencies
+├── run.py                         # Development server
+├── wsgi.py                        # Production WSGI entry
+├── websocket_server.py            # WebSocket server (Port 8765)
+├── setup.sh                       # Setup script
+├── manage_services.sh             # Service management script
+├── test_system.py                 # System test script
+├── test_client.py                 # WebSocket test client
+├── simple_test_client.py          # Simple WebSocket test client
+├── test_api.py                    # API test client
+├── lprserver.service              # Main service
+├── lprserver-websocket.service    # WebSocket service
+├── lprserver.conf                 # Nginx configuration
+├── env.example                    # Environment variables example
+├── coding_rule.md                 # Development guidelines
+├── DEVELOPMENT_REPORT.md          # Development report
+├── DEVELOPMENT_GUIDE.md           # Development guide
+├── DEPLOYMENT_GUIDE_RPI5.md       # Raspberry Pi 5 deployment guide
+├── SYSTEMD_SETUP.md               # Systemd setup guide
+├── USER_MANUAL_AI_CAMERA.md       # AI Camera user manual
+├── DEVELOPER_DOCUMENTATION_ALPR.md # Developer documentation
+├── ARCHITECTURE_ANALYSIS.md       # Architecture analysis
+└── README.md                      # This file
 ```
 
 ## การติดตั้ง
@@ -94,8 +169,27 @@ lprserver_v3/
    - ตั้งค่า systemd services
    - ตั้งค่า nginx
    - เริ่มต้นระบบ
+   - ทดสอบระบบ
 
-3. **ตรวจสอบสถานะ**
+3. **ตรวจสอบการติดตั้ง**
+   ```bash
+   # ตรวจสอบสถานะ services
+   ./manage_services.sh status
+   
+   # ทดสอบระบบ
+   python test_system.py
+   
+   # ทดสอบ WebSocket server
+   python simple_test_client.py
+   
+   # ทดสอบ API endpoints
+   python test_api.py
+   
+   # ตรวจสอบ web interface
+   curl -I http://localhost
+   ```
+
+4. **ตรวจสอบสถานะ**
    ```bash
    sudo systemctl status lprserver.service
    sudo systemctl status lprserver-websocket.service
@@ -106,273 +200,187 @@ lprserver_v3/
 
 ### Web Interface
 
+#### หน้าหลัก
 - **หน้าแรก**: http://localhost
 - **แดชบอร์ด**: http://localhost/dashboard
 - **รายการบันทึก**: http://localhost/records
 - **จัดการ Blacklist**: http://localhost/blacklist
 
-### WebSocket Server
+#### โมดูลเพิ่มเติม
+- **AI Camera**: http://localhost/aicamera
+- **Detection**: http://localhost/detection
+- **Map**: http://localhost/map
+- **System**: http://localhost/system
+- **User**: http://localhost/user
+- **Report**: http://localhost/report
+- **Health**: http://localhost/health
 
-- **Port**: 8765
-- **Protocol**: WebSocket
-- **Events**:
-  - `camera_register`: ลงทะเบียนกล้อง
-  - `lpr_data`: ส่งข้อมูล LPR
+### WebSocket Server (Port 8765)
 
-### API Endpoints
+#### Connection
+```python
+import socketio
 
-#### LPR Records
-- `GET /api/records` - ดึงรายการบันทึก
-- `GET /api/records/<id>` - ดึงบันทึกเฉพาะ
-- `POST /api/records` - สร้างบันทึกใหม่
-- `GET /api/statistics` - ดึงสถิติระบบ
-
-#### Blacklist Management
-- `GET /api/blacklist` - ดึงรายการ blacklist
-- `POST /api/blacklist` - เพิ่มป้ายทะเบียนใน blacklist
-- `DELETE /api/blacklist/<id>` - ลบป้ายทะเบียนจาก blacklist
-- `GET /api/blacklist/statistics` - ดึงสถิติ blacklist
-- `GET /api/blacklist/detections` - ดึงการตรวจจับ blacklist
-
-## การส่งข้อมูลจาก Edge Camera
-
-### การเชื่อมต่อ WebSocket
-
-```javascript
-const socket = io('ws://your-server:8765');
-
-// ลงทะเบียนกล้อง
-socket.emit('camera_register', {
-    camera_id: 'CAM001'
-});
-
-// ส่งข้อมูล LPR
-socket.emit('lpr_data', {
-    camera_id: 'CAM001',
-    plate_number: 'กข1234',
-    confidence: 85.5,
-    image_data: 'base64_encoded_image_data',
-    location: 'ประตูหน้า'
-});
+sio = socketio.Client()
+sio.connect('http://localhost:8765')
 ```
 
-### ตัวอย่างข้อมูล JSON
+#### Events ที่รองรับ
+- `connect`: เมื่อ client เชื่อมต่อ
+- `disconnect`: เมื่อ client ตัดการเชื่อมต่อ
+- `camera_register`: ลงทะเบียนกล้อง
+- `lpr_data`: ส่งข้อมูล LPR detection
+- `ping`: ทดสอบการเชื่อมต่อ
+- `join_dashboard`: เข้าร่วม dashboard room
 
-```json
-{
-    "camera_id": "CAM001",
-    "plate_number": "กข1234",
-    "confidence": 85.5,
-    "image_data": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ...",
-    "location": "ประตูหน้า"
-}
+#### Response Events
+- `status`: สถานะการทำงาน
+- `lpr_response`: ตอบกลับข้อมูล LPR
+- `error`: ข้อผิดพลาด
+- `pong`: ตอบกลับ ping
+
+#### ตัวอย่างการใช้งาน
+```python
+# ลงทะเบียนกล้อง
+sio.emit('camera_register', {'camera_id': 'CAM001'})
+
+# ส่งข้อมูล LPR
+sio.emit('lpr_data', {
+    'camera_id': 'CAM001',
+    'plate_number': 'กข1234',
+    'confidence': 85.5,
+    'location': 'ประตูหน้า',
+    'image_data': 'base64_encoded_image'
+})
 ```
 
-## การจัดการระบบ
+### REST API Endpoints
 
-### ตรวจสอบสถานะ
+#### Server Information
+- `GET /` - สถานะเซิร์ฟเวอร์
+- `GET /websocket` - ข้อมูล WebSocket
 
+#### Statistics API
+- `GET /api/statistics` - สถิติข้อมูลทั้งหมด
+
+#### Records API
+- `GET /api/records` - รายการ LPR records
+  - Query Parameters:
+    - `limit`: จำนวนรายการ (default: 20)
+    - `camera_id`: กรองตามกล้อง
+    - `plate_number`: กรองตามป้ายทะเบียน
+
+#### Cameras API
+- `GET /api/cameras` - ข้อมูลกล้องทั้งหมด
+
+#### ตัวอย่างการใช้งาน API
 ```bash
-# ตรวจสอบสถานะ services
-sudo systemctl status lprserver.service
-sudo systemctl status lprserver-websocket.service
-sudo systemctl status nginx
+# ดึงสถิติ
+curl http://localhost:8765/api/statistics
 
-# ดู logs
-sudo journalctl -u lprserver.service -f
-sudo journalctl -u lprserver-websocket.service -f
-sudo tail -f /var/log/nginx/lprserver_access.log
-```
+# ดึงรายการล่าสุด 10 รายการ
+curl "http://localhost:8765/api/records?limit=10"
 
-### การรีสตาร์ท
+# ดึงรายการจากกล้องเฉพาะ
+curl "http://localhost:8765/api/records?camera_id=CAM001"
 
-```bash
-# รีสตาร์ท services
-sudo systemctl restart lprserver.service
-sudo systemctl restart lprserver-websocket.service
-sudo systemctl restart nginx
-```
-
-### การอัปเดต
-
-```bash
-# Pull โค้ดใหม่
-git pull
-
-# รีสตาร์ท services
-sudo systemctl restart lprserver.service
-sudo systemctl restart lprserver-websocket.service
-```
-
-## การกำหนดค่า
-
-### Environment Variables
-
-- `FLASK_CONFIG`: การกำหนดค่า (development/production)
-- `SECRET_KEY`: Flask secret key
-- `DATABASE_URL`: URL ฐานข้อมูล
-- `IMAGE_STORAGE_PATH`: Path สำหรับเก็บภาพ
-- `LOG_LEVEL`: ระดับ logging
-
-### การกำหนดค่า Nginx
-
-ไฟล์: `/etc/nginx/sites-available/lprserver`
-
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-    
-    location / {
-        proxy_pass http://unix:/tmp/lprserver.sock;
-        # ... other settings
-    }
-}
-```
-
-## การพัฒนา
-
-### Development Mode
-
-```bash
-# เปิดใช้งาน development mode
-export FLASK_CONFIG=development
-export FLASK_DEBUG=true
-
-# รัน development server
-python run.py
+# ดึงข้อมูลกล้อง
+curl http://localhost:8765/api/cameras
 ```
 
 ### การทดสอบ
 
-#### ทดสอบ WebSocket Connection
+#### ทดสอบ WebSocket
 ```bash
+# ทดสอบ WebSocket client
+python simple_test_client.py
+
 # ทดสอบ WebSocket connection
-python -c "
-import socketio
-sio = socketio.Client()
-sio.connect('http://localhost:8765')
-sio.emit('camera_register', {'camera_id': 'TEST_CAM'})
-sio.disconnect()
-"
+python test_client.py
 ```
 
-#### ทดสอบ API Endpoints
+#### ทดสอบ API
 ```bash
-# ทดสอบการเพิ่ม blacklist
-curl -X POST http://localhost:5000/api/blacklist \
-  -H "Content-Type: application/json" \
-  -d '{"license_plate_text": "กข1234", "reason": "ทดสอบระบบ", "added_by": "admin"}'
+# ทดสอบ API endpoints
+python test_api.py
 
-# ทดสอบการดึงข้อมูล blacklist
-curl http://localhost:5000/api/blacklist
-
-# ทดสอบการสร้าง LPR record
-curl -X POST http://localhost:5000/api/records \
-  -H "Content-Type: application/json" \
-  -d '{"camera_id": "CAM001", "plate_number": "กข1234", "confidence": 0.95, "location": "หน้าหอพัก"}'
-
-# ทดสอบการดึงสถิติ
-curl http://localhost:5000/api/statistics
-curl http://localhost:5000/api/blacklist/statistics
+# ทดสอบด้วย curl
+curl http://localhost:8765/api/statistics
 ```
 
-#### ทดสอบระบบอัตโนมัติ
+#### ทดสอบระบบทั้งหมด
 ```bash
-# รัน test script
+# ทดสอบระบบอัตโนมัติ
 python test_system.py
 ```
 
-## การแก้ไขปัญหา
+## การจัดการระบบ
 
-### ปัญหาที่พบบ่อย
+### Service Management
+```bash
+# ตรวจสอบสถานะ
+./manage_services.sh status
 
-1. **Service ไม่เริ่มต้น**
-   ```bash
-   sudo journalctl -u lprserver.service -f
-   ```
+# เริ่มต้นระบบ
+./manage_services.sh start
 
-2. **WebSocket Connection Errors**
-   ```bash
-   # ตรวจสอบ WebSocket service
-   sudo journalctl -u lprserver-websocket.service -f
-   
-   # ตรวจสอบ port 8765
-   netstat -tlnp | grep 8765
-   ```
+# หยุดระบบ
+./manage_services.sh stop
 
-3. **API Endpoint Errors**
-   ```bash
-   # ตรวจสอบ Flask application logs
-   tail -f logs/app.log
-   
-   # ทดสอบ API endpoints
-   curl -v http://localhost:5000/api/blacklist
-   ```
+# รีสตาร์ทระบบ
+./manage_services.sh restart
+```
 
-4. **Database error**
-   ```bash
-   # ตรวจสอบฐานข้อมูล
-   sqlite3 database/lprserver.db ".tables"
-   
-   # ตรวจสอบ database permissions
-   ls -la database/
-   ```
+### Logs
+```bash
+# ดู logs ของ WebSocket server
+sudo journalctl -u lprserver-websocket.service -f
 
-5. **Nginx error**
-   ```bash
-   sudo nginx -t
-   sudo tail -f /var/log/nginx/error.log
-   ```
+# ดู logs ของ main server
+sudo journalctl -u lprserver.service -f
 
-6. **Permission error**
-   ```bash
-   sudo chown -R www-data:www-data /home/devuser/lprserver_v3
-   sudo chmod -R 755 /home/devuser/lprserver_v3
-   ```
+# ดู nginx logs
+sudo tail -f /var/log/nginx/lprserver_access.log
+```
 
-7. **Blacklist System Issues**
-   ```bash
-   # ตรวจสอบ blacklist service
-   python -c "from src.services.blacklist_service import BlacklistService; print('BlacklistService imported successfully')"
-   
-   # ตรวจสอบ database models
-   python -c "from core.models.blacklist_plate import BlacklistPlate; print('BlacklistPlate model loaded')"
-   ```
+## การพัฒนา
 
-## สถานะระบบล่าสุด
+### การเพิ่ม WebSocket Events
+1. เพิ่ม event handler ใน `websocket_server.py`
+2. ทดสอบด้วย `simple_test_client.py`
+3. อัปเดตเอกสาร
 
-### ✅ ระบบทำงานได้อย่างสมบูรณ์ (อัปเดตล่าสุด: 12 สิงหาคม 2025)
+### การเพิ่ม API Endpoints
+1. เพิ่ม route ใน `websocket_server.py`
+2. ทดสอบด้วย `test_api.py`
+3. อัปเดตเอกสาร
 
-#### การแก้ไขปัญหาที่สำคัญ:
-1. **WebSocket Event Handlers** - แก้ไขปัญหา parameter mismatch ใน `handle_connect` และ `handle_disconnect`
-2. **BlacklistService Methods** - เพิ่ม class method `get_active_blacklist` และแก้ไขการเรียกใช้ instance methods
-3. **API Endpoints** - แก้ไขการเรียกใช้ services ผ่าน dependency container
-4. **Database Operations** - เพิ่ม imports ที่จำเป็นสำหรับ `db`, `timedelta`, และ `db.func`
+### การทดสอบ
+- ใช้ `simple_test_client.py` สำหรับ WebSocket testing
+- ใช้ `test_api.py` สำหรับ API testing
+- ใช้ `test_system.py` สำหรับ system testing
 
-#### ฟีเจอร์ที่ทำงานได้:
-- ✅ **WebSocket Server** - รับข้อมูลจาก Edge Camera
-- ✅ **LPR Data Processing** - บันทึกและประมวลผลข้อมูลป้ายทะเบียน
-- ✅ **Blacklist System** - จัดการและตรวจจับป้ายทะเบียนที่อยู่ใน blacklist
-- ✅ **Real-time Dashboard** - แสดงสถิติแบบ real-time
-- ✅ **REST API** - ทุก endpoints ทำงานได้ปกติ
-- ✅ **Web Interface** - หน้าเว็บทุกหน้าทำงานได้
+## ข้อจำกัดและข้อเสนอแนะ
 
-#### การทดสอบที่ผ่าน:
-- ✅ การเพิ่มข้อมูล blacklist
-- ✅ การตรวจจับป้ายทะเบียนที่อยู่ใน blacklist
-- ✅ การอัปเดตสถิติการตรวจจับ
-- ✅ WebSocket connections
-- ✅ API responses
+### ข้อจำกัดปัจจุบัน
+- ใช้ In-Memory storage (ข้อมูลหายเมื่อ restart)
+- ไม่มี authentication/authorization
+- ไม่มี rate limiting
 
-### 🚀 พร้อมใช้งานสำหรับ Production
+### ข้อเสนอแนะการพัฒนา
+- เพิ่ม database persistence (SQLite/PostgreSQL)
+- เพิ่ม authentication system
+- เพิ่ม rate limiting และ security headers
+- เพิ่ม API documentation (Swagger/OpenAPI)
 
-ระบบพร้อมใช้งานสำหรับการรับข้อมูลจาก Edge Camera และการจัดการ blacklist อย่างสมบูรณ์
+## สรุป
 
-## การสนับสนุน
+ระบบ LPR Server v3 รองรับทั้ง Socket.IO และ REST API อย่างครบถ้วน:
 
-หากพบปัญหาหรือต้องการความช่วยเหลือ กรุณาเปิด issue ใน repository หรือติดต่อทีมพัฒนา
+✅ **Socket.IO Support**: Real-time communication สำหรับ cameras และ dashboards  
+✅ **REST API Support**: HTTP endpoints สำหรับ data retrieval และ monitoring  
+✅ **Unified Architecture**: ใช้ Flask + SocketIO ร่วมกัน  
+✅ **Comprehensive Endpoints**: ครอบคลุมการใช้งานหลักทั้งหมด  
+✅ **Flexible Client Support**: รองรับ client หลายประเภท  
 
-## License
-
-MIT License
+ระบบพร้อมใช้งานสำหรับการพัฒนาและทดสอบ LPR application
