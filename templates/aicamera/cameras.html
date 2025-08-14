@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}จัดการกล้อง - AI Camera Manager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-video text-primary"></i> จัดการกล้อง
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="addCamera()">
+                <i class="fas fa-plus"></i> เพิ่มกล้อง
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+                <i class="fas fa-sync-alt"></i> รีเฟรช
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Camera Statistics -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="data-card">
+            <div class="metric-value" id="totalCameras">3</div>
+            <div class="metric-label">กล้องทั้งหมด</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="data-card">
+            <div class="metric-value" id="onlineCameras">2</div>
+            <div class="metric-label">กล้องออนไลน์</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="data-card">
+            <div class="metric-value" id="offlineCameras">1</div>
+            <div class="metric-label">กล้องออฟไลน์</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="data-card">
+            <div class="metric-value" id="totalDetections">2707</div>
+            <div class="metric-label">การตรวจจับทั้งหมด</div>
+        </div>
+    </div>
+</div>
+
+<!-- Camera List -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list text-info"></i> รายการกล้อง
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="camerasTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>ชื่อ</th>
+                                <th>ตำแหน่ง</th>
+                                <th>IP Address</th>
+                                <th>สถานะ</th>
+                                <th>การตรวจจับล่าสุด</th>
+                                <th>การดำเนินการ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>CAM001</strong></td>
+                                <td>Main Entrance Camera</td>
+                                <td>Main Gate</td>
+                                <td>192.168.1.100</td>
+                                <td><span class="status-indicator"></span> ออนไลน์</td>
+                                <td>2024-01-15 14:30:25</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button class="btn btn-outline-info" onclick="viewCamera('CAM001')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-outline-warning" onclick="testConnection('CAM001')">
+                                            <i class="fas fa-plug"></i>
+                                        </button>
+                                        <button class="btn btn-outline-success" onclick="editCamera('CAM001')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>CAM002</strong></td>
+                                <td>Parking Lot Camera</td>
+                                <td>Parking Area A</td>
+                                <td>192.168.1.101</td>
+                                <td><span class="status-indicator"></span> ออนไลน์</td>
+                                <td>2024-01-15 14:28:10</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button class="btn btn-outline-info" onclick="viewCamera('CAM002')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-outline-warning" onclick="testConnection('CAM002')">
+                                            <i class="fas fa-plug"></i>
+                                        </button>
+                                        <button class="btn btn-outline-success" onclick="editCamera('CAM002')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>CAM003</strong></td>
+                                <td>Exit Camera</td>
+                                <td>Exit Gate</td>
+                                <td>192.168.1.102</td>
+                                <td><span class="status-indicator error"></span> ออฟไลน์</td>
+                                <td>2024-01-15 12:15:30</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button class="btn btn-outline-info" onclick="viewCamera('CAM003')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-outline-warning" onclick="testConnection('CAM003')">
+                                            <i class="fas fa-plug"></i>
+                                        </button>
+                                        <button class="btn btn-outline-success" onclick="editCamera('CAM003')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize DataTable
+    $('#camerasTable').DataTable({
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/th.json'
+        },
+        responsive: true,
+        order: [[0, 'asc']]
+    });
+});
+
+function addCamera() {
+    alert('ฟีเจอร์เพิ่มกล้องจะพร้อมใช้งานในเวอร์ชันถัดไป');
+}
+
+function viewCamera(cameraId) {
+    window.open(`/aicamera/cameras/${cameraId}`, '_blank');
+}
+
+function testConnection(cameraId) {
+    showLoading();
+    fetch(`/aicamera/api/cameras/${cameraId}/test-connection`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`การทดสอบการเชื่อมต่อ: ${data.result.status}`);
+            } else {
+                alert(`เกิดข้อผิดพลาด: ${data.error}`);
+            }
+        })
+        .catch(error => {
+            console.error('Error testing connection:', error);
+            alert('เกิดข้อผิดพลาดในการทดสอบการเชื่อมต่อ');
+        })
+        .finally(() => {
+            hideLoading();
+        });
+}
+
+function editCamera(cameraId) {
+    window.open(`/aicamera/cameras/${cameraId}/settings`, '_blank');
+}
+</script>
+{% endblock %}

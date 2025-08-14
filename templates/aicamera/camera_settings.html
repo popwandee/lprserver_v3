@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}ตั้งค่ากล้อง - AI Camera Manager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-cog text-primary"></i> ตั้งค่ากล้อง
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-success" onclick="saveSettings()">
+                <i class="fas fa-save"></i> บันทึก
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+                <i class="fas fa-sync-alt"></i> รีเฟรช
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Camera Settings -->
+<div class="row">
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-cogs text-info"></i> การตั้งค่าทั่วไป
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="cameraSettingsForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="cameraId" class="form-label">Camera ID</label>
+                            <input type="text" class="form-control" id="cameraId" value="CAM001" readonly>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="cameraName" class="form-label">ชื่อกล้อง</label>
+                            <input type="text" class="form-control" id="cameraName" value="Main Entrance Camera">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="ipAddress" class="form-label">IP Address</label>
+                            <input type="text" class="form-control" id="ipAddress" value="192.168.1.100">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="port" class="form-label">Port</label>
+                            <input type="number" class="form-control" id="port" value="8765">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="location" class="form-label">ตำแหน่ง</label>
+                            <input type="text" class="form-control" id="location" value="Main Gate">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="status" class="form-label">สถานะ</label>
+                            <select class="form-select" id="status">
+                                <option value="active" selected>ใช้งาน</option>
+                                <option value="inactive">ไม่ใช้งาน</option>
+                                <option value="maintenance">บำรุงรักษา</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Image Processing Settings -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-image text-warning"></i> การตั้งค่าการประมวลผลภาพ
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="resolution" class="form-label">ความละเอียด</label>
+                        <select class="form-select" id="resolution">
+                            <option value="1920x1080" selected>1920x1080 (Full HD)</option>
+                            <option value="1280x720">1280x720 (HD)</option>
+                            <option value="2560x1440">2560x1440 (2K)</option>
+                            <option value="3840x2160">3840x2160 (4K)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="fps" class="form-label">Frame Rate (FPS)</label>
+                        <select class="form-select" id="fps">
+                            <option value="15">15 FPS</option>
+                            <option value="25">25 FPS</option>
+                            <option value="30" selected>30 FPS</option>
+                            <option value="60">60 FPS</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="sensitivity" class="form-label">ความไวในการตรวจจับ</label>
+                        <input type="range" class="form-range" id="sensitivity" min="0" max="1" step="0.1" value="0.8">
+                        <div class="form-text">ค่า: <span id="sensitivityValue">0.8</span></div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="confidence" class="form-label">ความเชื่อมั่นขั้นต่ำ</label>
+                        <input type="range" class="form-range" id="confidence" min="0" max="1" step="0.1" value="0.7">
+                        <div class="form-text">ค่า: <span id="confidenceValue">0.7</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <!-- Camera Status -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle text-info"></i> สถานะกล้อง
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <span class="status-indicator me-2"></span>
+                    <span>ออนไลน์</span>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted">IP Address:</small><br>
+                    <strong>192.168.1.100</strong>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted">การตรวจจับล่าสุด:</small><br>
+                    <strong>2024-01-15 14:30:25</strong>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted">การตรวจจับทั้งหมด:</small><br>
+                    <strong>1,250 รายการ</strong>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted">ความเชื่อมั่นเฉลี่ย:</small><br>
+                    <strong>87.5%</strong>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bolt text-warning"></i> การดำเนินการด่วน
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary" onclick="testConnection()">
+                        <i class="fas fa-plug me-2"></i>ทดสอบการเชื่อมต่อ
+                    </button>
+                    <button class="btn btn-outline-success" onclick="restartCamera()">
+                        <i class="fas fa-redo me-2"></i>รีสตาร์ทกล้อง
+                    </button>
+                    <button class="btn btn-outline-warning" onclick="calibrateCamera()">
+                        <i class="fas fa-crosshairs me-2"></i>ปรับเทียบกล้อง
+                    </button>
+                    <button class="btn btn-outline-info" onclick="viewLogs()">
+                        <i class="fas fa-file-alt me-2"></i>ดู Logs
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Update range values
+    document.getElementById('sensitivity').addEventListener('input', function() {
+        document.getElementById('sensitivityValue').textContent = this.value;
+    });
+    
+    document.getElementById('confidence').addEventListener('input', function() {
+        document.getElementById('confidenceValue').textContent = this.value;
+    });
+});
+
+function saveSettings() {
+    showLoading();
+    
+    // Simulate API call
+    setTimeout(() => {
+        hideLoading();
+        alert('บันทึกการตั้งค่าเรียบร้อยแล้ว');
+    }, 1000);
+}
+
+function testConnection() {
+    showLoading();
+    setTimeout(() => {
+        hideLoading();
+        alert('การทดสอบการเชื่อมต่อสำเร็จ');
+    }, 1500);
+}
+
+function restartCamera() {
+    if (confirm('คุณต้องการรีสตาร์ทกล้องหรือไม่?')) {
+        showLoading();
+        setTimeout(() => {
+            hideLoading();
+            alert('รีสตาร์ทกล้องเรียบร้อยแล้ว');
+        }, 2000);
+    }
+}
+
+function calibrateCamera() {
+    alert('ฟีเจอร์ปรับเทียบกล้องจะพร้อมใช้งานในเวอร์ชันถัดไป');
+}
+
+function viewLogs() {
+    window.open('/system/logs', '_blank');
+}
+</script>
+{% endblock %}

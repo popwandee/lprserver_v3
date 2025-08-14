@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block title %}ติดตามรถ - Map Manager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-route text-primary"></i> ติดตามรถ
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="exportTracking()">
+                <i class="fas fa-download"></i> ส่งออก
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+                <i class="fas fa-sync-alt"></i> รีเฟรช
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Search Panel -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-search text-info"></i> ค้นหารถ
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="plateSearch" class="form-label">ป้ายทะเบียน</label>
+                        <input type="text" class="form-control" id="plateSearch" placeholder="ป้อนป้ายทะเบียน">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="cameraSearch" class="form-label">กล้อง</label>
+                        <select class="form-select" id="cameraSearch">
+                            <option value="">ทั้งหมด</option>
+                            <option value="CAM001">CAM001 - Main Entrance</option>
+                            <option value="CAM002">CAM002 - Parking Lot</option>
+                            <option value="CAM003">CAM003 - Exit</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="startDate" class="form-label">วันที่เริ่มต้น</label>
+                        <input type="date" class="form-control" id="startDate">
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label for="endDate" class="form-label">วันที่สิ้นสุด</label>
+                        <input type="date" class="form-control" id="endDate">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <button class="btn btn-primary" onclick="searchVehicle()">
+                            <i class="fas fa-search me-2"></i>ค้นหา
+                        </button>
+                        <button class="btn btn-outline-secondary ms-2" onclick="clearSearch()">
+                            <i class="fas fa-times me-2"></i>ล้าง
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Map Container -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-map text-info"></i> แผนที่ติดตาม
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="mapContainer" style="height: 400px; background: #f8f9fa; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center;">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-map-marked-alt fa-3x mb-3"></i>
+                        <h5>แผนที่ติดตามรถ</h5>
+                        <p>กรุณาเลือกป้ายทะเบียนเพื่อดูเส้นทาง</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tracking Results -->
+<div class="row">
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list text-info"></i> รายการการตรวจจับ
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="trackingTable">
+                        <thead>
+                            <tr>
+                                <th>ลำดับ</th>
+                                <th>ป้ายทะเบียน</th>
+                                <th>กล้อง</th>
+                                <th>ตำแหน่ง</th>
+                                <th>วันที่/เวลา</th>
+                                <th>ทิศทาง</th>
+                                <th>ความเร็ว</th>
+                                <th>การดำเนินการ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1</td>
+                                <td><span class="badge bg-primary">กข-1234</span></td>
+                                <td>CAM001</td>
+                                <td>Main Gate</td>
+                                <td>2024-01-15 14:30:25</td>
+                                <td><i class="fas fa-arrow-right text-success"></i> เข้า</td>
+                                <td>25 km/h</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-info" onclick="viewLocation(1)">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td><span class="badge bg-primary">กข-1234</span></td>
+                                <td>CAM002</td>
+                                <td>Parking Area A</td>
+                                <td>2024-01-15 14:35:10</td>
+                                <td><i class="fas fa-arrow-up text-info"></i> ตรง</td>
+                                <td>15 km/h</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-info" onclick="viewLocation(2)">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>3</td>
+                                <td><span class="badge bg-primary">กข-1234</span></td>
+                                <td>CAM003</td>
+                                <td>Exit Gate</td>
+                                <td>2024-01-15 14:40:45</td>
+                                <td><i class="fas fa-arrow-left text-warning"></i> ออก</td>
+                                <td>30 km/h</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-info" onclick="viewLocation(3)">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <!-- Vehicle Info -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-car text-info"></i> ข้อมูลรถ
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <span class="badge bg-primary fs-5">กข-1234</span>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted">การตรวจจับครั้งแรก:</small><br>
+                    <strong>2024-01-15 14:30:25</strong>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted">การตรวจจับครั้งล่าสุด:</small><br>
+                    <strong>2024-01-15 14:40:45</strong>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted">จำนวนครั้งที่ตรวจพบ:</small><br>
+                    <strong>3 ครั้ง</strong>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted">เวลาที่อยู่ในพื้นที่:</small><br>
+                    <strong>10 นาที 20 วินาที</strong>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted">ความเร็วเฉลี่ย:</small><br>
+                    <strong>23.3 km/h</strong>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted">สถานะ:</small><br>
+                    <span class="badge bg-success">ปกติ</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Route Summary -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-route text-warning"></i> สรุปเส้นทาง
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <small class="text-muted">จุดเริ่มต้น:</small><br>
+                    <strong>Main Gate (CAM001)</strong>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted">จุดผ่าน:</small><br>
+                    <strong>Parking Area A (CAM002)</strong>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted">จุดสิ้นสุด:</small><br>
+                    <strong>Exit Gate (CAM003)</strong>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted">ระยะทางรวม:</small><br>
+                    <strong>ประมาณ 500 เมตร</strong>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted">รูปแบบการเคลื่อนที่:</small><br>
+                    <strong>เข้า → จอด → ออก</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize DataTable
+    $('#trackingTable').DataTable({
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/th.json'
+        },
+        responsive: true,
+        order: [[4, 'desc']],
+        pageLength: 10
+    });
+});
+
+function searchVehicle() {
+    const plate = document.getElementById('plateSearch').value;
+    const camera = document.getElementById('cameraSearch').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    if (!plate) {
+        alert('กรุณาป้อนป้ายทะเบียน');
+        return;
+    }
+    
+    showLoading();
+    setTimeout(() => {
+        hideLoading();
+        // Simulate search results
+        document.getElementById('mapContainer').innerHTML = `
+            <div class="text-center">
+                <i class="fas fa-route fa-3x text-primary mb-3"></i>
+                <h5>เส้นทางของ ${plate}</h5>
+                <p>แสดงเส้นทางจาก Main Gate → Parking Area → Exit Gate</p>
+            </div>
+        `;
+    }, 1500);
+}
+
+function clearSearch() {
+    document.getElementById('plateSearch').value = '';
+    document.getElementById('cameraSearch').value = '';
+    document.getElementById('startDate').value = '';
+    document.getElementById('endDate').value = '';
+    
+    document.getElementById('mapContainer').innerHTML = `
+        <div class="text-center text-muted">
+            <i class="fas fa-map-marked-alt fa-3x mb-3"></i>
+            <h5>แผนที่ติดตามรถ</h5>
+            <p>กรุณาเลือกป้ายทะเบียนเพื่อดูเส้นทาง</p>
+        </div>
+    `;
+}
+
+function exportTracking() {
+    showLoading();
+    setTimeout(() => {
+        hideLoading();
+        alert('ส่งออกข้อมูลการติดตามเรียบร้อยแล้ว');
+    }, 2000);
+}
+
+function viewLocation(recordId) {
+    alert(`แสดงตำแหน่งการตรวจจับ #${recordId} บนแผนที่`);
+}
+</script>
+{% endblock %}

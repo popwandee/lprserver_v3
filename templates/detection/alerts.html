@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}การแจ้งเตือน - Detection Manager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-bell text-primary"></i> การแจ้งเตือน
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-success" onclick="markAllRead()">
+                <i class="fas fa-check-double"></i> อ่านทั้งหมด
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+                <i class="fas fa-sync-alt"></i> รีเฟรช
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Alert Statistics -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="data-card">
+            <div class="metric-value" id="totalAlerts">24</div>
+            <div class="metric-label">การแจ้งเตือนทั้งหมด</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="data-card">
+            <div class="metric-value" id="unreadAlerts">8</div>
+            <div class="metric-label">ยังไม่อ่าน</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="data-card">
+            <div class="metric-value" id="blacklistAlerts">12</div>
+            <div class="metric-label">Blacklist</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="data-card">
+            <div class="metric-value" id="systemAlerts">4</div>
+            <div class="metric-label">ระบบ</div>
+        </div>
+    </div>
+</div>
+
+<!-- Alert Filters -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-filter text-info"></i> ตัวกรองการแจ้งเตือน
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="alertType" class="form-label">ประเภท</label>
+                        <select class="form-select" id="alertType">
+                            <option value="">ทั้งหมด</option>
+                            <option value="blacklist">Blacklist</option>
+                            <option value="system">ระบบ</option>
+                            <option value="camera">กล้อง</option>
+                            <option value="detection">การตรวจจับ</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="alertLevel" class="form-label">ระดับ</label>
+                        <select class="form-select" id="alertLevel">
+                            <option value="">ทั้งหมด</option>
+                            <option value="critical">วิกฤต</option>
+                            <option value="warning">เตือน</option>
+                            <option value="info">ข้อมูล</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="alertStatus" class="form-label">สถานะ</label>
+                        <select class="form-select" id="alertStatus">
+                            <option value="">ทั้งหมด</option>
+                            <option value="unread">ยังไม่อ่าน</option>
+                            <option value="read">อ่านแล้ว</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="alertDate" class="form-label">วันที่</label>
+                        <input type="date" class="form-control" id="alertDate">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <button class="btn btn-primary" onclick="applyFilters()">
+                            <i class="fas fa-search me-2"></i>ค้นหา
+                        </button>
+                        <button class="btn btn-outline-secondary ms-2" onclick="clearFilters()">
+                            <i class="fas fa-times me-2"></i>ล้างตัวกรอง
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alerts List -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list text-info"></i> รายการการแจ้งเตือน
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="alertsTable">
+                        <thead>
+                            <tr>
+                                <th>สถานะ</th>
+                                <th>ประเภท</th>
+                                <th>หัวข้อ</th>
+                                <th>รายละเอียด</th>
+                                <th>วันที่/เวลา</th>
+                                <th>การดำเนินการ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="table-danger">
+                                <td>
+                                    <span class="badge bg-danger">วิกฤต</span>
+                                    <span class="badge bg-warning">ใหม่</span>
+                                </td>
+                                <td><i class="fas fa-ban text-danger"></i> Blacklist</td>
+                                <td><strong>ตรวจพบรถ Blacklist</strong></td>
+                                <td>ป้ายทะเบียน <span class="badge bg-danger">คง-9999</span> ถูกตรวจพบที่ CAM001</td>
+                                <td>2024-01-15 14:25:45</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button class="btn btn-outline-info" onclick="viewAlert('1')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-outline-success" onclick="markAsRead('1')">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr class="table-warning">
+                                <td>
+                                    <span class="badge bg-warning">เตือน</span>
+                                    <span class="badge bg-warning">ใหม่</span>
+                                </td>
+                                <td><i class="fas fa-video text-warning"></i> กล้อง</td>
+                                <td><strong>กล้องออฟไลน์</strong></td>
+                                <td>CAM003 (Exit Camera) ไม่ตอบสนอง</td>
+                                <td>2024-01-15 14:20:30</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button class="btn btn-outline-info" onclick="viewAlert('2')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-outline-success" onclick="markAsRead('2')">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr class="table-info">
+                                <td>
+                                    <span class="badge bg-info">ข้อมูล</span>
+                                </td>
+                                <td><i class="fas fa-search text-info"></i> การตรวจจับ</td>
+                                <td><strong>ความเชื่อมั่นต่ำ</strong></td>
+                                <td>การตรวจจับป้ายทะเบียน <span class="badge bg-primary">งจ-1111</span> มีความเชื่อมั่น 45%</td>
+                                <td>2024-01-15 14:22:30</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button class="btn btn-outline-info" onclick="viewAlert('3')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-outline-success" onclick="markAsRead('3')">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <span class="badge bg-success">ปกติ</span>
+                                </td>
+                                <td><i class="fas fa-cogs text-success"></i> ระบบ</td>
+                                <td><strong>ระบบทำงานปกติ</strong></td>
+                                <td>ระบบ LPR ทำงานปกติ กล้องออนไลน์ 2/3 ตัว</td>
+                                <td>2024-01-15 14:15:00</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button class="btn btn-outline-info" onclick="viewAlert('4')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-outline-success" onclick="markAsRead('4')">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize DataTable
+    $('#alertsTable').DataTable({
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/th.json'
+        },
+        responsive: true,
+        order: [[4, 'desc']],
+        pageLength: 25
+    });
+});
+
+function applyFilters() {
+    const type = document.getElementById('alertType').value;
+    const level = document.getElementById('alertLevel').value;
+    const status = document.getElementById('alertStatus').value;
+    const date = document.getElementById('alertDate').value;
+    
+    // Simulate filter application
+    showLoading();
+    setTimeout(() => {
+        hideLoading();
+        alert('ใช้ตัวกรองเรียบร้อยแล้ว');
+    }, 1000);
+}
+
+function clearFilters() {
+    document.getElementById('alertType').value = '';
+    document.getElementById('alertLevel').value = '';
+    document.getElementById('alertStatus').value = '';
+    document.getElementById('alertDate').value = '';
+    
+    // Reload table
+    $('#alertsTable').DataTable().ajax.reload();
+}
+
+function markAllRead() {
+    if (confirm('คุณต้องการทำเครื่องหมายการแจ้งเตือนทั้งหมดเป็นอ่านแล้วหรือไม่?')) {
+        showLoading();
+        setTimeout(() => {
+            hideLoading();
+            alert('ทำเครื่องหมายการแจ้งเตือนทั้งหมดเป็นอ่านแล้ว');
+        }, 1000);
+    }
+}
+
+function viewAlert(alertId) {
+    // Show alert details in modal or new page
+    alert(`ดูรายละเอียดการแจ้งเตือน #${alertId}`);
+}
+
+function markAsRead(alertId) {
+    showLoading();
+    setTimeout(() => {
+        hideLoading();
+        alert(`ทำเครื่องหมายการแจ้งเตือน #${alertId} เป็นอ่านแล้ว`);
+    }, 500);
+}
+</script>
+{% endblock %}

@@ -16,49 +16,62 @@
     </div>
 </div>
 
-<!-- Quick Stats Row -->
+<!-- Modular Architecture Overview -->
 <div class="row mb-4">
-    <div class="col-xl-3 col-md-6 mb-3">
-        <div class="card stat-card h-100">
-            <div class="card-body text-center">
-                <div class="h1 mb-0">
-                    <i class="fas fa-car"></i>
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-network-wired text-info"></i> Edge-to-Cloud Architecture
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="flow-diagram">
+                    <div class="flow-node online">
+                        <i class="fas fa-video fa-2x mb-2"></i>
+                        <strong>Camera</strong>
+                        <small>Edge Device</small>
+                    </div>
+                    <div class="flow-node online">
+                        <i class="fas fa-cogs fa-2x mb-2"></i>
+                        <strong>Preprocessing</strong>
+                        <small>Image Processing</small>
+                    </div>
+                    <div class="flow-node online">
+                        <i class="fas fa-search fa-2x mb-2"></i>
+                        <strong>OCR Engine</strong>
+                        <small>Plate Detection</small>
+                    </div>
+                    <div class="flow-node online">
+                        <i class="fas fa-database fa-2x mb-2"></i>
+                        <strong>Database</strong>
+                        <small>Cloud Storage</small>
+                    </div>
                 </div>
-                <div class="h4 mb-0" id="totalRecords">0</div>
-                <div class="text-white-50">รายการทั้งหมด</div>
             </div>
         </div>
     </div>
-    <div class="col-xl-3 col-md-6 mb-3">
-        <div class="card stat-card h-100">
-            <div class="card-body text-center">
-                <div class="h1 mb-0">
-                    <i class="fas fa-video"></i>
-                </div>
-                <div class="h4 mb-0" id="activeCameras">0</div>
-                <div class="text-white-50">กล้องที่ใช้งาน</div>
+</div>
+
+<!-- Data-Centric Metrics -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="data-grid">
+            <div class="data-card">
+                <div class="metric-value" id="totalRecords">0</div>
+                <div class="metric-label">Total Records</div>
             </div>
-        </div>
-    </div>
-    <div class="col-xl-3 col-md-6 mb-3">
-        <div class="card stat-card h-100">
-            <div class="card-body text-center">
-                <div class="h1 mb-0">
-                    <i class="fas fa-calendar-day"></i>
-                </div>
-                <div class="h4 mb-0" id="todayRecords">0</div>
-                <div class="text-white-50">รายการวันนี้</div>
+            <div class="data-card">
+                <div class="metric-value" id="activeCameras">0</div>
+                <div class="metric-label">Active Cameras</div>
             </div>
-        </div>
-    </div>
-    <div class="col-xl-3 col-md-6 mb-3">
-        <div class="card stat-card h-100">
-            <div class="card-body text-center">
-                <div class="h1 mb-0">
-                    <i class="fas fa-ban"></i>
-                </div>
-                <div class="h4 mb-0" id="blacklistCount">0</div>
-                <div class="text-white-50">Blacklist</div>
+            <div class="data-card">
+                <div class="metric-value" id="todayRecords">0</div>
+                <div class="metric-label">Today's Records</div>
+            </div>
+            <div class="data-card">
+                <div class="metric-value" id="blacklistCount">0</div>
+                <div class="metric-label">Blacklist Items</div>
             </div>
         </div>
     </div>
@@ -76,22 +89,73 @@
             <div class="card-body">
                 <p class="card-text">
                     ระบบ LPR Server v3 เป็นระบบจัดการข้อมูลการอ่านป้ายทะเบียนรถยนต์ 
-                    ที่รับข้อมูลจาก Edge Camera ผ่าน WebSocket และแสดงผลในรูปแบบตาราง
+                    ที่ใช้ Modular Architecture รองรับการขยายตัวและการบำรุงรักษา
                 </p>
-                <div class="row">
-                    <div class="col-md-6">
-                        <ul class="list-unstyled">
-                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>รับข้อมูลจาก Edge Camera ผ่าน WebSocket</li>
-                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>บันทึกข้อมูลลงฐานข้อมูล SQLite</li>
-                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>บันทึกภาพลงใน storage directory</li>
-                        </ul>
+                
+                <!-- Module Cards -->
+                <div class="row mt-4">
+                    <div class="col-md-6 mb-3">
+                        <div class="module-card">
+                            <div class="module-header">
+                                <h6 class="module-title">
+                                    <i class="fas fa-video text-info"></i> AI Camera Manager
+                                </h6>
+                                <div class="module-status">
+                                    <span class="status-indicator"></span>
+                                    <small>Online</small>
+                                </div>
+                            </div>
+                            <p class="mb-2">จัดการกล้อง AI และการเชื่อมต่อ Real-time</p>
+                            <a href="{{ url_for('aicamera.index') }}" class="btn btn-sm btn-outline-primary">เข้าถึง</a>
+                        </div>
                     </div>
-                    <div class="col-md-6">
-                        <ul class="list-unstyled">
-                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>แสดงผลในรูปแบบตารางพร้อมการกรองข้อมูล</li>
-                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>แดชบอร์ดแสดงสถิติการใช้งาน</li>
-                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>ระบบจัดการรถ Blacklist</li>
-                        </ul>
+                    
+                    <div class="col-md-6 mb-3">
+                        <div class="module-card">
+                            <div class="module-header">
+                                <h6 class="module-title">
+                                    <i class="fas fa-search text-success"></i> Detection Manager
+                                </h6>
+                                <div class="module-status">
+                                    <span class="status-indicator"></span>
+                                    <small>Online</small>
+                                </div>
+                            </div>
+                            <p class="mb-2">จัดการข้อมูลการตรวจจับและสถิติ</p>
+                            <a href="{{ url_for('detection.index') }}" class="btn btn-sm btn-outline-success">เข้าถึง</a>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <div class="module-card">
+                            <div class="module-header">
+                                <h6 class="module-title">
+                                    <i class="fas fa-map text-warning"></i> Map Manager
+                                </h6>
+                                <div class="module-status">
+                                    <span class="status-indicator warning"></span>
+                                    <small>Warning</small>
+                                </div>
+                            </div>
+                            <p class="mb-2">ติดตามรถและวิเคราะห์เส้นทาง</p>
+                            <a href="{{ url_for('map.index') }}" class="btn btn-sm btn-outline-warning">เข้าถึง</a>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <div class="module-card">
+                            <div class="module-header">
+                                <h6 class="module-title">
+                                    <i class="fas fa-cogs text-danger"></i> System Manager
+                                </h6>
+                                <div class="module-status">
+                                    <span class="status-indicator"></span>
+                                    <small>Online</small>
+                                </div>
+                            </div>
+                            <p class="mb-2">จัดการระบบและตรวจสอบสถานะ</p>
+                            <a href="{{ url_for('system.index') }}" class="btn btn-sm btn-outline-danger">เข้าถึง</a>
+                        </div>
                     </div>
                 </div>
             </div>
