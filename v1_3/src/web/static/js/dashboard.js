@@ -177,6 +177,9 @@ const DashboardManager = {
         // Update WebSocket communication status (overall)
         this.updateWebSocketCommunicationStatus();
 
+        // Update server logs
+        this.updateServerLogsFromAPI();
+
         // Update database status
         AICameraUtils.apiRequest('/health/system')
             .then(data => {
@@ -192,114 +195,60 @@ const DashboardManager = {
     },
 
     /**
-     * Update WebSocket component status with appropriate colors
-     * Following VARIABLE_MANAGEMENT.md standards
+     * Update WebSocket status for different components
      */
     updateWebSocketStatus: function(component, status) {
-        const elementId = `websocket-${component}-status`;
-        const element = document.getElementById(elementId);
+        let elementId, text, className;
         
-        if (!element) {
-            console.warn(`Element not found: ${elementId}`);
-            return;
+        switch (component) {
+            case 'sender':
+                elementId = 'main-server-connection-status';
+                if (status.connected) {
+                    text = 'Connected';
+                    className = 'status-indicator status-online';
+                } else if (status.running) {
+                    text = 'Running';
+                    className = 'status-indicator status-warning';
+                } else {
+                    text = 'Disconnected';
+                    className = 'status-indicator status-offline';
+                }
+                break;
+                
+            case 'streaming':
+                elementId = 'main-data-sending-status';
+                if (status.active) {
+                    text = 'Active';
+                    className = 'status-indicator status-online';
+                } else {
+                    text = 'Inactive';
+                    className = 'status-indicator status-offline';
+                }
+                break;
+                
+            default:
+                return; // Skip unknown components
         }
-
-        let text, className;
-
-        if (status.error) {
-            text = 'Error';
-            className = 'status-badge error';
-        } else {
-            switch (component) {
-                case 'camera':
-                    if (status.streaming) {
-                        text = 'Active';
-                        className = 'status-badge active';
-                    } else if (status.initialized) {
-                        text = 'Ready';
-                        className = 'status-badge warning';
-                    } else {
-                        text = 'Inactive';
-                        className = 'status-badge inactive';
-                    }
-                    break;
-                    
-                case 'detection':
-                    if (status.service_running) {
-                        text = 'Running';
-                        className = 'status-badge running';
-                    } else {
-                        text = 'Stopped';
-                        className = 'status-badge stopped';
-                    }
-                    break;
-                    
-                case 'health':
-                    if (status.health && status.health.overall_status === 'healthy') {
-                        text = 'Healthy';
-                        className = 'status-badge active';
-                    } else if (status.health && status.health.overall_status === 'unhealthy') {
-                        text = 'Warning';
-                        className = 'status-badge warning';
-                    } else if (status.health && status.health.overall_status === 'critical') {
-                        text = 'Critical';
-                        className = 'status-badge error';
-                    } else {
-                        text = 'Unknown';
-                        className = 'status-badge loading';
-                    }
-                    break;
-                    
-                case 'sender':
-                    if (status.connected) {
-                        text = 'Connected';
-                        className = 'status-badge connected';
-                    } else if (status.running) {
-                        text = 'Running';
-                        className = 'status-badge warning';
-                    } else if (status.enabled) {
-                        text = 'Enabled';
-                        className = 'status-badge loading';
-                    } else {
-                        text = 'Disabled';
-                        className = 'status-badge inactive';
-                    }
-                    break;
-                    
-                case 'streaming':
-                    if (status.active) {
-                        text = 'Active';
-                        className = 'status-badge active';
-                    } else {
-                        text = 'Inactive';
-                        className = 'status-badge inactive';
-                    }
-                    break;
-                    
-                case 'database':
-                    if (status.status === 'healthy') {
-                        text = 'Connected';
-                        className = 'status-badge connected';
-                    } else if (status.status === 'unhealthy') {
-                        text = 'Warning';
-                        className = 'status-badge warning';
-                    } else if (status.status === 'critical') {
-                        text = 'Error';
-                        className = 'status-badge error';
-                    } else {
-                        text = 'Unknown';
-                        className = 'status-badge loading';
-                    }
-                    break;
-                    
-                default:
-                    text = 'Unknown';
-                    className = 'status-badge loading';
-            }
+        
+        // Update the status indicator
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.className = className;
         }
-
-        element.textContent = text;
-        element.className = className;
+        
+        // Update the text element
+        const textElement = document.getElementById(elementId.replace('-status', '-text'));
+        if (textElement) {
+            textElement.textContent = text;
+        }
+        
+        // Add log message for connection status changes
+        if (component === 'sender') {
+            const logMessage = status.connected ? 
+                'WebSocket sender connected to server' : 
+                'WebSocket sender disconnected from server';
+            AICameraUtils.addLogMessage('main-server-logs', logMessage, status.connected ? 'success' : 'warning');
+        }
     },
 
     /**
@@ -769,6 +718,23 @@ const DashboardManager = {
 
         // Auto-scroll to bottom
         logsContainer.scrollTop = logsContainer.scrollHeight;
+    },
+
+    /**
+     * Fetch and update server logs from API
+     */
+    updateServerLogsFromAPI: function() {
+        AICameraUtils.apiRequest('/websocket-sender/logs?limit=20')
+            .then(data => {
+                if (data.success && data.logs) {
+                    this.updateServerLogs(data.logs);
+                }
+            })
+            .catch(error => {
+                console.error('Failed to fetch server logs:', error);
+                // Add error message to logs
+                AICameraUtils.addLogMessage('main-server-logs', 'Failed to fetch server logs: ' + error.message, 'error');
+            });
     },
 
     /**

@@ -1,29 +1,39 @@
-# Core Flask and WSGI
+# AI Camera v1.3 Dependencies
+
+# Core Framework
 Flask==2.3.3
 Flask-SocketIO==5.3.6
-Flask-CORS==6.0.1
-gunicorn==21.2.0
-eventlet==0.33.3
+python-socketio==5.9.0
+Werkzeug==2.3.7
 
 # Camera and Image Processing
 picamera2==0.3.12
-opencv-python==4.8.1.78
+# Database
+SQLAlchemy==2.0.23
+alembic==1.12.1
+
+# Image Processing
 Pillow==10.0.1
+opencv-python==4.8.1.78
 numpy==1.24.3
+
 
 # AI and OCR
 easyocr==1.7.0
 degirum==1.0.0
 degirum_tools==1.0.0
-degirum_cli==1.0.0
+degirum_cli==1.0.0# AI/ML
+hailo-platform==4.20.0
+hailo-model-zoo==2.15.0
 
-# WebSocket and Networking
+# WebSocket
 websockets==11.0.3
-websocket-client==1.6.4
 
 # Database and Data Processing
 pandas==2.0.3
 sqlite3
+# HTTP Requests
+requests==2.31.0
 
 # System Monitoring and Utilities
 psutil==7.0.0

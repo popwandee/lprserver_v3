@@ -353,6 +353,94 @@ def create_demo_app():
             logger.error(f"Error handling demo detection request: {e}")
             emit('demo_detection_response', {'error': str(e)})
     
+    # Demo WebSocket Sender Routes
+    @app.route('/websocket-sender/status')
+    def websocket_sender_status():
+        """Get WebSocket sender status (demo mode)."""
+        return jsonify({
+            'success': True,
+            'status': {
+                'connected': False,  # Demo mode - always disconnected
+                'running': False,
+                'enabled': False,
+                'server_url': 'ws://demo-server:8765',
+                'retry_count': 0,
+                'aicamera_id': 'DEMO-001',
+                'checkpoint_id': 'DEMO-CP-001',
+                'total_detections_sent': 0,
+                'total_health_sent': 0
+            }
+        })
+
+    @app.route('/websocket-sender/logs')
+    def websocket_sender_logs():
+        """Get WebSocket sender logs (demo mode)."""
+        demo_logs = [
+            {
+                'timestamp': datetime.now().isoformat(),
+                'action': 'connection',
+                'data_type': 'connection',
+                'status': 'failed',
+                'message': 'Demo mode - WebSocket server not available',
+                'record_count': 0,
+                'aicamera_id': 'DEMO-001',
+                'checkpoint_id': 'DEMO-CP-001'
+            },
+            {
+                'timestamp': (datetime.now().replace(second=datetime.now().second-30)).isoformat(),
+                'action': 'send_detection',
+                'data_type': 'detection',
+                'status': 'no_data',
+                'message': 'No detection data to send',
+                'record_count': 0,
+                'aicamera_id': 'DEMO-001',
+                'checkpoint_id': 'DEMO-CP-001'
+            }
+        ]
+        
+        return jsonify({
+            'success': True,
+            'logs': demo_logs,
+            'total_logs': len(demo_logs)
+        })
+
+    @app.route('/websocket-sender/start', methods=['POST'])
+    def websocket_sender_start():
+        """Start WebSocket sender (demo mode)."""
+        return jsonify({
+            'success': False,
+            'error': 'WebSocket sender not available in demo mode'
+        })
+
+    @app.route('/websocket-sender/stop', methods=['POST'])
+    def websocket_sender_stop():
+        """Stop WebSocket sender (demo mode)."""
+        return jsonify({
+            'success': False,
+            'error': 'WebSocket sender not available in demo mode'
+        })
+
+    @app.route('/websocket-sender/connection-test', methods=['POST'])
+    def websocket_sender_connection_test():
+        """Test WebSocket connection (demo mode)."""
+        return jsonify({
+            'success': False,
+            'error': 'WebSocket connection test not available in demo mode'
+        })
+
+    @app.route('/streaming/status')
+    def streaming_status():
+        """Get streaming status (demo mode)."""
+        return jsonify({
+            'success': True,
+            'status': {
+                'active': True,
+                'streaming': True,
+                'fps': 30,
+                'resolution': [640, 480]
+            }
+        })
+    
     return app, socketio
 
 def main():

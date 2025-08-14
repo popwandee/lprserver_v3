@@ -162,6 +162,7 @@ const WebSocketManager = {
     socket: null,
     reconnectAttempts: 0,
     maxReconnectAttempts: 5,
+    connectionTimeout: 10000, // 10 seconds timeout
 
     /**
      * Initialize WebSocket connection
@@ -172,7 +173,16 @@ const WebSocketManager = {
             return;
         }
 
-        this.socket = io(namespace);
+        // Configure Socket.IO with timeout and reconnection settings
+        this.socket = io(namespace, {
+            timeout: this.connectionTimeout,
+            reconnection: true,
+            reconnectionAttempts: this.maxReconnectAttempts,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            maxReconnectionAttempts: this.maxReconnectAttempts
+        });
+        
         this.setupEventHandlers();
     },
 
@@ -183,19 +193,71 @@ const WebSocketManager = {
         if (!this.socket) return;
 
         this.socket.on('connect', () => {
-            console.log('WebSocket connected');
+            console.log('WebSocket connected successfully');
             AICameraUtils.showToast('Connected to server', 'success');
             this.reconnectAttempts = 0;
+            
+            // Update connection status in main dashboard
+            const connectionElement = document.getElementById('main-server-connection-status');
+            const connectionText = document.getElementById('main-server-connection-text');
+            if (connectionElement) {
+                connectionElement.className = 'status-indicator status-online';
+            }
+            if (connectionText) {
+                connectionText.textContent = 'Connected';
+            }
+            
+            // Add log message
+            AICameraUtils.addLogMessage('main-server-logs', 'WebSocket connection established', 'success');
         });
 
-        this.socket.on('disconnect', () => {
-            console.log('WebSocket disconnected');
-            AICameraUtils.showToast('Disconnected from server', 'warning');
+        this.socket.on('disconnect', (reason) => {
+            console.log('WebSocket disconnected:', reason);
+            AICameraUtils.showToast('Disconnected from server: ' + reason, 'warning');
+            
+            // Update connection status in main dashboard
+            const connectionElement = document.getElementById('main-server-connection-status');
+            const connectionText = document.getElementById('main-server-connection-text');
+            if (connectionElement) {
+                connectionElement.className = 'status-indicator status-offline';
+            }
+            if (connectionText) {
+                connectionText.textContent = 'Disconnected';
+            }
+            
+            // Add log message
+            AICameraUtils.addLogMessage('main-server-logs', 'WebSocket disconnected: ' + reason, 'warning');
         });
 
         this.socket.on('connect_error', (error) => {
             console.error('WebSocket connection error:', error);
+            AICameraUtils.showToast('Connection error: ' + error.message, 'error');
+            
+            // Update connection status in main dashboard
+            const connectionElement = document.getElementById('main-server-connection-status');
+            const connectionText = document.getElementById('main-server-connection-text');
+            if (connectionElement) {
+                connectionElement.className = 'status-indicator status-offline';
+            }
+            if (connectionText) {
+                connectionText.textContent = 'Connection Error';
+            }
+            
+            // Add log message
+            AICameraUtils.addLogMessage('main-server-logs', 'WebSocket connection error: ' + error.message, 'error');
+            
             this.handleReconnect();
+        });
+
+        this.socket.on('reconnect_attempt', (attemptNumber) => {
+            console.log(`WebSocket reconnection attempt ${attemptNumber}/${this.maxReconnectAttempts}`);
+            AICameraUtils.addLogMessage('main-server-logs', `Reconnection attempt ${attemptNumber}/${this.maxReconnectAttempts}`, 'info');
+        });
+
+        this.socket.on('reconnect_failed', () => {
+            console.error('WebSocket reconnection failed after all attempts');
+            AICameraUtils.showToast('Connection failed after all attempts. Please refresh the page.', 'error');
+            AICameraUtils.addLogMessage('main-server-logs', 'WebSocket reconnection failed after all attempts', 'error');
         });
     },
 

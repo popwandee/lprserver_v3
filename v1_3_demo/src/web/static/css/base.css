@@ -7,18 +7,40 @@
     border-radius: 50%;
     display: inline-block;
     margin-right: 8px;
+    transition: background-color 0.3s ease;
 }
 
 .status-online {
     background-color: #28a745;
+    box-shadow: 0 0 5px rgba(40, 167, 69, 0.5);
 }
 
 .status-offline {
     background-color: #dc3545;
+    box-shadow: 0 0 5px rgba(220, 53, 69, 0.5);
 }
 
 .status-warning {
     background-color: #ffc107;
+    box-shadow: 0 0 5px rgba(255, 193, 7, 0.5);
+}
+
+/* Status text styling */
+.status-text {
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.status-text.connected {
+    color: #28a745;
+}
+
+.status-text.disconnected {
+    color: #dc3545;
+}
+
+.status-text.warning {
+    color: #ffc107;
 }
 
 /* Status Badges for WebSocket Components */
@@ -99,23 +121,42 @@
     transform: translateY(-5px);
 }
 
+/* Status Cards */
 .status-card {
-    background: #f8f9fa;
+    background: white;
     border-radius: 10px;
-    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
     margin-bottom: 20px;
-    border-left: 4px solid #007bff;
-    transition: all 0.3s ease;
 }
 
-.status-card.active {
-    border-left-color: #28a745;
-    background-color: #f8fff9;
+.status-card:hover {
+    transform: translateY(-2px);
 }
 
-.status-card.error {
-    border-left-color: #dc3545;
-    background-color: #fff8f8;
+.status-card .card-body {
+    padding: 1.5rem;
+}
+
+.status-card .status-icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.status-card .status-icon.connected {
+    color: #28a745;
+}
+
+.status-card .status-icon.disconnected {
+    color: #dc3545;
+}
+
+.status-card .status-icon.warning {
+    color: #ffc107;
+}
+
+.status-card .status-icon.info {
+    color: #17a2b8;
 }
 
 /* Icons and Visual Elements */

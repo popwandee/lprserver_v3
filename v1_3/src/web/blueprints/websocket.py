@@ -60,6 +60,174 @@ def get_websocket_status():
         }), 500
 
 
+# WebSocket Sender Routes
+@websocket_bp.route('/sender/status')
+def websocket_sender_status():
+    """Get WebSocket sender status."""
+    try:
+        websocket_sender = get_service('websocket_sender')
+        if websocket_sender:
+            status = websocket_sender.get_status()
+            return jsonify({
+                'success': True,
+                'status': status
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'status': {
+                    'connected': False,
+                    'running': False,
+                    'enabled': False,
+                    'server_url': 'Not configured',
+                    'retry_count': 0,
+                    'aicamera_id': 'Not configured',
+                    'checkpoint_id': 'Not configured',
+                    'total_detections_sent': 0,
+                    'total_health_sent': 0
+                }
+            })
+    except Exception as e:
+        logger.error(f"Error getting WebSocket sender status: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@websocket_bp.route('/sender/logs')
+def websocket_sender_logs():
+    """Get WebSocket sender logs."""
+    try:
+        websocket_sender = get_service('websocket_sender')
+        if websocket_sender:
+            logs = websocket_sender.get_logs(limit=20)
+            return jsonify({
+                'success': True,
+                'logs': logs,
+                'total_logs': len(logs)
+            })
+        else:
+            # Return empty logs if service not available
+            return jsonify({
+                'success': True,
+                'logs': [],
+                'total_logs': 0
+            })
+    except Exception as e:
+        logger.error(f"Error getting WebSocket sender logs: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@websocket_bp.route('/sender/start', methods=['POST'])
+def websocket_sender_start():
+    """Start WebSocket sender."""
+    try:
+        websocket_sender = get_service('websocket_sender')
+        if websocket_sender:
+            success = websocket_sender.start()
+            return jsonify({
+                'success': success,
+                'message': 'WebSocket sender started successfully' if success else 'Failed to start WebSocket sender'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'WebSocket sender service not available'
+            })
+    except Exception as e:
+        logger.error(f"Error starting WebSocket sender: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@websocket_bp.route('/sender/stop', methods=['POST'])
+def websocket_sender_stop():
+    """Stop WebSocket sender."""
+    try:
+        websocket_sender = get_service('websocket_sender')
+        if websocket_sender:
+            success = websocket_sender.stop()
+            return jsonify({
+                'success': success,
+                'message': 'WebSocket sender stopped successfully' if success else 'Failed to stop WebSocket sender'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'WebSocket sender service not available'
+            })
+    except Exception as e:
+        logger.error(f"Error stopping WebSocket sender: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@websocket_bp.route('/sender/connection-test', methods=['POST'])
+def websocket_sender_connection_test():
+    """Test WebSocket connection."""
+    try:
+        websocket_sender = get_service('websocket_sender')
+        if websocket_sender:
+            success = websocket_sender.test_connection()
+            return jsonify({
+                'success': success,
+                'message': 'Connection test successful' if success else 'Connection test failed'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'WebSocket sender service not available'
+            })
+    except Exception as e:
+        logger.error(f"Error testing WebSocket connection: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@websocket_bp.route('/streaming/status')
+def streaming_status():
+    """Get streaming status."""
+    try:
+        camera_manager = get_service('camera_manager')
+        if camera_manager:
+            status = camera_manager.get_status()
+            return jsonify({
+                'success': True,
+                'status': {
+                    'active': status.get('streaming', False),
+                    'streaming': status.get('streaming', False),
+                    'fps': status.get('config', {}).get('framerate', 30),
+                    'resolution': status.get('config', {}).get('resolution', [640, 480])
+                }
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'status': {
+                    'active': False,
+                    'streaming': False,
+                    'fps': 30,
+                    'resolution': [640, 480]
+                }
+            })
+    except Exception as e:
+        logger.error(f"Error getting streaming status: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
 def register_websocket_events(socketio):
     """Register WebSocket events for general WebSocket functionality."""
     
