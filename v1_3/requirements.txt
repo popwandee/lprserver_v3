@@ -49,3 +49,6 @@ ipykernel==6.25.2
 # Additional Dependencies
 libcamera
 difflib
+
+# Experiment Dependencies
+scikit-image==0.21.0  # For image processing and blur detection

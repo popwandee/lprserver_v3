@@ -1,0 +1,389 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-chart-bar"></i> Experiment Results: {{ experiment_details.name }}
+                    </h3>
+                    <div class="card-tools">
+                        <a href="{{ url_for('experiments.dashboard') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Dashboard
+                        </a>
+                        <button type="button" class="btn btn-success" onclick="downloadReport()">
+                            <i class="fas fa-download"></i> Download Report
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Experiment Overview -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> 
+                                <strong>Experiment ID:</strong> {{ experiment_id[:8] }}... | 
+                                <strong>Type:</strong> {{ experiment_details.type }} | 
+                                <strong>Status:</strong> {{ experiment_details.status }} |
+                                <strong>Total Records:</strong> {{ summary.total_records }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Summary Statistics -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h4><i class="fas fa-chart-pie"></i> Summary Statistics</h4>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-success">
+                                    <i class="fas fa-check-circle"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Overall Accuracy</span>
+                                    <span class="info-box-number">{{ "%.1f"|format(summary.overall_stats.accuracy_rate * 100) }}%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-info">
+                                    <i class="fas fa-crosshairs"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Avg Sharpness</span>
+                                    <span class="info-box-number">{{ "%.2f"|format(summary.overall_stats.avg_sharpness) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-warning">
+                                    <i class="fas fa-percentage"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Avg Confidence</span>
+                                    <span class="info-box-number">{{ "%.1f"|format(summary.overall_stats.avg_confidence_cropped * 100) }}%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-primary">
+                                    <i class="fas fa-camera"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Total Attempts</span>
+                                    <span class="info-box-number">{{ summary.overall_stats.total_ocr_attempts }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Camera Type Comparison -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h4><i class="fas fa-camera"></i> Camera Type Comparison</h4>
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Camera Type</th>
+                                            <th>Accuracy Rate</th>
+                                            <th>Avg Sharpness</th>
+                                            <th>Avg Confidence</th>
+                                            <th>Correct OCR</th>
+                                            <th>Total Attempts</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for camera_type, data in summary.summary_by_camera_type.items() %}
+                                        <tr>
+                                            <td><strong>{{ camera_type }}</strong></td>
+                                            <td>
+                                                <span class="badge badge-{{ 'success' if data.accuracy_rate > 0.8 else 'warning' if data.accuracy_rate > 0.5 else 'danger' }}">
+                                                    {{ "%.1f"|format(data.accuracy_rate * 100) }}%
+                                                </span>
+                                            </td>
+                                            <td>{{ "%.2f"|format(data.avg_sharpness) }}</td>
+                                            <td>{{ "%.1f"|format(data.avg_confidence_cropped * 100) }}%</td>
+                                            <td>{{ data.correct_ocr_count }}</td>
+                                            <td>{{ data.total_ocr_attempts }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Section -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h4><i class="fas fa-chart-line"></i> Performance Charts</h4>
+                        </div>
+                        
+                        <!-- OCR Confidence vs Distance -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">OCR Confidence vs Distance</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="confidenceChart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sharpness vs Distance -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">Sharpness vs Distance</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="sharpnessChart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Raw Data Table -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h4><i class="fas fa-table"></i> Raw Data</h4>
+                            <div class="table-responsive">
+                                <table class="table table-striped table-sm" id="rawDataTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Timestamp</th>
+                                            <th>Camera Type</th>
+                                            <th>Lens Cover</th>
+                                            <th>Distance (m)</th>
+                                            <th>OCR Text</th>
+                                            <th>Confidence</th>
+                                            <th>Sharpness</th>
+                                            <th>Blur</th>
+                                            <th>Exposure</th>
+                                            <th>Gain</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for result in raw_results %}
+                                        <tr>
+                                            <td>{{ result.Timestamp }}</td>
+                                            <td>{{ result.CameraType }}</td>
+                                            <td>{{ result.LensCover }}</td>
+                                            <td>{{ result['Distance(m)'] }}</td>
+                                            <td>
+                                                <span class="badge badge-{{ 'success' if result.LicenseTextCropped == 'กก 6014 อุบลราชธานี' else 'secondary' }}">
+                                                    {{ result.LicenseTextCropped[:20] }}{{ '...' if result.LicenseTextCropped|length > 20 else '' }}
+                                                </span>
+                                            </td>
+                                            <td>{{ "%.1f"|format(result.ConfidenceCrop|float * 100) }}%</td>
+                                            <td>{{ "%.2f"|format(result.SharpnessLaplacian|float) }}</td>
+                                            <td>{{ "%.2f"|format(result.BlurGaussian|float) }}</td>
+                                            <td>{{ result.ExposureTime or '-' }}</td>
+                                            <td>{{ result.AnalogueGain or '-' }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+$(document).ready(function() {
+    // Initialize DataTable for raw data
+    $('#rawDataTable').DataTable({
+        pageLength: 25,
+        order: [[0, 'desc']],
+        responsive: true,
+        dom: 'Bfrtip',
+        buttons: [
+            'copy', 'csv', 'excel', 'pdf', 'print'
+        ]
+    });
+
+    // Prepare chart data
+    const rawData = JSON.parse('{{ raw_results|tojson|safe }}');
+    
+    // Group data by distance and camera type
+    const chartData = {};
+    rawData.forEach(record => {
+        const distance = record['Distance(m)'];
+        const cameraType = record.CameraType;
+        const confidence = parseFloat(record.ConfidenceCrop) * 100;
+        const sharpness = parseFloat(record.SharpnessLaplacian);
+        
+        if (!chartData[distance]) {
+            chartData[distance] = {};
+        }
+        if (!chartData[distance][cameraType]) {
+            chartData[distance][cameraType] = { confidence: [], sharpness: [] };
+        }
+        
+        chartData[distance][cameraType].confidence.push(confidence);
+        chartData[distance][cameraType].sharpness.push(sharpness);
+    });
+
+    // Calculate averages
+    const distances = Object.keys(chartData).sort((a, b) => parseFloat(a) - parseFloat(b));
+    const cameraTypes = [...new Set(rawData.map(r => r.CameraType))];
+    
+    const confidenceData = {};
+    const sharpnessData = {};
+    
+    cameraTypes.forEach(cameraType => {
+        confidenceData[cameraType] = [];
+        sharpnessData[cameraType] = [];
+        
+        distances.forEach(distance => {
+            if (chartData[distance][cameraType]) {
+                const avgConfidence = chartData[distance][cameraType].confidence.reduce((a, b) => a + b, 0) / chartData[distance][cameraType].confidence.length;
+                const avgSharpness = chartData[distance][cameraType].sharpness.reduce((a, b) => a + b, 0) / chartData[distance][cameraType].sharpness.length;
+                
+                confidenceData[cameraType].push(avgConfidence);
+                sharpnessData[cameraType].push(avgSharpness);
+            } else {
+                confidenceData[cameraType].push(0);
+                sharpnessData[cameraType].push(0);
+            }
+        });
+    });
+
+    // Create confidence chart
+    const confidenceCtx = document.getElementById('confidenceChart').getContext('2d');
+    new Chart(confidenceCtx, {
+        type: 'line',
+        data: {
+            labels: distances.map(d => d + 'm'),
+            datasets: cameraTypes.map((cameraType, index) => ({
+                label: cameraType,
+                data: confidenceData[cameraType],
+                borderColor: `hsl(${index * 120}, 70%, 50%)`,
+                backgroundColor: `hsla(${index * 120}, 70%, 50%, 0.1)`,
+                tension: 0.1
+            }))
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'OCR Confidence vs Distance'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Confidence (%)'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Distance (meters)'
+                    }
+                }
+            }
+        }
+    });
+
+    // Create sharpness chart
+    const sharpnessCtx = document.getElementById('sharpnessChart').getContext('2d');
+    new Chart(sharpnessCtx, {
+        type: 'line',
+        data: {
+            labels: distances.map(d => d + 'm'),
+            datasets: cameraTypes.map((cameraType, index) => ({
+                label: cameraType,
+                data: sharpnessData[cameraType],
+                borderColor: `hsl(${index * 120}, 70%, 50%)`,
+                backgroundColor: `hsla(${index * 120}, 70%, 50%, 0.1)`,
+                tension: 0.1
+            }))
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Sharpness vs Distance'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Sharpness (Laplacian Variance)'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Distance (meters)'
+                    }
+                }
+            }
+        }
+    });
+});
+
+// Download report function
+function downloadReport() {
+    const experimentId = '{{ experiment_id }}';
+    const experimentName = '{{ experiment_details.name }}';
+    
+    // Create a simple text report
+    let report = `Experiment Report\n`;
+    report += `================\n\n`;
+    report += `Experiment ID: ${experimentId}\n`;
+    report += `Name: ${experimentName}\n`;
+    report += `Type: {{ experiment_details.type }}\n`;
+    report += `Status: {{ experiment_details.status }}\n`;
+    report += `Total Records: {{ summary.total_records }}\n\n`;
+    
+    report += `Overall Statistics:\n`;
+    report += `- Overall Accuracy: {{ "%.1f"|format(summary.overall_stats.accuracy_rate * 100) }}%\n`;
+    report += `- Average Sharpness: {{ "%.2f"|format(summary.overall_stats.avg_sharpness) }}\n`;
+    report += `- Average Confidence: {{ "%.1f"|format(summary.overall_stats.avg_confidence_cropped * 100) }}%\n`;
+    report += `- Total OCR Attempts: {{ summary.overall_stats.total_ocr_attempts }}\n\n`;
+    
+    report += `Camera Type Comparison:\n`;
+    const cameraData = JSON.parse('{{ summary.summary_by_camera_type|tojson|safe }}');
+    Object.entries(cameraData).forEach(([camera_type, data]) => {
+        report += `- ${camera_type}: ${(data.accuracy_rate * 100).toFixed(1)}% accuracy, ${data.avg_sharpness.toFixed(2)} sharpness, ${(data.avg_confidence_cropped * 100).toFixed(1)}% confidence\n`;
+    });
+    
+    // Create and download file
+    const blob = new Blob([report], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `experiment_report_${experimentId}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+}
+</script>
+{% endblock %}

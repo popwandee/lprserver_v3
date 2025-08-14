@@ -16,7 +16,7 @@ Date: August 7, 2025
 
 from flask import Flask
 from flask_socketio import SocketIO
-from v1_3.src.core.config import WEBSOCKET_SENDER_ENABLED, STORAGE_MONITOR_ENABLED
+from v1_3.src.core.config import WEBSOCKET_SENDER_ENABLED, STORAGE_MONITOR_ENABLED, EXPERIMENT_ENABLED
 from v1_3.src.core.utils.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -28,6 +28,18 @@ from v1_3.src.web.blueprints.health import health_bp, register_health_events
 from v1_3.src.web.blueprints.streaming import streaming_bp, register_streaming_events
 from v1_3.src.web.blueprints.detection import detection_bp, register_detection_events
 from v1_3.src.web.blueprints.detection_results import detection_results_bp
+
+# Import experiments blueprint (optional)
+experiments_bp = None
+register_experiment_events = None
+if EXPERIMENT_ENABLED:
+    try:
+        from v1_3.src.web.blueprints.experiments import experiments_bp, register_experiment_events
+        logger.info("Experiments blueprint imported (enabled in config)")
+    except ImportError:
+        logger.warning("Experiments blueprint not available")
+else:
+    logger.info("Experiments blueprint not imported (disabled in config)")
 
 # Import optional blueprints (may not be available)
 websocket_sender_bp = None
@@ -98,6 +110,13 @@ def register_blueprints(app: Flask, socketio: SocketIO):
     app.register_blueprint(detection_results_bp)
     logger.info("   ✅ Detection Results blueprint registered")
     
+    # Register experiments blueprint if available and enabled
+    if experiments_bp and EXPERIMENT_ENABLED:
+        app.register_blueprint(experiments_bp)
+        logger.info("   ✅ Experiments blueprint registered (enabled)")
+    else:
+        logger.info("   ℹ️ Experiments blueprint not registered (disabled/not available)")
+    
     # WebSocket blueprint (core communication)
     if websocket_bp:
         app.register_blueprint(websocket_bp)
@@ -140,6 +159,13 @@ def register_blueprints(app: Flask, socketio: SocketIO):
     
     register_streaming_events(socketio)
     logger.info("   ✅ Streaming events registered")
+    
+    # Register experiment events if available and enabled
+    if register_experiment_events and EXPERIMENT_ENABLED:
+        register_experiment_events(socketio)
+        logger.info("   ✅ Experiment events registered (enabled)")
+    else:
+        logger.info("   ℹ️ Experiment events not registered (disabled/not available)")
     
     # Optional WebSocket events
     if register_websocket_events:

@@ -59,18 +59,23 @@
                             <i class="fas fa-heartbeat"></i> Health
                         </a>
                     </li>
+                    {% if config.get('EXPERIMENT_ENABLED', true) %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'experiments' %}active{% endif %}" href="/experiments">
+                            <i class="fas fa-flask"></i> Experiments
+                        </a>
+                    </li>
+                    {% endif %}
                     
                     <!-- Optional Menu Items (Conditionally Available) -->
                     <li class="nav-item" id="websocket-sender-menu-item" style="display: none;">
                         <a class="nav-link {% if active_page == 'websocket_sender' %}active{% endif %}" href="/websocket-sender">
                             <i class="fas fa-share-alt"></i> WebSocket Sender
-                            <small class="text-muted">(Optional)</small>
                         </a>
                     </li>
                     <li class="nav-item" id="storage-menu-item" style="display: none;">
                         <a class="nav-link {% if active_page == 'storage' %}active{% endif %}" href="/storage">
                             <i class="fas fa-hdd"></i> Storage
-                            <small class="text-muted">(Optional)</small>
                         </a>
                     </li>
                 </ul>
