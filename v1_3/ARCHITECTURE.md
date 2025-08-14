@@ -123,14 +123,24 @@ class DependencyContainer:
         except ImportError as e:
             self.logger.warning(f"CameraManager service not available: {e}")
         
-        try:
+                try:
             from v1_3.src.services.health_service import HealthService, create_health_service
             self.register_service('health_service', HealthService, 
-                                singleton=True, 
+                                singleton=True,
                                 factory=create_health_service,
                                 dependencies={'health_monitor': 'health_monitor', 'logger': 'logger'})
         except ImportError as e:
             self.logger.warning(f"HealthService not available: {e}")
+        
+        # Register WebSocket Sender service
+        try:
+            from v1_3.src.services.websocket_sender import WebSocketSender, create_websocket_sender
+            self.register_service('websocket_sender', WebSocketSender, 
+                                singleton=True,
+                                factory=create_websocket_sender,
+                                dependencies={'database_manager': 'database_manager', 'logger': 'logger'})
+        except ImportError:
+            self.logger.warning("WebSocketSender not available")
 ```
 
 ### 2.3 Service Registration
@@ -219,6 +229,11 @@ def register_blueprints(app: Flask, socketio: SocketIO):
     # Register WebSocket events
     register_camera_events(socketio)
     register_health_events(socketio)
+    
+    # Register storage blueprint and events
+    from v1_3.src.web.blueprints.storage import storage_bp, register_storage_events
+    app.register_blueprint(storage_bp)
+    register_storage_events(socketio)
 ```
 
 ### 3.4 Health Blueprint Example
@@ -455,6 +470,311 @@ class HealthService:
     def stop_monitoring(self):
         """Stop continuous health monitoring."""
         self.health_monitor.stop_monitoring()
+```
+
+## 6. WebSocket Sender Architecture
+
+### 6.1 WebSocket Sender System Overview
+
+ระบบ WebSocket Sender ของ AI Camera v1.3 รองรับการสื่อสารแบบ Real-time และ REST API พร้อม fallback mechanism:
+
+1. **WebSocketSender Service** - Business logic layer
+2. **Socket.IO Client** - Real-time communication
+3. **REST API Client** - HTTP-based communication
+4. **Fallback Mechanism** - Automatic switching between protocols
+
+### 6.2 WebSocketSender Service (Business Logic)
+
+```python
+# v1_3/src/services/websocket_sender.py
+class WebSocketSender:
+    """
+    WebSocket Sender Service for external server communication.
+    
+    Features:
+    - Socket.IO connection management with auto-reconnect
+    - REST API fallback mechanism
+    - Detection data sender thread
+    - Health status sender thread  
+    - Database integration for tracking sent status
+    - Logging and status monitoring
+    """
+    
+    def __init__(self, database_manager=None, logger=None):
+        self.logger = logger or get_logger(__name__)
+        self.database_manager = database_manager
+        
+        # Socket.IO connection
+        self.sio = None
+        self.connected = False
+        self.server_url = WEBSOCKET_SERVER_URL
+        self.server_type = None  # 'socketio' or 'rest'
+        
+        # Threading
+        self.detection_thread = None
+        self.health_thread = None
+        self.running = False
+        self.stop_event = threading.Event()
+        
+        # Status tracking
+        self.last_detection_check = None
+        self.last_health_check = None
+        self.retry_count = 0
+        self.total_detections_sent = 0
+        self.total_health_sent = 0
+    
+    def _detect_server_type(self):
+        """Detect if server supports Socket.IO or REST API."""
+        # Try Socket.IO first, fallback to REST API
+        # Convert HTTP URLs to WebSocket URLs for Socket.IO
+        # Test connections and set server_type accordingly
+    
+    def connect(self) -> bool:
+        """Connect to server (Socket.IO or REST API)."""
+        # Determine server type if not already detected
+        # Connect based on server type
+        # Return connection status
+    
+    def send_data(self, data: Dict[str, Any]) -> bool:
+        """Send data via Socket.IO or REST API with fallback."""
+        # Try primary method first (Socket.IO or REST based on server_type)
+        # Fallback to alternative method if primary fails
+        # Return send status
+    
+    def start(self) -> bool:
+        """Start WebSocket sender service threads."""
+        # Initialize service
+        # Start detection sender thread
+        # Start health sender thread
+        # Return start status
+```
+
+### 6.3 Socket.IO Communication Events
+
+```python
+# Socket.IO Events ที่รองรับ
+# Client -> Server
+'camera_register' - สำหรับ camera ลงทะเบียน
+'lpr_data' - สำหรับส่งข้อมูล LPR detection
+'health_status' - สำหรับส่งข้อมูล health check
+'ping' - สำหรับทดสอบการเชื่อมต่อ
+
+# Server -> Client
+'connect' - เมื่อ client เชื่อมต่อสำเร็จ
+'disconnect' - เมื่อ client ตัดการเชื่อมต่อ
+'error' - เมื่อเกิดข้อผิดพลาด
+'pong' - response สำหรับ ping
+'lpr_response' - response สำหรับ lpr_data
+'health_response' - response สำหรับ health_status
+```
+
+### 6.4 REST API Endpoints
+
+```python
+# REST API Endpoints ที่รองรับ
+POST /api/cameras/register - Camera registration
+POST /api/detection - LPR detection data
+POST /api/health - Health check data
+GET /api/test - Test connection
+GET /api/statistics - Get statistics (existing)
+```
+
+### 6.5 Fallback Strategy
+
+```python
+# Priority Order:
+1. Socket.IO (Primary) - Real-time communication
+2. REST API (Fallback) - When Socket.IO unavailable
+
+# Detection Logic:
+- Try Socket.IO connection first
+- If Socket.IO fails, fallback to REST API
+- If both fail, retry after delay
+```
+
+## 7. Storage Management Architecture
+
+### 7.1 Storage Management System Overview
+
+ระบบ Storage Management ของ AI Camera v1.3 ประกอบด้วย 3 ชั้นหลัก:
+
+1. **StorageMonitor Component** - Low-level storage monitoring
+2. **StorageService** - Business logic layer
+3. **Storage Blueprint** - Web interface layer
+
+### 7.2 StorageMonitor Component (Low-level)
+
+```python
+# v1_3/src/components/storage_monitor.py
+class StorageMonitor:
+    """
+    Storage Monitor Component for disk space monitoring.
+    
+    Features:
+    - Disk usage monitoring
+    - Folder size calculation
+    - File status tracking (sent/unsent)
+    - Prioritized cleanup (sent files first)
+    - Batch file deletion
+    - Configuration management
+    """
+    
+    def __init__(self, logger=None):
+        self.logger = logger or get_logger(__name__)
+        self.folder_path = STORAGE_FOLDER_PATH
+        self.min_free_space_gb = STORAGE_MIN_FREE_SPACE_GB
+        self.retention_days = STORAGE_RETENTION_DAYS
+        self.batch_size = STORAGE_BATCH_SIZE
+        self.monitor_interval = STORAGE_MONITOR_INTERVAL
+        self.running = False
+        self.stop_event = threading.Event()
+        self.monitor_thread = None
+    
+    def get_storage_status(self) -> Dict[str, Any]:
+        """Get comprehensive storage status."""
+        # Check disk usage
+        # Calculate folder statistics
+        # Get file counts by status
+        # Return status data
+    
+    def cleanup_old_files(self, priority_sent: bool = True) -> Dict[str, Any]:
+        """Clean up old files with priority for sent files."""
+        # Get files by status from database
+        # Delete sent files first if priority_sent=True
+        # Delete unsent files if still needed
+        # Return cleanup statistics
+```
+
+### 7.3 StorageService (Business Logic)
+
+```python
+# v1_3/src/services/storage_service.py
+class StorageService:
+    """
+    Storage Service for disk space management.
+    
+    Features:
+    - Storage status aggregation
+    - Cleanup orchestration
+    - Alert generation
+    - Configuration management
+    - Monitoring control
+    """
+    
+    def __init__(self, storage_monitor: StorageMonitor, logger=None):
+        self.storage_monitor = storage_monitor
+        self.logger = logger or get_logger(__name__)
+    
+    def get_storage_status(self) -> Dict[str, Any]:
+        """Get comprehensive storage status."""
+        # Get status from storage monitor
+        # Add service-level information
+        # Return aggregated status
+    
+    def start_storage_monitoring(self, interval: int = None) -> bool:
+        """Start continuous storage monitoring."""
+        # Start monitoring thread
+        # Set monitoring interval
+        # Return start status
+    
+    def stop_storage_monitoring(self):
+        """Stop continuous storage monitoring."""
+        # Stop monitoring thread
+        # Clean up resources
+    
+    def perform_cleanup(self, priority_sent: bool = True) -> Dict[str, Any]:
+        """Perform storage cleanup with priority settings."""
+        # Call storage monitor cleanup
+        # Log cleanup results
+        # Return cleanup statistics
+```
+
+### 7.4 Storage Blueprint (Web Interface)
+
+```python
+# v1_3/src/web/blueprints/storage.py
+from flask import Blueprint, render_template, jsonify, request
+from flask_socketio import emit, join_room, leave_room
+
+storage_bp = Blueprint('storage', __name__, url_prefix='/storage')
+
+@storage_bp.route('/')
+def storage_dashboard():
+    """Render storage management dashboard."""
+    return render_template('storage/dashboard.html')
+
+@storage_bp.route('/status')
+def get_storage_status():
+    """Get storage status."""
+    storage_service = get_service('storage_service')
+    status_data = storage_service.get_storage_status()
+    return jsonify(status_data)
+
+@storage_bp.route('/cleanup', methods=['POST'])
+def perform_cleanup():
+    """Perform storage cleanup."""
+    storage_service = get_service('storage_service')
+    priority_sent = request.json.get('priority_sent', True)
+    cleanup_data = storage_service.perform_cleanup(priority_sent)
+    return jsonify(cleanup_data)
+
+# WebSocket Events
+@socketio.on('storage_status_request')
+def handle_storage_status_request():
+    """Handle storage status request via WebSocket."""
+    storage_service = get_service('storage_service')
+    status_data = storage_service.get_storage_status()
+    emit('storage_status_update', status_data)
+```
+
+## 8. Auto-Startup Sequence
+
+### 8.1 Service Initialization Order
+
+```python
+# v1_3/src/app.py - _initialize_services()
+def _initialize_services(logger):
+    """
+    Initialize services in the correct order with auto-startup sequence.
+    
+    Sequence:
+    1. Initialize camera manager (auto-starts camera if enabled)
+    2. Initialize detection manager (auto-starts detection if enabled)
+    3. Initialize health monitor (auto-starts monitoring when camera and detection are ready)
+    4. Initialize WebSocket sender (auto-starts when health monitor is ready)
+    5. Initialize storage service (auto-starts monitoring when WebSocket sender is ready)
+    """
+    
+    # Step 1: Camera Manager
+    camera_manager = get_service('camera_manager')
+    if camera_manager and AUTO_START_CAMERA:
+        camera_manager.initialize()
+    
+    # Step 2: Detection Manager
+    detection_manager = get_service('detection_manager')
+    if detection_manager and AUTO_START_DETECTION:
+        detection_manager.initialize()
+    
+    # Step 3: Health Monitor
+    health_service = get_service('health_service')
+    if health_service and AUTO_START_HEALTH_MONITOR:
+        health_service.initialize()
+        time.sleep(HEALTH_MONITOR_STARTUP_DELAY)
+        health_service.start_monitoring()
+    
+    # Step 4: WebSocket Sender
+    websocket_sender = get_service('websocket_sender')
+    if websocket_sender and AUTO_START_WEBSOCKET_SENDER:
+        websocket_sender.initialize()
+        time.sleep(WEBSOCKET_SENDER_STARTUP_DELAY)
+        websocket_sender.start()
+    
+    # Step 5: Storage Service
+    storage_service = get_service('storage_service')
+    if storage_service and AUTO_START_STORAGE_MONITOR:
+        storage_service.initialize()
+        time.sleep(STORAGE_MONITOR_STARTUP_DELAY)
+        storage_service.start_storage_monitoring()
 ```
 
 ## 5. Health Monitoring Architecture
@@ -1594,6 +1914,8 @@ AI Camera v1.3 ใช้ Dependency Injection, Flask Blueprints และ **Abso
 - **Variable-Clean**: Streamlined element IDs and JavaScript variables
 - **Offline-Capable**: WebSocket Sender รองรับ offline mode และ auto-recovery
 - **Config-Managed**: จัดการ configuration ผ่าน environment variables และ import helper
+- **WebSocket-Ready**: รองรับ Socket.IO และ REST API พร้อม fallback mechanism
+- **Storage-Managed**: ระบบจัดการพื้นที่จัดเก็บอัตโนมัติพร้อม prioritized cleanup
 
 Architecture นี้ทำให้ระบบมีความยืดหยุ่นและสามารถพัฒนาเพิ่มเติมได้อย่างมีประสิทธิภาพ พร้อมกับความชัดเจนในการจัดการ dependencies และ imports รวมถึงการจัดการ startup sequence, error prevention, comprehensive health monitoring system, optimized user interface layout และ robust offline mode support
 

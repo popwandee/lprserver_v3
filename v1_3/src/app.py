@@ -46,133 +46,297 @@ from v1_3.src.core.dependency_container import get_container, get_service
 from v1_3.src.web.blueprints import register_blueprints
 from v1_3.src.core.config import (
     AUTO_START_CAMERA, AUTO_START_DETECTION, AUTO_START_HEALTH_MONITOR, AUTO_START_WEBSOCKET_SENDER,
-    STARTUP_DELAY, HEALTH_MONITOR_STARTUP_DELAY, WEBSOCKET_SENDER_STARTUP_DELAY
+    AUTO_START_STORAGE_MONITOR, STARTUP_DELAY, HEALTH_MONITOR_STARTUP_DELAY, 
+    WEBSOCKET_SENDER_STARTUP_DELAY, STORAGE_MONITOR_STARTUP_DELAY, STORAGE_MONITOR_INTERVAL
 )
 
 
 def _initialize_services(logger):
     """
-    Initialize services in the correct order with auto-startup sequence.
+    Initialize services in the correct order with modular architecture support.
     
-    Sequence:
-    1. Initialize camera manager (auto-starts camera if enabled)
-    2. Initialize detection manager (auto-starts detection if enabled)
-    3. Initialize health monitor (auto-starts monitoring when camera and detection are ready)
-    4. Initialize WebSocket sender (auto-starts when health monitor is ready)
+    Modular Architecture:
+    - Core modules (camera, detection, health) are essential and must work
+    - Optional modules (websocket sender, storage) can be disabled without affecting core
+    - Each phase is independent and can fail without stopping the system
     
     Args:
         logger: Logger instance
     """
-    logger.info("🚀 Starting service initialization sequence...")
+    logger.info("🚀 Starting modular service initialization sequence...")
     
-    # Step 1: Initialize Camera Manager (will auto-start camera and streaming)
+    # Track initialization results
+    init_results = {
+        'core_modules': {},
+        'optional_modules': {},
+        'errors': []
+    }
+    
+    # === PHASE 1: Core Infrastructure ===
+    logger.info("📋 Phase 1: Core Infrastructure")
     try:
-        logger.info("📸 Step 1: Initializing Camera Manager...")
+        # Logger and config are already initialized by DI container
+        logger.info("✅ Core infrastructure ready")
+    except Exception as e:
+        logger.error(f"❌ Core infrastructure failed: {e}")
+        init_results['errors'].append(f"Core infrastructure: {e}")
+        return False  # Core infrastructure failure is critical
+    
+    # === PHASE 2: Core Components ===
+    logger.info("🔧 Phase 2: Core Components")
+    
+    # Camera Handler
+    try:
+        camera_handler = get_service('camera_handler')
+        if camera_handler:
+            logger.info("✅ Camera Handler available")
+            init_results['core_modules']['camera_handler'] = True
+        else:
+            logger.error("❌ Camera Handler not available")
+            init_results['core_modules']['camera_handler'] = False
+            init_results['errors'].append("Camera Handler not available")
+    except Exception as e:
+        logger.error(f"❌ Camera Handler error: {e}")
+        init_results['core_modules']['camera_handler'] = False
+        init_results['errors'].append(f"Camera Handler: {e}")
+    
+    # Detection Processor
+    try:
+        detection_processor = get_service('detection_processor')
+        if detection_processor:
+            logger.info("✅ Detection Processor available")
+            init_results['core_modules']['detection_processor'] = True
+        else:
+            logger.warning("⚠️ Detection Processor not available")
+            init_results['core_modules']['detection_processor'] = False
+    except Exception as e:
+        logger.warning(f"⚠️ Detection Processor error: {e}")
+        init_results['core_modules']['detection_processor'] = False
+    
+    # Database Manager
+    try:
+        database_manager = get_service('database_manager')
+        if database_manager:
+            logger.info("✅ Database Manager available")
+            init_results['core_modules']['database_manager'] = True
+        else:
+            logger.error("❌ Database Manager not available")
+            init_results['core_modules']['database_manager'] = False
+            init_results['errors'].append("Database Manager not available")
+    except Exception as e:
+        logger.error(f"❌ Database Manager error: {e}")
+        init_results['core_modules']['database_manager'] = False
+        init_results['errors'].append(f"Database Manager: {e}")
+    
+    # Health Monitor
+    try:
+        health_monitor = get_service('health_monitor')
+        if health_monitor:
+            logger.info("✅ Health Monitor available")
+            init_results['core_modules']['health_monitor'] = True
+        else:
+            logger.error("❌ Health Monitor not available")
+            init_results['core_modules']['health_monitor'] = False
+            init_results['errors'].append("Health Monitor not available")
+    except Exception as e:
+        logger.error(f"❌ Health Monitor error: {e}")
+        init_results['core_modules']['health_monitor'] = False
+        init_results['errors'].append(f"Health Monitor: {e}")
+    
+    # === PHASE 3: Core Services ===
+    logger.info("⚙️ Phase 3: Core Services")
+    
+    # Camera Manager
+    try:
         camera_manager = get_service('camera_manager')
         if camera_manager:
             success = camera_manager.initialize()
             if success:
                 logger.info("✅ Camera Manager initialized successfully")
+                init_results['core_modules']['camera_manager'] = True
                 if AUTO_START_CAMERA:
-                    logger.info("🎥 Camera auto-start enabled - camera should be running")
+                    logger.info("🎥 Camera auto-start enabled")
             else:
                 logger.error("❌ Camera Manager initialization failed")
-                return False
+                init_results['core_modules']['camera_manager'] = False
+                init_results['errors'].append("Camera Manager initialization failed")
         else:
             logger.error("❌ Camera Manager service not available")
-            return False
+            init_results['core_modules']['camera_manager'] = False
+            init_results['errors'].append("Camera Manager service not available")
     except Exception as e:
-        logger.error(f"❌ Error initializing Camera Manager: {e}")
-        return False
+        logger.error(f"❌ Camera Manager error: {e}")
+        init_results['core_modules']['camera_manager'] = False
+        init_results['errors'].append(f"Camera Manager: {e}")
     
-    # Step 2: Initialize Detection Manager (will auto-start detection if enabled)
+    # Detection Manager
     try:
-        logger.info("🤖 Step 2: Initializing Detection Manager...")
         detection_manager = get_service('detection_manager')
         if detection_manager:
             success = detection_manager.initialize()
             if success:
                 logger.info("✅ Detection Manager initialized successfully")
+                init_results['core_modules']['detection_manager'] = True
                 if AUTO_START_DETECTION:
-                    logger.info("🔍 Detection auto-start enabled - detection should be running")
+                    logger.info("🔍 Detection auto-start enabled")
             else:
-                logger.error("❌ Detection Manager initialization failed")
-                # Don't return False here - camera can work without detection
+                logger.warning("⚠️ Detection Manager initialization failed")
+                init_results['core_modules']['detection_manager'] = False
         else:
-            logger.warning("⚠️  Detection Manager service not available")
+            logger.warning("⚠️ Detection Manager service not available")
+            init_results['core_modules']['detection_manager'] = False
     except Exception as e:
-        logger.error(f"❌ Error initializing Detection Manager: {e}")
-        # Don't return False here - camera can work without detection
+        logger.warning(f"⚠️ Detection Manager error: {e}")
+        init_results['core_modules']['detection_manager'] = False
     
-    # Step 3: Initialize Health Monitor and Service (will auto-start monitoring when ready)
+    # Health Service
     try:
-        logger.info("🏥 Step 3: Initializing Health Monitor and Service...")
-        
-        # Initialize health monitor component
-        health_monitor = get_service('health_monitor')
-        if health_monitor:
-            logger.info("✅ Health Monitor component available")
-            if health_monitor.initialize():
-                logger.info("✅ Health Monitor component initialized successfully")
-            else:
-                logger.error("❌ Health Monitor component initialization failed")
-        else:
-            logger.warning("⚠️  Health Monitor component not available")
-        
-        # Initialize health service
         health_service = get_service('health_service')
         if health_service:
-            logger.info("✅ Health Service available")
-            if health_service.initialize():
+            success = health_service.initialize()
+            if success:
                 logger.info("✅ Health Service initialized successfully")
-                
-                # Set up auto-start monitoring if enabled
+                init_results['core_modules']['health_service'] = True
                 if AUTO_START_HEALTH_MONITOR:
-                    logger.info("🏥 Health Monitor auto-start enabled - will start when camera and detection are ready")
-                    # The health service will automatically start monitoring when camera and detection are ready
-                else:
-                    logger.info("🏥 Health Monitor auto-start disabled")
+                    logger.info("🏥 Health Monitor auto-start enabled")
             else:
                 logger.error("❌ Health Service initialization failed")
+                init_results['core_modules']['health_service'] = False
+                init_results['errors'].append("Health Service initialization failed")
         else:
-            logger.warning("⚠️  Health Service not available")
-            
+            logger.error("❌ Health Service not available")
+            init_results['core_modules']['health_service'] = False
+            init_results['errors'].append("Health Service not available")
     except Exception as e:
-        logger.warning(f"⚠️  Health services initialization: {e}")
+        logger.error(f"❌ Health Service error: {e}")
+        init_results['core_modules']['health_service'] = False
+        init_results['errors'].append(f"Health Service: {e}")
     
-    # Step 4: Initialize WebSocket Sender (will auto-start when enabled)
+    # Video Streaming
     try:
-        logger.info("📡 Step 4: Initializing WebSocket Sender...")
-        
+        video_streaming = get_service('video_streaming')
+        if video_streaming:
+            logger.info("✅ Video Streaming available")
+            init_results['core_modules']['video_streaming'] = True
+        else:
+            logger.warning("⚠️ Video Streaming not available")
+            init_results['core_modules']['video_streaming'] = False
+    except Exception as e:
+        logger.warning(f"⚠️ Video Streaming error: {e}")
+        init_results['core_modules']['video_streaming'] = False
+    
+    # === PHASE 4: Optional Components ===
+    logger.info("🔌 Phase 4: Optional Components")
+    
+    # Storage Monitor (Optional)
+    try:
+        storage_monitor = get_service('storage_monitor')
+        if storage_monitor:
+            logger.info("✅ Storage Monitor available")
+            init_results['optional_modules']['storage_monitor'] = True
+        else:
+            logger.info("ℹ️ Storage Monitor not available (optional)")
+            init_results['optional_modules']['storage_monitor'] = False
+    except Exception as e:
+        logger.info(f"ℹ️ Storage Monitor error (optional): {e}")
+        init_results['optional_modules']['storage_monitor'] = False
+    
+    # === PHASE 5: Optional Services ===
+    logger.info("🔌 Phase 5: Optional Services")
+    
+    # WebSocket Sender (Optional)
+    try:
         websocket_sender = get_service('websocket_sender')
         if websocket_sender:
-            logger.info("✅ WebSocket Sender available")
-            if websocket_sender.initialize():
+            success = websocket_sender.initialize()
+            if success:
                 logger.info("✅ WebSocket Sender initialized successfully")
-                
-                # Set up auto-start if enabled
+                init_results['optional_modules']['websocket_sender'] = True
                 if AUTO_START_WEBSOCKET_SENDER:
-                    logger.info("📤 WebSocket Sender auto-start enabled - starting service...")
-                    # Add delay before starting WebSocket sender
+                    logger.info("📤 WebSocket Sender auto-start enabled")
                     import time
                     time.sleep(WEBSOCKET_SENDER_STARTUP_DELAY)
-                    
                     if websocket_sender.start():
                         logger.info("✅ WebSocket Sender started successfully")
                     else:
-                        logger.error("❌ WebSocket Sender failed to start")
-                else:
-                    logger.info("📤 WebSocket Sender auto-start disabled")
+                        logger.warning("⚠️ WebSocket Sender failed to start")
             else:
-                logger.error("❌ WebSocket Sender initialization failed")
+                logger.warning("⚠️ WebSocket Sender initialization failed")
+                init_results['optional_modules']['websocket_sender'] = False
         else:
-            logger.warning("⚠️  WebSocket Sender service not available")
-            
+            logger.info("ℹ️ WebSocket Sender not available (optional)")
+            init_results['optional_modules']['websocket_sender'] = False
     except Exception as e:
-        logger.warning(f"⚠️  WebSocket Sender initialization: {e}")
+        logger.info(f"ℹ️ WebSocket Sender error (optional): {e}")
+        init_results['optional_modules']['websocket_sender'] = False
     
-    logger.info("🎉 Service initialization sequence completed!")
-    return True
+    # Storage Service (Optional)
+    try:
+        storage_service = get_service('storage_service')
+        if storage_service:
+            success = storage_service.initialize()
+            if success:
+                logger.info("✅ Storage Service initialized successfully")
+                init_results['optional_modules']['storage_service'] = True
+                if AUTO_START_STORAGE_MONITOR:
+                    logger.info("💾 Storage Monitor auto-start enabled")
+                    import time
+                    time.sleep(STORAGE_MONITOR_STARTUP_DELAY)
+                    if storage_service.start_storage_monitoring(interval=STORAGE_MONITOR_INTERVAL):
+                        logger.info("✅ Storage monitoring started successfully")
+                    else:
+                        logger.warning("⚠️ Storage monitoring failed to start")
+            else:
+                logger.warning("⚠️ Storage Service initialization failed")
+                init_results['optional_modules']['storage_service'] = False
+        else:
+            logger.info("ℹ️ Storage Service not available (optional)")
+            init_results['optional_modules']['storage_service'] = False
+    except Exception as e:
+        logger.info(f"ℹ️ Storage Service error (optional): {e}")
+        init_results['optional_modules']['storage_service'] = False
+    
+    # === SUMMARY ===
+    logger.info("📊 Initialization Summary:")
+    
+    # Core modules status
+    core_success = sum(init_results['core_modules'].values())
+    core_total = len(init_results['core_modules'])
+    logger.info(f"   Core Modules: {core_success}/{core_total} successful")
+    
+    for module, status in init_results['core_modules'].items():
+        status_icon = "✅" if status else "❌"
+        logger.info(f"     {status_icon} {module}")
+    
+    # Optional modules status
+    optional_success = sum(init_results['optional_modules'].values())
+    optional_total = len(init_results['optional_modules'])
+    logger.info(f"   Optional Modules: {optional_success}/{optional_total} successful")
+    
+    for module, status in init_results['optional_modules'].items():
+        status_icon = "✅" if status else "ℹ️"
+        logger.info(f"     {status_icon} {module}")
+    
+    # Error summary
+    if init_results['errors']:
+        logger.warning(f"   Errors: {len(init_results['errors'])} errors occurred")
+        for error in init_results['errors']:
+            logger.warning(f"     ❌ {error}")
+    
+    # Determine if system is functional
+    critical_modules = ['camera_handler', 'camera_manager', 'database_manager', 'health_monitor', 'health_service']
+    critical_success = all(init_results['core_modules'].get(module, False) for module in critical_modules)
+    
+    if critical_success:
+        logger.info("🎉 System initialization completed successfully!")
+        logger.info("   Core functionality is available")
+        if optional_success > 0:
+            logger.info(f"   {optional_success} optional modules are also available")
+        return True
+    else:
+        logger.error("❌ System initialization failed!")
+        logger.error("   Critical modules are missing or failed")
+        return False
 
 
 def create_app():

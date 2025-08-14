@@ -26,7 +26,9 @@ logger = get_logger(__name__)
 def websocket_sender_dashboard():
     """Render WebSocket sender dashboard."""
     try:
-        return render_template('websocket_sender/dashboard.html')
+        return render_template('websocket_sender/dashboard.html', 
+                             active_page='websocket_sender',
+                             title='WebSocket Sender')
     except Exception as e:
         logger.error(f"Error rendering WebSocket sender dashboard: {e}")
         return "WebSocket sender dashboard not available", 500

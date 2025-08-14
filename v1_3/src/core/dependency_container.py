@@ -28,7 +28,8 @@ from pathlib import Path
 from v1_3.src.core.config import (
     FLASK_HOST, FLASK_PORT, SECRET_KEY,
     VEHICLE_DETECTION_MODEL, LICENSE_PLATE_DETECTION_MODEL,
-    EASYOCR_LANGUAGES, IMAGE_SAVE_DIR, DETECTION_INTERVAL
+    EASYOCR_LANGUAGES, IMAGE_SAVE_DIR, DETECTION_INTERVAL,
+    WEBSOCKET_SENDER_ENABLED, STORAGE_MONITOR_ENABLED
 )
 
 T = TypeVar('T')
@@ -72,13 +73,14 @@ class DependencyContainer:
     
     def _register_default_services(self):
         """Register default services with their configurations using absolute imports."""
-        # Core components
+        # Core components - ALWAYS REGISTERED
         self.register_service('logger', logging.Logger, singleton=True,
                         factory=self._create_logger)
         self.register_service('config', dict, singleton=True, 
                             factory=self._create_config)
         
-        # Register components using absolute imports
+        # === CORE MODULES (Essential) ===
+        # Register core components using absolute imports
         try:
             from v1_3.src.components.detection_processor import DetectionProcessor
             self.register_service('detection_processor', DetectionProcessor, 
@@ -109,7 +111,7 @@ class DependencyContainer:
         except ImportError:
             self.logger.warning("DatabaseManager not available")
         
-        # Register service layer components using absolute imports
+        # Register core service layer components using absolute imports
         try:
             from v1_3.src.services.camera_manager import CameraManager, create_camera_manager
             self.register_service('camera_manager', CameraManager, 
@@ -141,15 +143,6 @@ class DependencyContainer:
             self.logger.warning("VideoStreamingService not available")
         
         try:
-            from v1_3.src.services.websocket_sender import WebSocketSender, create_websocket_sender
-            self.register_service('websocket_sender', WebSocketSender, 
-                                singleton=True,
-                                factory=create_websocket_sender,
-                                dependencies={'database_manager': 'database_manager', 'logger': 'logger'})
-        except ImportError:
-            self.logger.warning("WebSocketSender not available")
-        
-        try:
             from v1_3.src.services.health_service import HealthService, create_health_service
             self.register_service('health_service', HealthService, 
                                 singleton=True,
@@ -157,6 +150,44 @@ class DependencyContainer:
                                 dependencies={'health_monitor': 'health_monitor', 'logger': 'logger'})
         except ImportError as e:
             self.logger.warning(f"HealthService not available: {e}")
+        
+        # === OPTIONAL MODULES (Can be disabled) ===
+        # Register optional modules only if enabled in configuration
+        
+        # WebSocket Sender (Optional)
+        if WEBSOCKET_SENDER_ENABLED:
+            try:
+                from v1_3.src.services.websocket_sender import WebSocketSender, create_websocket_sender
+                self.register_service('websocket_sender', WebSocketSender, 
+                                    singleton=True,
+                                    factory=create_websocket_sender,
+                                    dependencies={'database_manager': 'database_manager', 'logger': 'logger'})
+                self.logger.info("WebSocket Sender registered (enabled in config)")
+            except ImportError:
+                self.logger.warning("WebSocketSender not available")
+        else:
+            self.logger.info("WebSocket Sender not registered (disabled in config)")
+        
+        # Storage Management (Optional)
+        if STORAGE_MONITOR_ENABLED:
+            try:
+                from v1_3.src.components.storage_monitor import StorageMonitor
+                self.register_service('storage_monitor', StorageMonitor, 
+                                    singleton=True, dependencies={'logger': 'logger'})
+            except ImportError:
+                self.logger.warning("StorageMonitor not available")
+            
+            try:
+                from v1_3.src.services.storage_service import StorageService, create_storage_service
+                self.register_service('storage_service', StorageService, 
+                                    singleton=True,
+                                    factory=create_storage_service,
+                                    dependencies={'storage_monitor': 'storage_monitor', 'logger': 'logger'})
+                self.logger.info("Storage Service registered (enabled in config)")
+            except ImportError as e:
+                self.logger.warning(f"StorageService not available: {e}")
+        else:
+            self.logger.info("Storage Management not registered (disabled in config)")
             
     def _create_logger(self, **kwargs) -> logging.Logger:
         """Create a logger instance."""

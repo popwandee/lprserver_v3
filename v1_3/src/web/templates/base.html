@@ -33,6 +33,7 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
+                    <!-- Core Menu Items (Always Available) -->
                     <li class="nav-item">
                         <a class="nav-link {% if active_page == 'main' %}active{% endif %}" href="/">
                             <i class="fas fa-home"></i> Dashboard
@@ -56,6 +57,20 @@
                     <li class="nav-item">
                         <a class="nav-link {% if active_page == 'health' %}active{% endif %}" href="/health">
                             <i class="fas fa-heartbeat"></i> Health
+                        </a>
+                    </li>
+                    
+                    <!-- Optional Menu Items (Conditionally Available) -->
+                    <li class="nav-item" id="websocket-sender-menu-item" style="display: none;">
+                        <a class="nav-link {% if active_page == 'websocket_sender' %}active{% endif %}" href="/websocket-sender">
+                            <i class="fas fa-share-alt"></i> WebSocket Sender
+                            <small class="text-muted">(Optional)</small>
+                        </a>
+                    </li>
+                    <li class="nav-item" id="storage-menu-item" style="display: none;">
+                        <a class="nav-link {% if active_page == 'storage' %}active{% endif %}" href="/storage">
+                            <i class="fas fa-hdd"></i> Storage
+                            <small class="text-muted">(Optional)</small>
                         </a>
                     </li>
                 </ul>
@@ -87,6 +102,87 @@
     
     <!-- Base JavaScript -->
     <script src="{{ url_for('static', filename='js/base.js') }}"></script>
+    
+    <!-- Modular Menu JavaScript -->
+    <script>
+        // Modular Menu Management
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Initializing modular menu...');
+            
+            // Check optional modules and show/hide menu items
+            checkOptionalModules();
+        });
+        
+        function checkOptionalModules() {
+            // Check WebSocket Sender
+            checkWebSocketSender();
+            
+            // Check Storage Manager
+            checkStorageManager();
+        }
+        
+        function checkWebSocketSender() {
+            fetch('/websocket-sender/status')
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error('WebSocket Sender not available');
+                    }
+                })
+                .then(data => {
+                    if (data.success) {
+                        console.log('WebSocket Sender is available - showing menu item');
+                        showMenuItem('websocket-sender-menu-item');
+                    } else {
+                        console.log('WebSocket Sender not available - hiding menu item');
+                        hideMenuItem('websocket-sender-menu-item');
+                    }
+                })
+                .catch(error => {
+                    console.log('WebSocket Sender not available (optional module):', error.message);
+                    hideMenuItem('websocket-sender-menu-item');
+                });
+        }
+        
+        function checkStorageManager() {
+            fetch('/storage/status')
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error('Storage Manager not available');
+                    }
+                })
+                .then(data => {
+                    if (data.success) {
+                        console.log('Storage Manager is available - showing menu item');
+                        showMenuItem('storage-menu-item');
+                    } else {
+                        console.log('Storage Manager not available - hiding menu item');
+                        hideMenuItem('storage-menu-item');
+                    }
+                })
+                .catch(error => {
+                    console.log('Storage Manager not available (optional module):', error.message);
+                    hideMenuItem('storage-menu-item');
+                });
+        }
+        
+        function showMenuItem(menuItemId) {
+            const menuItem = document.getElementById(menuItemId);
+            if (menuItem) {
+                menuItem.style.display = 'block';
+            }
+        }
+        
+        function hideMenuItem(menuItemId) {
+            const menuItem = document.getElementById(menuItemId);
+            if (menuItem) {
+                menuItem.style.display = 'none';
+            }
+        }
+    </script>
     
     {% block additional_js %}{% endblock %}
 </body>

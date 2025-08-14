@@ -1001,4 +1001,179 @@ note top of ConfigManagement
   - v1_3/src/wsgi.py
 end note
 
+' WebSocket Communication Variables
+package "WebSocket Communication" as WebSocketComm {
+  class WebSocketEvents {
+    + SOCKETIO_CLIENT_EVENTS: object
+    + SOCKETIO_SERVER_EVENTS: object
+    + REST_API_ENDPOINTS: object
+    --
+    **Client Events:**
+    + CAMERA_REGISTER: string
+    + LPR_DATA: string
+    + HEALTH_STATUS: string
+    + PING: string
+    --
+    **Server Events:**
+    + CONNECT: string
+    + DISCONNECT: string
+    + ERROR: string
+    + PONG: string
+    + LPR_RESPONSE: string
+    + HEALTH_RESPONSE: string
+    --
+    **REST Endpoints:**
+    + CAMERA_REGISTER: string
+    + DETECTION: string
+    + HEALTH: string
+    + TEST: string
+    + STATISTICS: string
+  }
+  
+  class WebSocketDataFormats {
+    + cameraRegistrationData: object
+    + lprDetectionData: object
+    + healthStatusData: object
+    --
+    **Registration Data:**
+    + camera_id: string
+    + checkpoint_id: string
+    + timestamp: string
+    --
+    **Detection Data:**
+    + type: string
+    + vehicles_count: number
+    + plates_count: number
+    + ocr_results: array
+    + processing_time_ms: number
+    + annotated_image: string
+    + cropped_plates: array
+    --
+    **Health Data:**
+    + component: string
+    + status: string
+    + message: string
+    + details: object
+  }
+  
+  class WebSocketStatus {
+    + connected: boolean
+    + server_type: string
+    + server_url: string
+    + retry_count: number
+    + last_connection: string
+    + fallback_mode: boolean
+    + total_detections_sent: number
+    + total_health_sent: number
+    + detection_thread_alive: boolean
+    + health_thread_alive: boolean
+  }
+}
+
+' Storage Management Variables
+package "Storage Management" as StorageManagement {
+  class StorageStatus {
+    + disk_usage: object
+    + folder_stats: object
+    + monitoring: object
+    --
+    **Disk Usage:**
+    + total_space_gb: number
+    + used_space_gb: number
+    + free_space_gb: number
+    + usage_percentage: number
+    + status: string
+    --
+    **Folder Stats:**
+    + total_files: number
+    + total_size_gb: number
+    + sent_files: number
+    + unsent_files: number
+    + oldest_file: string
+    + newest_file: string
+    --
+    **Monitoring:**
+    + monitoring_active: boolean
+    + last_check: string
+    + next_check: string
+    + checks_performed: number
+    + cleanups_performed: number
+  }
+  
+  class StorageConfiguration {
+    + min_free_space_gb: number
+    + retention_days: number
+    + batch_size: number
+    + monitor_interval: number
+    + folder_path: string
+    + auto_cleanup_enabled: boolean
+    + priority_sent: boolean
+    + batch_processing: boolean
+    + dry_run: boolean
+    + max_files_per_batch: number
+  }
+  
+  class StorageActions {
+    + cleanup_results: object
+    + storage_events: object
+    --
+    **Cleanup Results:**
+    + files_deleted: number
+    + space_freed_gb: number
+    + sent_files_deleted: number
+    + unsent_files_deleted: number
+    + errors: number
+    + duration_ms: number
+    --
+    **Storage Events:**
+    + STORAGE_STATUS_REQUEST: string
+    + STORAGE_CLEANUP_REQUEST: string
+    + STORAGE_CONFIG_UPDATE: string
+    + STORAGE_STATUS_UPDATE: string
+    + STORAGE_CLEANUP_RESULT: string
+    + STORAGE_CONFIG_UPDATED: string
+  }
+}
+
+' Relationships for WebSocket Communication
+WebSocketComm ..> WebSocketOfflineMode : "Communication Layer"
+WebSocketEvents ..> WebSocketDataFormats : "Event Handling"
+WebSocketDataFormats ..> WebSocketStatus : "Data Transmission"
+WebSocketStatus ..> MainDashboardElements : "Status Display"
+
+' Relationships for Storage Management
+StorageManagement ..> MainDashboardElements : "Storage Dashboard"
+StorageStatus ..> StorageConfiguration : "Configuration Based"
+StorageConfiguration ..> StorageActions : "Action Execution"
+StorageActions ..> StorageStatus : "Status Updates"
+
+note top of WebSocketComm
+  **WebSocket Communication System**
+  - Socket.IO และ REST API support พร้อม fallback mechanism
+  - Real-time communication สำหรับ detection data และ health status
+  - Automatic server type detection (Socket.IO → REST API)
+  - Offline mode support และ auto-recovery
+  - Database integration สำหรับ tracking sent status
+  
+  **Fallback Strategy:**
+  1. Socket.IO (Primary) - Real-time communication
+  2. REST API (Fallback) - When Socket.IO unavailable
+  3. Automatic detection และ switching
+end note
+
+note top of StorageManagement
+  **Storage Management System**
+  - Disk space monitoring และ automatic cleanup
+  - Prioritized file deletion (sent files first)
+  - Batch file deletion สำหรับ large datasets
+  - Configuration management ผ่าน environment variables
+  - Web dashboard สำหรับ storage management
+  
+  **Cleanup Priority:**
+  1. Sent files (already processed)
+  2. Unsent files (if still needed)
+  3. Batch processing for efficiency
+  4. Configuration-based thresholds
+end note
+
 @enduml

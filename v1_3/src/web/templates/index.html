@@ -118,10 +118,12 @@
     </div>
 </div>
 
-<div class="row mb-5">
+<!-- Optional: Server Communication (WebSocket Sender) -->
+<div class="row mb-5" id="server-communication-section" style="display: none;">
     <div class="col-12">
         <h2 class="mb-4">
             <i class="fas fa-share-alt"></i> Server Communication
+            <small class="text-muted">(Optional Module)</small>
         </h2>
     </div>
 
@@ -155,18 +157,7 @@
     <div class="col-12">
         <div class="card-body">
             <div class="row">
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5><i class="fas fa-terminal"></i> Server Communication Log</h5>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="log-container" id="main-server-logs" style="height: 300px;">
-                                <div class="text-muted p-3">Server communication logs will appear here...</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <!-- Core: System Log -->
                 <div class="col-md-6">
                     <div class="card">
                         <div class="card-header">
@@ -174,8 +165,24 @@
                             <p><strong>System Uptime:</strong> <span id="main-system-uptime">Loading...</span></p>
                         </div>
                         <div class="card-body p-0">
-                            <div class="log-container" id="main-system-log" style="height: 200px;">
+                            <div class="log-container" id="main-system-log" style="height: 300px;">
                                 <div class="text-muted p-3">System log will appear here...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Optional: Server Communication Log -->
+                <div class="col-md-6" id="server-logs-section" style="display: none;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-terminal"></i> Server Communication Log
+                                <small class="text-muted">(Optional Module)</small>
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="log-container" id="main-server-logs" style="height: 300px;">
+                                <div class="text-muted p-3">Server communication logs will appear here...</div>
                             </div>
                         </div>
                     </div>
@@ -337,17 +344,6 @@
                             <li><strong>*</strong> Health Monitor</li>
                             <li><strong>*</strong> WebSocket Sender</li>
                             <li><strong>*</strong> Database Manager</li>
-                        </ul>
-                    </div>
-                    <div class="col-md-4">
-                        <h6>Component and Services</h6>
-                        <ul class="list-unstyled">
-                            <li><strong>Flask Streaming</strong> </li>
-                            <li><strong>Camera Component</strong> </li>
-                            <li><strong>Detection Component:</strong> </li>
-                            <li><strong>Health Monitor</strong> </li>
-                            <li><strong>Websocket sender</strong> </li>
-                            <li><strong>Database Manager</strong> </li>
                         </ul>
                     </div>
                 </div>

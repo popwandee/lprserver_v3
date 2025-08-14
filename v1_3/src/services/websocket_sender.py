@@ -17,8 +17,6 @@ Version: 1.3
 Date: December 2024
 """
 
-import asyncio
-import websockets
 import json
 import base64
 import threading
@@ -134,67 +132,93 @@ class WebSocketSender:
 
     def _detect_server_type(self):
         """
-        Detect if server supports WebSocket or REST API.
+        Detect if server supports Socket.IO or REST API.
+        Prioritizes Socket.IO, falls back to REST API.
         """
         try:
-            # Check if URL starts with ws:// or wss:// (WebSocket)
-            if self.server_url.startswith(('ws://', 'wss://')):
-                self.server_type = 'websocket'
-                self.logger.info("Detected WebSocket server")
+            # Store original URL for REST API fallback
+            original_url = self.server_url
+            
+            # Try Socket.IO first
+            socketio_url = self.server_url
+            if socketio_url.startswith(('http://', 'https://')):
+                # Convert HTTP to WebSocket URL for Socket.IO
+                if socketio_url.startswith('https://'):
+                    socketio_url = socketio_url.replace('https://', 'wss://')
+                else:
+                    socketio_url = socketio_url.replace('http://', 'ws://')
+            
+            # Test Socket.IO connection
+            if self._test_socketio_connection(socketio_url):
+                self.server_url = socketio_url
+                self.server_type = 'socketio'
+                self.logger.info(f"Detected Socket.IO server: {self.server_url}")
                 return
             
-            # Check if URL starts with http:// or https:// (REST API)
-            if self.server_url.startswith(('http://', 'https://')):
+            # Fallback to REST API
+            if self._test_rest_connection(original_url):
+                self.server_url = original_url
                 self.server_type = 'rest'
-                self.logger.info("Detected REST API server")
+                self.logger.info(f"Falling back to REST API server: {self.server_url}")
                 return
             
-            # Try to detect by testing connection
-            if self._test_websocket_connection():
-                self.server_type = 'websocket'
-                self.logger.info("Detected WebSocket server by testing")
-            elif self._test_rest_connection():
-                self.server_type = 'rest'
-                self.logger.info("Detected REST API server by testing")
-            else:
-                self.server_type = 'unknown'
-                self.logger.warning("Could not detect server type - will try WebSocket first")
+            # Default to Socket.IO if both tests fail
+            self.server_url = socketio_url
+            self.server_type = 'socketio'
+            self.logger.warning("Both Socket.IO and REST API tests failed, defaulting to Socket.IO")
                 
         except Exception as e:
             self.logger.error(f"Error detecting server type: {e}")
-            self.server_type = 'unknown'
+            self.server_type = 'socketio'  # Default to Socket.IO
 
-    def _test_websocket_connection(self) -> bool:
+    def _test_socketio_connection(self, test_url: str = None) -> bool:
         """
-        Test if server supports WebSocket connection.
+        Test if server supports Socket.IO connection.
         
+        Args:
+            test_url: URL to test (optional, uses self.server_url if not provided)
+            
         Returns:
-            bool: True if WebSocket supported, False otherwise
+            bool: True if Socket.IO supported, False otherwise
         """
         try:
-            # Try to connect with a simple WebSocket test
-            test_url = self.server_url
+            if test_url is None:
+                test_url = self.server_url
+            
             if not test_url.startswith(('ws://', 'wss://')):
                 test_url = f"ws://{test_url}"
             
-            # This is a simplified test - in practice, you'd need to implement
-            # a proper WebSocket connection test
-            return False  # For now, assume WebSocket is not supported
+            # Create a temporary Socket.IO client for testing
+            import socketio
+            test_sio = socketio.Client()
+            
+            # Try to connect with a short timeout
+            test_sio.connect(test_url, timeout=5)
+            
+            if test_sio.connected:
+                test_sio.disconnect()
+                return True
+            else:
+                return False
             
         except Exception as e:
-            self.logger.debug(f"WebSocket test failed: {e}")
+            self.logger.debug(f"Socket.IO test failed: {e}")
             return False
 
-    def _test_rest_connection(self) -> bool:
+    def _test_rest_connection(self, test_url: str = None) -> bool:
         """
         Test if server supports REST API.
         
+        Args:
+            test_url: URL to test (optional, uses self.server_url if not provided)
+            
         Returns:
             bool: True if REST API supported, False otherwise
         """
         try:
-            # Try to connect to REST API
-            test_url = self.server_url
+            if test_url is None:
+                test_url = self.server_url
+            
             if not test_url.startswith(('http://', 'https://')):
                 test_url = f"http://{test_url}"
             
@@ -205,9 +229,9 @@ class WebSocketSender:
             self.logger.debug(f"REST API test failed: {e}")
             return False
     
-    async def connect(self) -> bool:
+    def connect(self) -> bool:
         """
-        Connect to WebSocket server or REST API.
+        Connect to server (Socket.IO or REST API).
         
         Returns:
             bool: True if connection successful, False otherwise
@@ -225,10 +249,11 @@ class WebSocketSender:
             if not hasattr(self, 'server_type'):
                 self._detect_server_type()
             
+            # Connect based on server type
             if self.server_type == 'rest':
-                return await self._connect_rest()
+                return self._connect_rest()
             else:
-                return await self._connect_websocket()
+                return self._connect_socketio()
             
         except Exception as e:
             self.connected = False
@@ -245,7 +270,7 @@ class WebSocketSender:
             self.logger.error(f"Connection failed: {e}")
             return False
 
-    async def _connect_websocket(self) -> bool:
+    def _connect_socketio(self) -> bool:
         """
         Connect to Socket.IO server.
         
@@ -290,7 +315,7 @@ class WebSocketSender:
                 self.logger.info("Socket.IO connection established")
                 
                 # Try to send any pending data after successful connection
-                await self._send_pending_data()
+                self._send_pending_data()
                 
                 return True
             else:
@@ -319,7 +344,7 @@ class WebSocketSender:
         """Handle error from server"""
         self.logger.error(f"Server error: {data}")
 
-    async def _send_pending_data(self):
+    def _send_pending_data(self):
         """
         Send any pending data after successful connection.
         This method tries to send any unsent detection and health data.
@@ -331,12 +356,12 @@ class WebSocketSender:
             self.logger.info("Sending pending data after reconnection...")
             
             # Send pending detection data
-            detection_count = await self._send_detection_data_async()
+            detection_count = self._send_detection_data()
             if detection_count > 0:
                 self.logger.info(f"Sent {detection_count} pending detection records")
             
             # Send pending health data
-            health_count = await self._send_health_data_async()
+            health_count = self._send_health_data()
             if health_count > 0:
                 self.logger.info(f"Sent {health_count} pending health records")
             
@@ -348,9 +373,9 @@ class WebSocketSender:
         except Exception as e:
             self.logger.error(f"Error sending pending data: {e}")
 
-    async def disconnect(self) -> bool:
+    def disconnect(self) -> bool:
         """
-        Disconnect from Socket.IO server.
+        Disconnect from server (Socket.IO or REST API).
         
         Returns:
             bool: True if disconnection successful, False otherwise
@@ -370,16 +395,16 @@ class WebSocketSender:
                     message='Disconnected from server'
                 )
             
-            self.logger.info("Socket.IO disconnected")
+            self.logger.info("Server disconnected")
             return True
             
         except Exception as e:
-            self.logger.error(f"Socket.IO disconnection error: {e}")
+            self.logger.error(f"Server disconnection error: {e}")
             return False
 
-    async def send_data(self, data: Dict[str, Any]) -> bool:
+    def send_data(self, data: Dict[str, Any]) -> bool:
         """
-        Send data via Socket.IO or REST API.
+        Send data via Socket.IO or REST API with fallback.
         
         Args:
             data: Data to send
@@ -389,13 +414,27 @@ class WebSocketSender:
         """
         try:
             if not self.connected:
-                if not await self.connect():
+                if not self.connect():
                     return False
             
-            if self.server_type == 'rest':
-                return await self._send_data_rest(data)
+            # Try Socket.IO first if that's the current server type
+            if self.server_type == 'socketio':
+                success = self._send_data_socketio(data)
+                if success:
+                    return True
+                else:
+                    # Fallback to REST API if Socket.IO fails
+                    self.logger.warning("Socket.IO send failed, trying REST API fallback...")
+                    return self._send_data_rest(data)
             else:
-                return await self._send_data_websocket(data)
+                # Try REST API first if that's the current server type
+                success = self._send_data_rest(data)
+                if success:
+                    return True
+                else:
+                    # Fallback to Socket.IO if REST API fails
+                    self.logger.warning("REST API send failed, trying Socket.IO fallback...")
+                    return self._send_data_socketio(data)
             
         except Exception as e:
             self.logger.error(f"Send data error: {e}")
@@ -447,7 +486,7 @@ class WebSocketSender:
             self.logger.error(f"REST API connection failed: {e}")
             return False
 
-    async def _send_data_websocket(self, data: Dict[str, Any]) -> bool:
+    def _send_data_socketio(self, data: Dict[str, Any]) -> bool:
         """
         Send data via Socket.IO.
         
@@ -466,8 +505,15 @@ class WebSocketSender:
             data['checkpoint_id'] = self.checkpoint_id
             data['timestamp'] = datetime.now().isoformat()
             
-            # Send data via Socket.IO
-            self.sio.emit('lpr_data', data)
+            # Send data via Socket.IO based on data type
+            if data.get('type') == 'detection_result':
+                self.sio.emit('lpr_data', data)
+            elif data.get('type') == 'health_check':
+                self.sio.emit('health_status', data)
+            elif data.get('type') == 'test':
+                self.sio.emit('ping', data)
+            else:
+                self.sio.emit('lpr_data', data)
             
             self.logger.debug(f"Data sent via Socket.IO: {data}")
             return True
@@ -476,7 +522,7 @@ class WebSocketSender:
             self.logger.error(f"Socket.IO send error: {e}")
             return False
 
-    async def _send_data_rest(self, data: Dict[str, Any]) -> bool:
+    def _send_data_rest(self, data: Dict[str, Any]) -> bool:
         """
         Send data via REST API.
         
@@ -492,21 +538,33 @@ class WebSocketSender:
             if not api_url.startswith(('http://', 'https://')):
                 api_url = f"http://{api_url}"
             
-            # Determine endpoint based on data type
-            if data.get('type') == 'detection':
-                endpoint = '/api/detection'
-            elif data.get('type') == 'health':
-                endpoint = '/api/health'
+            # Determine endpoint and method based on data type
+            if data.get('type') == 'detection_result':
+                endpoint = '/api/statistics'  # Use statistics endpoint for detection data
+                method = 'POST'
+            elif data.get('type') == 'health_check':
+                endpoint = '/api/statistics'  # Use statistics endpoint for health data
+                method = 'POST'
+            elif data.get('type') == 'test':
+                endpoint = '/api/statistics'  # Use statistics endpoint for test
+                method = 'GET'
             else:
-                endpoint = '/api/data'
+                endpoint = '/api/statistics'  # Default to statistics endpoint
+                method = 'POST'
             
-            # Send POST request
-            response = requests.post(
-                f"{api_url}{endpoint}",
-                json=data,
-                headers={'Content-Type': 'application/json'},
-                timeout=30
-            )
+            # Send request based on method
+            if method == 'GET':
+                response = requests.get(
+                    f"{api_url}{endpoint}",
+                    timeout=30
+                )
+            else:
+                response = requests.post(
+                    f"{api_url}{endpoint}",
+                    json=data,
+                    headers={'Content-Type': 'application/json'},
+                    timeout=30
+                )
             
             if response.status_code in [200, 201]:
                 self.logger.debug(f"REST API response: {response.text}")
@@ -572,16 +630,13 @@ class WebSocketSender:
             self.running = False
             self.stop_event.set()
             
-            # Disconnect WebSocket
-            if self.connected:
+            # Disconnect Socket.IO
+            if self.connected and self.sio:
                 try:
-                    # Create a new event loop for disconnection
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                    loop.run_until_complete(self.disconnect())
-                    loop.close()
+                    self.sio.disconnect()
+                    self.connected = False
                 except Exception as e:
-                    self.logger.error(f"Error during WebSocket disconnection: {e}")
+                    self.logger.error(f"Error during Socket.IO disconnection: {e}")
             
             # Wait for threads to finish
             if self.detection_thread and self.detection_thread.is_alive():
@@ -599,31 +654,24 @@ class WebSocketSender:
         """Main loop for detection data sender thread."""
         self.logger.info("Detection sender thread started")
         
-        # Create new event loop for this thread
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        
-        try:
-            while self.running and not self.stop_event.is_set():
-                try:
-                    self.last_detection_check = datetime.now()
-                    sent_count = self._send_detection_data()
+        while self.running and not self.stop_event.is_set():
+            try:
+                self.last_detection_check = datetime.now()
+                sent_count = self._send_detection_data()
+                
+                if sent_count > 0:
+                    self.total_detections_sent += sent_count
+                    self.logger.info(f"Sent {sent_count} detection records to server")
+                
+                # Wait for next interval or stop event
+                if self.stop_event.wait(SENDER_INTERVAL):
+                    break
                     
-                    if sent_count > 0:
-                        self.total_detections_sent += sent_count
-                        self.logger.info(f"Sent {sent_count} detection records to server")
-                    
-                    # Wait for next interval or stop event
-                    if self.stop_event.wait(SENDER_INTERVAL):
-                        break
-                        
-                except Exception as e:
-                    self.logger.error(f"Error in detection sender loop: {e}")
-                    # Wait before retrying
-                    if self.stop_event.wait(SENDER_INTERVAL):
-                        break
-        finally:
-            loop.close()
+            except Exception as e:
+                self.logger.error(f"Error in detection sender loop: {e}")
+                # Wait before retrying
+                if self.stop_event.wait(SENDER_INTERVAL):
+                    break
         
         self.logger.info("Detection sender thread stopped")
     
@@ -631,31 +679,24 @@ class WebSocketSender:
         """Main loop for health status sender thread."""
         self.logger.info("Health sender thread started")
         
-        # Create new event loop for this thread
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        
-        try:
-            while self.running and not self.stop_event.is_set():
-                try:
-                    self.last_health_check = datetime.now()
-                    sent_count = self._send_health_data()
+        while self.running and not self.stop_event.is_set():
+            try:
+                self.last_health_check = datetime.now()
+                sent_count = self._send_health_data()
+                
+                if sent_count > 0:
+                    self.total_health_sent += sent_count
+                    self.logger.info(f"Sent {sent_count} health records to server")
+                
+                # Wait for next interval or stop event
+                if self.stop_event.wait(HEALTH_SENDER_INTERVAL):
+                    break
                     
-                    if sent_count > 0:
-                        self.total_health_sent += sent_count
-                        self.logger.info(f"Sent {sent_count} health records to server")
-                    
-                    # Wait for next interval or stop event
-                    if self.stop_event.wait(HEALTH_SENDER_INTERVAL):
-                        break
-                        
-                except Exception as e:
-                    self.logger.error(f"Error in health sender loop: {e}")
-                    # Wait before retrying
-                    if self.stop_event.wait(HEALTH_SENDER_INTERVAL):
-                        break
-        finally:
-            loop.close()
+            except Exception as e:
+                self.logger.error(f"Error in health sender loop: {e}")
+                # Wait before retrying
+                if self.stop_event.wait(HEALTH_SENDER_INTERVAL):
+                    break
         
         self.logger.info("Health sender thread stopped")
     
@@ -900,9 +941,9 @@ class WebSocketSender:
             
             # Send to server using synchronous method
             if self.server_type == 'rest':
-                return self._send_data_rest_sync(data)
+                return self._send_data_rest(data)
             else:
-                return self._send_data_websocket_sync(data)
+                return self._send_data_socketio(data)
             
         except Exception as e:
             self.logger.error(f"Error preparing detection data for sending: {e}")
@@ -934,246 +975,17 @@ class WebSocketSender:
             
             # Send to server using synchronous method
             if self.server_type == 'rest':
-                return self._send_data_rest_sync(data)
+                return self._send_data_rest(data)
             else:
-                return self._send_data_websocket_sync(data)
+                return self._send_data_socketio(data)
             
         except Exception as e:
             self.logger.error(f"Error preparing health check data for sending: {e}")
             return False
 
-    def _send_data_websocket_sync(self, data: Dict[str, Any]) -> bool:
-        """
-        Send data via Socket.IO (synchronous version).
-        
-        Args:
-            data: Data to send
-            
-        Returns:
-            bool: True if send successful, False otherwise
-        """
-        try:
-            if not self.sio or not self.sio.connected:
-                return False
-            
-            # Add metadata to data
-            data['camera_id'] = self.aicamera_id
-            data['checkpoint_id'] = self.checkpoint_id
-            data['timestamp'] = datetime.now().isoformat()
-            
-            # Send data via Socket.IO
-            self.sio.emit('lpr_data', data)
-            
-            self.logger.debug(f"Data sent via Socket.IO: {data}")
-            return True
-            
-        except Exception as e:
-            self.logger.error(f"Socket.IO send error: {e}")
-            return False
 
-    def _send_data_rest_sync(self, data: Dict[str, Any]) -> bool:
-        """
-        Send data via REST API (synchronous version).
-        
-        Args:
-            data: Data to send
-            
-        Returns:
-            bool: True if send successful, False otherwise
-        """
-        try:
-            # Prepare REST API URL
-            api_url = self.server_url
-            if not api_url.startswith(('http://', 'https://')):
-                api_url = f"http://{api_url}"
-            
-            # Determine endpoint based on data type
-            if data.get('type') == 'detection_result':
-                endpoint = '/api/detection'
-            elif data.get('type') == 'health_check':
-                endpoint = '/api/health'
-            else:
-                endpoint = '/api/data'
-            
-            # Send POST request
-            response = requests.post(
-                f"{api_url}{endpoint}",
-                json=data,
-                headers={'Content-Type': 'application/json'},
-                timeout=30
-            )
-            
-            if response.status_code in [200, 201]:
-                self.logger.debug(f"REST API response: {response.text}")
-                return True
-            else:
-                self.logger.error(f"REST API send failed: HTTP {response.status_code} - {response.text}")
-                return False
-                
-        except Exception as e:
-            self.logger.error(f"REST API send error: {e}")
-            return False
 
-    async def _send_detection_data_async(self) -> int:
-        """
-        Send unsent detection data to server (async version for pending data).
-        
-        Returns:
-            int: Number of records sent successfully
-        """
-        if not self.database_manager:
-            return 0
-        
-        try:
-            # Get unsent detection results
-            unsent_detections = self.database_manager.get_unsent_detection_results()
-            
-            if not unsent_detections:
-                return 0
-            
-            sent_count = 0
-            
-            for detection in unsent_detections:
-                success = await self._send_single_detection(detection)
-                
-                if success:
-                    # Mark as sent in database
-                    self.database_manager.mark_detection_result_sent(
-                        detection['id'], 
-                        'Successfully sent to server'
-                    )
-                    sent_count += 1
-            
-            return sent_count
-            
-        except Exception as e:
-            self.logger.error(f"Error sending detection data: {e}")
-            return 0
 
-    async def _send_health_data_async(self) -> int:
-        """
-        Send unsent health check data to server (async version for pending data).
-        
-        Returns:
-            int: Number of records sent successfully
-        """
-        if not self.database_manager:
-            return 0
-        
-        try:
-            # Get unsent health checks
-            unsent_health = self.database_manager.get_unsent_health_checks()
-            
-            if not unsent_health:
-                return 0
-            
-            sent_count = 0
-            
-            for health_check in unsent_health:
-                success = await self._send_single_health_check(health_check)
-                
-                if success:
-                    # Mark as sent in database
-                    self.database_manager.mark_health_check_sent(
-                        health_check['id'], 
-                        'Successfully sent to server'
-                    )
-                    sent_count += 1
-            
-            return sent_count
-            
-        except Exception as e:
-            self.logger.error(f"Error sending health data: {e}")
-            return 0
-    
-    async def _send_single_detection(self, detection: Dict[str, Any]) -> bool:
-        """
-        Send single detection result to server.
-        
-        Args:
-            detection: Detection result data
-            
-        Returns:
-            bool: True if send successful, False otherwise
-        """
-        try:
-            # Prepare data for sending
-            data = {
-                'type': 'detection_result',
-                'aicamera_id': self.aicamera_id,
-                'checkpoint_id': self.checkpoint_id,
-                'timestamp': detection['timestamp'],
-                'vehicles_count': detection['vehicles_count'],
-                'plates_count': detection['plates_count'],
-                'ocr_results': detection['ocr_results'],
-                'vehicle_detections': detection['vehicle_detections'],
-                'plate_detections': detection['plate_detections'],
-                'processing_time_ms': detection['processing_time_ms'],
-                'created_at': detection['created_at']
-            }
-            
-            # Add image data if available
-            if detection['annotated_image_path']:
-                image_path = Path(detection['annotated_image_path'])
-                if image_path.exists():
-                    with open(image_path, 'rb') as f:
-                        image_data = base64.b64encode(f.read()).decode('utf-8')
-                        data['annotated_image'] = image_data
-            
-            # Add cropped plate images if available
-            if detection['cropped_plates_paths']:
-                try:
-                    plate_paths = json.loads(detection['cropped_plates_paths'])
-                    cropped_images = []
-                    
-                    for path in plate_paths:
-                        plate_path = Path(path)
-                        if plate_path.exists():
-                            with open(plate_path, 'rb') as f:
-                                plate_image = base64.b64encode(f.read()).decode('utf-8')
-                                cropped_images.append(plate_image)
-                    
-                    data['cropped_plates'] = cropped_images
-                except Exception as e:
-                    self.logger.warning(f"Error processing cropped plate images: {e}")
-            
-            # Send to server
-            return await self.send_data(data)
-            
-        except Exception as e:
-            self.logger.error(f"Error preparing detection data for sending: {e}")
-            return False
-    
-    async def _send_single_health_check(self, health_check: Dict[str, Any]) -> bool:
-        """
-        Send single health check result to server.
-        
-        Args:
-            health_check: Health check data
-            
-        Returns:
-            bool: True if send successful, False otherwise
-        """
-        try:
-            # Prepare data for sending
-            data = {
-                'type': 'health_check',
-                'aicamera_id': self.aicamera_id,
-                'checkpoint_id': self.checkpoint_id,
-                'timestamp': health_check['timestamp'],
-                'component': health_check['component'],
-                'status': health_check['status'],
-                'message': health_check['message'],
-                'details': health_check['details'],
-                'created_at': health_check['created_at']
-            }
-            
-            # Send to server
-            return await self.send_data(data)
-            
-        except Exception as e:
-            self.logger.error(f"Error preparing health check data for sending: {e}")
-            return False
     
     def get_status(self) -> Dict[str, Any]:
         """
@@ -1187,6 +999,7 @@ class WebSocketSender:
             'running': self.running,
             'connected': self.connected if self.server_url else False,
             'server_url': self.server_url,
+            'server_type': getattr(self, 'server_type', 'unknown'),
             'offline_mode': self.server_url is None,
             'aicamera_id': self.aicamera_id,
             'checkpoint_id': self.checkpoint_id,
@@ -1198,6 +1011,74 @@ class WebSocketSender:
             'detection_thread_alive': self.detection_thread.is_alive() if self.detection_thread else False,
             'health_thread_alive': self.health_thread.is_alive() if self.health_thread else False
         }
+    
+    def switch_to_rest_api(self) -> bool:
+        """
+        Switch to REST API mode.
+        
+        Returns:
+            bool: True if switch successful, False otherwise
+        """
+        try:
+            if self.server_type == 'rest':
+                self.logger.info("Already in REST API mode")
+                return True
+            
+            # Convert WebSocket URL back to HTTP
+            rest_url = self.server_url
+            if rest_url.startswith('wss://'):
+                rest_url = rest_url.replace('wss://', 'https://')
+            elif rest_url.startswith('ws://'):
+                rest_url = rest_url.replace('ws://', 'http://')
+            
+            # Test REST API connection
+            if self._test_rest_connection(rest_url):
+                self.server_url = rest_url
+                self.server_type = 'rest'
+                self.connected = False  # Force reconnection
+                self.logger.info(f"Switched to REST API mode: {self.server_url}")
+                return True
+            else:
+                self.logger.error("Failed to switch to REST API - connection test failed")
+                return False
+                
+        except Exception as e:
+            self.logger.error(f"Error switching to REST API: {e}")
+            return False
+    
+    def switch_to_socketio(self) -> bool:
+        """
+        Switch to Socket.IO mode.
+        
+        Returns:
+            bool: True if switch successful, False otherwise
+        """
+        try:
+            if self.server_type == 'socketio':
+                self.logger.info("Already in Socket.IO mode")
+                return True
+            
+            # Convert HTTP URL to WebSocket
+            socketio_url = self.server_url
+            if socketio_url.startswith('https://'):
+                socketio_url = socketio_url.replace('https://', 'wss://')
+            elif socketio_url.startswith('http://'):
+                socketio_url = socketio_url.replace('http://', 'ws://')
+            
+            # Test Socket.IO connection
+            if self._test_socketio_connection(socketio_url):
+                self.server_url = socketio_url
+                self.server_type = 'socketio'
+                self.connected = False  # Force reconnection
+                self.logger.info(f"Switched to Socket.IO mode: {self.server_url}")
+                return True
+            else:
+                self.logger.error("Failed to switch to Socket.IO - connection test failed")
+                return False
+                
+        except Exception as e:
+            self.logger.error(f"Error switching to Socket.IO: {e}")
+            return False
     
     def cleanup(self):
         """Cleanup WebSocket sender resources."""

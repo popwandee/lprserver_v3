@@ -93,15 +93,25 @@ WEBSOCKET_CONNECTION_TIMEOUT = 30.0  # Connection timeout in seconds
 WEBSOCKET_RETRY_INTERVAL = 60.0  # Retry connection interval in seconds
 WEBSOCKET_MAX_RETRIES = 5  # Maximum connection retries before giving up
 
+# Storage monitoring configuration
+STORAGE_MONITOR_ENABLED = True  # Enable storage monitoring
+STORAGE_MONITOR_INTERVAL = 300  # Storage monitoring interval in seconds (5 minutes)
+STORAGE_MIN_FREE_SPACE_GB = 10.0  # Minimum free space in GB before cleanup
+STORAGE_RETENTION_DAYS = 7  # Number of days to keep images
+STORAGE_BATCH_SIZE = 100  # Number of files to delete in each batch
+STORAGE_FOLDER_PATH = os.path.join(BASE_DIR, 'captured_images')  # Path to monitored folder
+
 # Auto-startup configuration
 AUTO_START_CAMERA = True      # Auto start camera on system startup
 AUTO_START_STREAMING = True   # Auto start streaming when camera starts
 AUTO_START_DETECTION = True   # Auto start detection when streaming starts
 AUTO_START_HEALTH_MONITOR = True  # Auto start health monitoring when detection starts
 AUTO_START_WEBSOCKET_SENDER = True  # Auto start WebSocket sender when health monitor starts
+AUTO_START_STORAGE_MONITOR = True  # Auto start storage monitoring when WebSocket sender starts
 STARTUP_DELAY = 5.0          # Delay in seconds between startup steps
-HEALTH_MONITOR_STARTUP_DELAY = 30.0  # Delay before starting health monitoring (increased for model loading)
-WEBSOCKET_SENDER_STARTUP_DELAY = 10.0  # Delay before starting WebSocket sender
+HEALTH_MONITOR_STARTUP_DELAY = 5.0  # Delay before starting health monitoring (increased for model loading)
+WEBSOCKET_SENDER_STARTUP_DELAY = 5.0  # Delay before starting WebSocket sender
+STORAGE_MONITOR_STARTUP_DELAY = 5.0  # Delay before starting storage monitoring
 
 # Create directories if they don't exist - all in BASE_DIR (aicamera/)
 Path(IMAGE_SAVE_DIR).mkdir(parents=True, exist_ok=True)

@@ -32,6 +32,20 @@ AI Camera v1.3 เป็นระบบกล้องอัจฉริยะ�
 - ✅ WebSocket support
 - ✅ Modular architecture
 
+#### WebSocket Communication System (NEW)
+- ✅ Socket.IO และ REST API support พร้อม fallback mechanism
+- ✅ Real-time communication สำหรับ detection data และ health status
+- ✅ Automatic server type detection (Socket.IO → REST API)
+- ✅ Offline mode support และ auto-recovery
+- ✅ Database integration สำหรับ tracking sent status
+
+#### Storage Management System (NEW)
+- ✅ Disk space monitoring และ automatic cleanup
+- ✅ Prioritized file deletion (sent files first)
+- ✅ Batch file deletion สำหรับ large datasets
+- ✅ Configuration management ผ่าน environment variables
+- ✅ Web dashboard สำหรับ storage management
+
 #### Absolute Imports System (NEW)
 - ✅ Consistent import paths across the project
 - ✅ Import validation and error handling
@@ -248,12 +262,15 @@ python3 -c "from v1_3.src.core.utils.import_helper import validate_imports; prin
 - Configuration Management ✅
 - Absolute Imports ✅
 - Import Validation ✅
+- WebSocket Communication ✅
+- Storage Management ✅
 
 ## 💻 การใช้งาน
 
 ### การเข้าถึงระบบ
 - **เว็บอินเตอร์เฟส**: http://localhost
 - **Health Check**: http://localhost/health
+- **Storage Management**: http://localhost/storage
 - **API Endpoints**: ดูในส่วน API Reference
 
 ### การควบคุมผ่านเว็บ
@@ -292,7 +309,11 @@ FLASK_ENV=production
 FLASK_APP=v1_3.src.app:app
 VEHICLE_DETECTION_MODEL=/path/to/vehicle_model
 LICENSE_PLATE_DETECTION_MODEL=/path/to/lpr_model
-WEBSOCKET_SERVER_URL=ws://localhost:8080
+WEBSOCKET_SERVER_URL=http://100.95.46.128:8765
+AICAMERA_ID=1
+CHECKPOINT_ID=1
+STORAGE_MIN_FREE_SPACE_GB=10.0
+STORAGE_RETENTION_DAYS=7
 ```
 
 ### Camera Settings

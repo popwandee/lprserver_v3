@@ -8,39 +8,148 @@ const DashboardManager = {
     statusUpdateInterval: null,
     
     /**
-     * Initialize dashboard
+     * Initialize dashboard with modular architecture support
      */
     init: function() {
-        // Add initial log message
-        AICameraUtils.addLogMessage('main-system-log', 'AI Camera Dashboard initialized', 'success');
-        AICameraUtils.addLogMessage('main-system-log', 'Loading system status...', 'info');
+        console.log('Initializing dashboard with modular architecture...');
         
-        this.setupWebSocket();
-        this.setupStatusUpdates();
-        this.loadInitialStatus();
+        // Initialize core functionality
+        this.initCoreModules();
         
-        // Test camera elements after a short delay
-        setTimeout(() => {
-            console.log('Testing camera elements...');
-            const featureResolutionElement = document.getElementById('feature-camera-resolution');
-            const featureFpsElement = document.getElementById('feature-camera-fps');
-            const featureModelElement = document.getElementById('feature-camera-model');
-            const aiAcceleratorElement = document.getElementById('system-info-ai-accelerator');
-            
-            console.log('Camera elements found:', {
-                resolution: featureResolutionElement,
-                fps: featureFpsElement,
-                model: featureModelElement,
-                aiAccelerator: aiAcceleratorElement
+        // Check and initialize optional modules
+        this.checkOptionalModules();
+        
+        // Set up periodic updates
+        this.setupPeriodicUpdates();
+        
+        console.log('Dashboard initialization completed');
+    },
+
+    /**
+     * Initialize core modules (always available)
+     */
+    initCoreModules: function() {
+        console.log('Initializing core modules...');
+        
+        // Initialize WebSocket connection for core modules
+        this.initWebSocket();
+        
+        // Set up core status updates
+        this.updateSystemStatusComprehensive();
+        
+        // Set up core event handlers
+        this.setupCoreEventHandlers();
+    },
+
+    /**
+     * Check and initialize optional modules
+     */
+    checkOptionalModules: function() {
+        console.log('Checking optional modules...');
+        
+        // Check WebSocket Sender (optional)
+        this.checkWebSocketSender();
+        
+        // Check Storage Manager (optional)
+        this.checkStorageManager();
+    },
+
+    /**
+     * Check if WebSocket Sender is available
+     */
+    checkWebSocketSender: function() {
+        AICameraUtils.apiRequest('/websocket-sender/status')
+            .then(data => {
+                if (data.success) {
+                    console.log('WebSocket Sender is available');
+                    this.showOptionalModule('websocket_sender');
+                    this.updateWebSocketStatus('sender', data.status);
+                } else {
+                    console.log('WebSocket Sender not available (optional module)');
+                    this.hideOptionalModule('websocket_sender');
+                }
+            })
+            .catch(error => {
+                console.log('WebSocket Sender not available (optional module):', error.message);
+                this.hideOptionalModule('websocket_sender');
             });
-            
-            if (featureResolutionElement) featureResolutionElement.textContent = 'Test Resolution';
-            if (featureFpsElement) featureFpsElement.textContent = 'Test FPS';
-            if (featureModelElement) featureModelElement.textContent = 'Test Model';
-            if (aiAcceleratorElement) aiAcceleratorElement.textContent = 'Test AI Accelerator';
-        }, 1000);
+    },
+
+    /**
+     * Check if Storage Manager is available
+     */
+    checkStorageManager: function() {
+        AICameraUtils.apiRequest('/storage/status')
+            .then(data => {
+                if (data.success) {
+                    console.log('Storage Manager is available');
+                    this.showOptionalModule('storage');
+                } else {
+                    console.log('Storage Manager not available (optional module)');
+                    this.hideOptionalModule('storage');
+                }
+            })
+            .catch(error => {
+                console.log('Storage Manager not available (optional module):', error.message);
+                this.hideOptionalModule('storage');
+            });
+    },
+
+    /**
+     * Show optional module sections
+     */
+    showOptionalModule: function(moduleName) {
+        switch (moduleName) {
+            case 'websocket_sender':
+                const serverCommSection = document.getElementById('server-communication-section');
+                const serverLogsSection = document.getElementById('server-logs-section');
+                if (serverCommSection) serverCommSection.style.display = 'block';
+                if (serverLogsSection) serverLogsSection.style.display = 'block';
+                break;
+            case 'storage':
+                // Storage module sections would be shown here if needed
+                break;
+        }
+    },
+
+    /**
+     * Hide optional module sections
+     */
+    hideOptionalModule: function(moduleName) {
+        switch (moduleName) {
+            case 'websocket_sender':
+                const serverCommSection = document.getElementById('server-communication-section');
+                const serverLogsSection = document.getElementById('server-logs-section');
+                if (serverCommSection) serverCommSection.style.display = 'none';
+                if (serverLogsSection) serverLogsSection.style.display = 'none';
+                break;
+            case 'storage':
+                // Storage module sections would be hidden here if needed
+                break;
+        }
+    },
+
+    /**
+     * Set up core event handlers
+     */
+    setupCoreEventHandlers: function() {
+        // Core event handlers for camera, detection, health
+        // These are always available
+    },
+
+    /**
+     * Set up periodic updates
+     */
+    setupPeriodicUpdates: function() {
+        // Update core status every 5 seconds
+        setInterval(() => {
+            this.updateSystemStatusComprehensive();
+        }, 5000);
         
-        console.log('Dashboard Manager initialized');
+        // Update system info every 30 seconds
+        setInterval(() => {
+            this.updateSystemInfoFromAPI();
+        }, 30000);
     },
 
     /**
@@ -59,6 +168,9 @@ const DashboardManager = {
                 });
             }
         }
+        
+        // Setup server connection status updates
+        this.updateServerConnectionStatus();
     },
 
     /**
@@ -136,117 +248,197 @@ const DashboardManager = {
             .catch(error => {
                 console.error('Failed to fetch system info:', error);
             });
+            
+        // Update server connection status
+        this.updateServerConnectionStatus();
+    },
 
-        // Update health status (comprehensive)
+    /**
+     * Update server connection status
+     */
+    updateServerConnectionStatus: function() {
+        AICameraUtils.apiRequest('/websocket-sender/status')
+            .then(data => {
+                if (data.success) {
+                    const status = data.status;
+                    const connectionElement = document.getElementById('main-server-connection-status');
+                    const connectionText = document.getElementById('main-server-connection-text');
+                    const dataSendingElement = document.getElementById('main-data-sending-status');
+                    const dataSendingText = document.getElementById('main-data-sending-text');
+                    const lastSyncElement = document.getElementById('main-last-sync-time');
+                    
+                    // Update server connection status
+                    if (connectionElement && connectionText) {
+                        if (status.connected) {
+                            connectionElement.className = 'status-indicator status-online';
+                            connectionText.textContent = 'Connected';
+                        } else if (status.running) {
+                            connectionElement.className = 'status-indicator status-warning';
+                            connectionText.textContent = 'Running';
+                        } else {
+                            connectionElement.className = 'status-indicator status-offline';
+                            connectionText.textContent = 'Disconnected';
+                        }
+                    }
+                    
+                    // Update data sending status
+                    if (dataSendingElement && dataSendingText) {
+                        if (status.running && (status.total_detections_sent > 0 || status.total_health_sent > 0)) {
+                            dataSendingElement.className = 'status-indicator status-online';
+                            dataSendingText.textContent = 'Active';
+                        } else if (status.running) {
+                            dataSendingElement.className = 'status-indicator status-warning';
+                            dataSendingText.textContent = 'Ready';
+                        } else {
+                            dataSendingElement.className = 'status-indicator status-offline';
+                            dataSendingText.textContent = 'Inactive';
+                        }
+                    }
+                    
+                    // Update last sync time
+                    if (lastSyncElement) {
+                        if (status.last_detection_check || status.last_health_check) {
+                            const lastCheck = status.last_detection_check || status.last_health_check;
+                            const lastCheckTime = new Date(lastCheck);
+                            const now = new Date();
+                            const diffMs = now - lastCheckTime;
+                            const diffMins = Math.floor(diffMs / 60000);
+                            
+                            if (diffMins < 1) {
+                                lastSyncElement.textContent = 'Just now';
+                            } else if (diffMins < 60) {
+                                lastSyncElement.textContent = `${diffMins} min ago`;
+                            } else {
+                                const diffHours = Math.floor(diffMins / 60);
+                                lastSyncElement.textContent = `${diffHours} hours ago`;
+                            }
+                        } else {
+                            lastSyncElement.textContent = 'Never';
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Failed to fetch server connection status:', error);
+                // Update status to show error
+                const connectionElement = document.getElementById('main-server-connection-status');
+                const connectionText = document.getElementById('main-server-connection-text');
+                if (connectionElement && connectionText) {
+                    connectionElement.className = 'status-indicator status-offline';
+                    connectionText.textContent = 'Error';
+                }
+            });
+    },
+
+    /**
+     * Update system status (comprehensive) - Modular Architecture
+     */
+    updateSystemStatusComprehensive: function() {
+        console.log('Updating system status (modular architecture)...');
+        
+        // === CORE MODULES (Always Available) ===
+        // Update health status (comprehensive) - CORE MODULE
         AICameraUtils.apiRequest('/health/system')
             .then(data => {
                 if (data.success) {
                     this.updateHealthStatus(data);
-                    this.updateWebSocketStatus('health', data);
+                    // Health status is handled by updateHealthStatus, no need for separate WebSocket status
                 }
             })
             .catch(error => {
                 console.error('Failed to fetch health status:', error);
-                this.updateWebSocketStatus('health', { error: true });
-            });
-
-        // Update WebSocket sender status
-        AICameraUtils.apiRequest('/websocket-sender/status')
-            .then(data => {
-                if (data.success) {
-                    this.updateWebSocketStatus('sender', data.status);
+                // Update system status to show error
+                const systemStatusElement = document.getElementById('main-system-status');
+                const systemStatusText = document.getElementById('main-system-status-text');
+                if (systemStatusElement && systemStatusText) {
+                    systemStatusElement.className = 'status-indicator status-offline';
+                    systemStatusText.textContent = 'Error';
                 }
-            })
-            .catch(error => {
-                console.error('Failed to fetch WebSocket sender status:', error);
-                this.updateWebSocketStatus('sender', { error: true });
             });
 
-        // Update streaming status
-        AICameraUtils.apiRequest('/streaming/status')
-            .then(data => {
-                if (data.success) {
-                    this.updateWebSocketStatus('streaming', data.status);
-                }
-            })
-            .catch(error => {
-                console.error('Failed to fetch streaming status:', error);
-                this.updateWebSocketStatus('streaming', { error: true });
-            });
+        // Update streaming status (if available) - CORE MODULE
+        this.updateStreamingStatus();
 
-        // Update WebSocket communication status (overall)
-        this.updateWebSocketCommunicationStatus();
+        // === OPTIONAL MODULES (Conditionally Available) ===
+        // Update WebSocket sender status - OPTIONAL MODULE
+        this.updateWebSocketSenderStatus();
 
-        // Update server logs
+        // Update server logs - OPTIONAL MODULE
         this.updateServerLogsFromAPI();
-
-        // Update database status
-        AICameraUtils.apiRequest('/health/system')
-            .then(data => {
-                if (data.success && data.health && data.health.components) {
-                    const dbComponent = data.health.components.get('database_manager', {});
-                    this.updateWebSocketStatus('database', dbComponent);
-                }
-            })
-            .catch(error => {
-                console.error('Failed to fetch database status:', error);
-                this.updateWebSocketStatus('database', { error: true });
-            });
     },
 
     /**
      * Update WebSocket status for different components
      */
     updateWebSocketStatus: function(component, status) {
-        let elementId, text, className;
+        console.log(`updateWebSocketStatus called for ${component}:`, status);
         
         switch (component) {
             case 'sender':
-                elementId = 'main-server-connection-status';
-                if (status.connected) {
-                    text = 'Connected';
-                    className = 'status-indicator status-online';
-                } else if (status.running) {
-                    text = 'Running';
-                    className = 'status-indicator status-warning';
+                // Update server connection status using existing elements
+                const connectionElement = document.getElementById('main-server-connection-status');
+                const connectionText = document.getElementById('main-server-connection-text');
+                
+                if (connectionElement && connectionText) {
+                    if (status.connected) {
+                        connectionElement.className = 'status-indicator status-online';
+                        connectionText.textContent = 'Connected';
+                    } else if (status.offline_mode) {
+                        connectionElement.className = 'status-indicator status-warning';
+                        connectionText.textContent = 'Offline Mode';
+                    } else if (status.running) {
+                        connectionElement.className = 'status-indicator status-warning';
+                        connectionText.textContent = 'Running';
+                    } else {
+                        connectionElement.className = 'status-indicator status-offline';
+                        connectionText.textContent = 'Disconnected';
+                    }
                 } else {
-                    text = 'Disconnected';
-                    className = 'status-indicator status-offline';
+                    console.warn('Server connection status elements not found');
                 }
                 break;
                 
             case 'streaming':
-                elementId = 'main-data-sending-status';
-                if (status.active) {
-                    text = 'Active';
-                    className = 'status-indicator status-online';
+                // Update data sending status using existing elements
+                const dataSendingElement = document.getElementById('main-data-sending-status');
+                const dataSendingText = document.getElementById('main-data-sending-text');
+                
+                if (dataSendingElement && dataSendingText) {
+                    if (status.active || status.streaming) {
+                        dataSendingElement.className = 'status-indicator status-online';
+                        dataSendingText.textContent = 'Active';
+                    } else if (status.running) {
+                        dataSendingElement.className = 'status-indicator status-warning';
+                        dataSendingText.textContent = 'Ready';
+                    } else {
+                        dataSendingElement.className = 'status-indicator status-offline';
+                        dataSendingText.textContent = 'Inactive';
+                    }
                 } else {
-                    text = 'Inactive';
-                    className = 'status-indicator status-offline';
+                    console.warn('Data sending status elements not found');
                 }
                 break;
                 
+            case 'health':
+                // Health status is handled by updateHealthStatus function
+                console.log('Health status update handled by updateHealthStatus');
+                return;
+                
+            case 'database':
+                // Database status is handled by main dashboard status cards
+                console.log('Database status update handled by main dashboard');
+                return;
+                
             default:
+                console.log('Unknown WebSocket component:', component);
                 return; // Skip unknown components
-        }
-        
-        // Update the status indicator
-        const element = document.getElementById(elementId);
-        if (element) {
-            element.className = className;
-        }
-        
-        // Update the text element
-        const textElement = document.getElementById(elementId.replace('-status', '-text'));
-        if (textElement) {
-            textElement.textContent = text;
         }
         
         // Add log message for connection status changes
         if (component === 'sender') {
             const logMessage = status.connected ? 
                 'WebSocket sender connected to server' : 
-                'WebSocket sender disconnected from server';
+                (status.offline_mode ? 'WebSocket sender in offline mode' : 'WebSocket sender disconnected from server');
             AICameraUtils.addLogMessage('main-server-logs', logMessage, status.connected ? 'success' : 'warning');
         }
     },
@@ -255,31 +447,9 @@ const DashboardManager = {
      * Update overall WebSocket communication status
      */
     updateWebSocketCommunicationStatus: function() {
-        const element = document.getElementById('websocket-communication-status');
-        if (!element) return;
-
-        // Check if WebSocket sender is connected
-        AICameraUtils.apiRequest('/websocket-sender/status')
-            .then(data => {
-                if (data.success && data.status.connected) {
-                    element.textContent = 'Connected';
-                    element.className = 'status-badge connected';
-                } else if (data.success && data.status.running) {
-                    element.textContent = 'Running';
-                    element.className = 'status-badge warning';
-                } else {
-                    element.textContent = 'Disconnected';
-                    element.className = 'status-badge disconnected';
-                }
-            })
-            .catch(error => {
-                console.error('Failed to fetch WebSocket communication status:', error);
-                element.textContent = 'Error';
-                element.className = 'status-badge error';
-            });
-
-        // Update WebSocket sender status
-        this.updateServerStatus();
+        // This function is now handled by updateServerConnectionStatus()
+        // No need for separate websocket-communication-status element
+        console.log('WebSocket communication status update handled by server connection status');
     },
 
     /**
@@ -414,159 +584,270 @@ const DashboardManager = {
     },
 
     /**
-     * Update system health display
+     * Update health status display
      */
-    updateSystemHealth: function(healthData) {
-        console.log('Updating system health with data:', healthData);
+    updateHealthStatus: function(data) {
+        console.log('updateHealthStatus called with:', data);
         
-        // Extract health data from new format
-        const health = healthData.data || healthData;
-        const overallStatus = health.overall_status || 'unknown';
-        const components = health.components || {};
+        if (!data || !data.data) {
+            console.warn('Invalid health data received');
+            return;
+        }
         
-        // Determine system health based on overall status
-        const systemHealthy = overallStatus === 'healthy';
-        const systemStatusText = overallStatus.charAt(0).toUpperCase() + overallStatus.slice(1);
+        const healthData = data.data;
         
-        AICameraUtils.updateStatusIndicator('main-system-status', systemHealthy, systemStatusText);
-
-        // Database status from components
-        const databaseComponent = components.database || {};
-        const databaseHealthy = databaseComponent.status === 'healthy';
-        const databaseStatusText = databaseComponent.status ? 
-            databaseComponent.status.charAt(0).toUpperCase() + databaseComponent.status.slice(1) : 
-            'Unknown';
+        // Update overall system status
+        if (healthData.overall_status) {
+            const systemStatusElement = document.getElementById('main-system-status');
+            const systemStatusText = document.getElementById('main-system-status-text');
             
-        AICameraUtils.updateStatusIndicator('main-database-status', databaseHealthy, databaseStatusText);
+            if (systemStatusElement && systemStatusText) {
+                const status = healthData.overall_status.toLowerCase();
+                if (status === 'healthy') {
+                    systemStatusElement.className = 'status-indicator status-online';
+                    systemStatusText.textContent = 'Healthy';
+                } else if (status === 'unhealthy') {
+                    systemStatusElement.className = 'status-indicator status-warning';
+                    systemStatusText.textContent = 'Unhealthy';
+                } else if (status === 'critical') {
+                    systemStatusElement.className = 'status-indicator status-offline';
+                    systemStatusText.textContent = 'Critical';
+                } else {
+                    systemStatusElement.className = 'status-indicator status-offline';
+                    systemStatusText.textContent = 'Unknown';
+                }
+            }
+        }
         
-        // Log system health status
-        if (overallStatus === 'healthy') {
-            AICameraUtils.addLogMessage('main-system-log', 'System health: ' + systemStatusText, 'success');
-        } else {
-            AICameraUtils.addLogMessage('main-system-log', 'System health: ' + systemStatusText, 'warning');
+        // Update component statuses
+        if (healthData.components) {
+            // Camera status
+            if (healthData.components.camera) {
+                const cameraStatus = healthData.components.camera;
+                const cameraStatusElement = document.getElementById('main-camera-status');
+                const cameraStatusText = document.getElementById('main-camera-status-text');
+                
+                if (cameraStatusElement && cameraStatusText) {
+                    const status = cameraStatus.status?.toLowerCase() || 'unknown';
+                    if (status === 'healthy') {
+                        cameraStatusElement.className = 'status-indicator status-online';
+                        cameraStatusText.textContent = 'Online';
+                    } else if (status === 'unhealthy') {
+                        cameraStatusElement.className = 'status-indicator status-warning';
+                        cameraStatusText.textContent = 'Warning';
+                    } else {
+                        cameraStatusElement.className = 'status-indicator status-offline';
+                        cameraStatusText.textContent = 'Offline';
+                    }
+                }
+            }
+            
+            // Detection status
+            if (healthData.components.detection) {
+                const detectionStatus = healthData.components.detection;
+                const detectionStatusElement = document.getElementById('main-detection-status');
+                const detectionStatusText = document.getElementById('main-detection-status-text');
+                
+                if (detectionStatusElement && detectionStatusText) {
+                    const status = detectionStatus.status?.toLowerCase() || 'unknown';
+                    if (status === 'healthy') {
+                        detectionStatusElement.className = 'status-indicator status-online';
+                        detectionStatusText.textContent = 'Active';
+                    } else if (status === 'unhealthy') {
+                        detectionStatusElement.className = 'status-indicator status-warning';
+                        detectionStatusText.textContent = 'Warning';
+                    } else {
+                        detectionStatusElement.className = 'status-indicator status-offline';
+                        detectionStatusText.textContent = 'Inactive';
+                    }
+                }
+            }
+            
+            // Database status
+            if (healthData.components.database) {
+                const databaseStatus = healthData.components.database;
+                const databaseStatusElement = document.getElementById('main-database-status');
+                const databaseStatusText = document.getElementById('main-database-status-text');
+                
+                if (databaseStatusElement && databaseStatusText) {
+                    const status = databaseStatus.status?.toLowerCase() || 'unknown';
+                    if (status === 'healthy') {
+                        databaseStatusElement.className = 'status-indicator status-online';
+                        databaseStatusText.textContent = 'Connected';
+                    } else if (status === 'unhealthy') {
+                        databaseStatusElement.className = 'status-indicator status-warning';
+                        databaseStatusText.textContent = 'Warning';
+                    } else {
+                        databaseStatusElement.className = 'status-indicator status-offline';
+                        databaseStatusText.textContent = 'Disconnected';
+                    }
+                }
+            }
+        }
+        
+        // Update system information
+        if (healthData.system) {
+            this.updateSystemInfoFromHealth(healthData.system);
+        }
+        
+        // Add health status log
+        AICameraUtils.addLogMessage('main-system-log', 
+            `Health check completed: ${healthData.overall_status}`, 
+            healthData.overall_status === 'healthy' ? 'success' : 'warning');
+    },
+
+    /**
+     * Update system information from health data
+     */
+    updateSystemInfoFromHealth: function(systemData) {
+        // Update CPU info
+        if (systemData.cpu_info) {
+            const cpuElement = document.getElementById('system-info-cpu');
+            if (cpuElement) {
+                const cpuInfo = systemData.cpu_info;
+                cpuElement.textContent = `${cpuInfo.model || 'Unknown'} ${cpuInfo.architecture || ''}`;
+            }
+        }
+        
+        // Update AI Accelerator info
+        if (systemData.ai_accelerator_info) {
+            const aiElement = document.getElementById('system-info-ai-accelerator');
+            if (aiElement) {
+                const aiInfo = systemData.ai_accelerator_info;
+                aiElement.textContent = `Device Architecture: ${aiInfo.device_architecture || 'Unknown'}, Firmware: ${aiInfo.firmware_version || 'Unknown'}`;
+            }
+        }
+        
+        // Update OS info
+        if (systemData.os_info) {
+            const osElement = document.getElementById('system-info-os');
+            if (osElement) {
+                const osInfo = systemData.os_info;
+                osElement.textContent = `${osInfo.distribution || 'Unknown'} ${osInfo.distribution_version || ''} (Kernel ${osInfo.kernel_version || 'Unknown'})`;
+            }
+        }
+        
+        // Update RAM info
+        if (systemData.memory_usage) {
+            const ramElement = document.getElementById('system-info-ram');
+            if (ramElement) {
+                ramElement.textContent = `${systemData.memory_usage.total?.toFixed(2) || 'Unknown'} GB`;
+            }
+        }
+        
+        // Update Disk info
+        if (systemData.disk_usage) {
+            const diskElement = document.getElementById('system-info-disk');
+            if (diskElement) {
+                diskElement.textContent = `${systemData.disk_usage.total?.toFixed(2) || 'Unknown'} GB`;
+            }
         }
     },
 
     /**
      * Update system information display
      */
-    updateHealthStatus: function(healthData) {
-        console.log('Updating health status with data:', healthData);
+    updateSystemInfo: function(data) {
+        console.log('Updating system info with data:', data);
         
-        // Update system information
-        this.updateSystemInfo(healthData);
+        if (!data || !data.success) {
+            console.warn('Invalid system info data received');
+            return;
+        }
         
-        // Update system resources if available
-        if (healthData.data && healthData.data.system) {
-            const systemInfo = healthData.data.system;
+        // Extract system data from the correct path
+        const systemData = data.data && data.data.system ? data.data.system : data.data || data;
+        
+        // Update CPU info
+        if (systemData.cpu_info) {
+            const cpuElement = document.getElementById('system-info-cpu');
+            if (cpuElement) {
+                const cpuInfo = systemData.cpu_info;
+                cpuElement.textContent = `${cpuInfo.model || 'Unknown'} ${cpuInfo.architecture || ''}`;
+            }
+        }
+        
+        // Update AI Accelerator info
+        if (systemData.ai_accelerator_info) {
+            const aiElement = document.getElementById('system-info-ai-accelerator');
+            if (aiElement) {
+                const aiInfo = systemData.ai_accelerator_info;
+                aiElement.textContent = `Device Architecture: ${aiInfo.device_architecture || 'Unknown'}, Firmware: ${aiInfo.firmware_version || 'Unknown'}`;
+            }
+        }
+        
+        // Update OS info
+        if (systemData.os_info) {
+            const osElement = document.getElementById('system-info-os');
+            if (osElement) {
+                const osInfo = systemData.os_info;
+                osElement.textContent = `${osInfo.distribution || 'Unknown'} ${osInfo.distribution_version || ''} (Kernel ${osInfo.kernel_version || 'Unknown'})`;
+            }
+        }
+        
+        // Update RAM info
+        if (systemData.memory_usage) {
+            const ramElement = document.getElementById('system-info-ram');
+            if (ramElement) {
+                ramElement.textContent = `${systemData.memory_usage.total?.toFixed(2) || 'Unknown'} GB`;
+            }
+        }
+        
+        // Update Disk info
+        if (systemData.disk_usage) {
+            const diskElement = document.getElementById('system-info-disk');
+            if (diskElement) {
+                diskElement.textContent = `${systemData.disk_usage.total?.toFixed(2) || 'Unknown'} GB`;
+            }
+        }
+        
+        // Update camera info if available
+        if (systemData.camera_info) {
+            const cameraModelElement = document.getElementById('feature-camera-model');
+            const cameraResolutionElement = document.getElementById('feature-camera-resolution');
+            const cameraFpsElement = document.getElementById('feature-camera-fps');
+            const cameraStatusElement = document.getElementById('feature-camera-status');
             
-            // Update CPU usage
-            const cpuElement = document.getElementById('cpu-usage');
-            if (cpuElement && systemInfo.cpu_usage !== undefined) {
-                cpuElement.textContent = `${systemInfo.cpu_usage}%`;
+            if (cameraModelElement && systemData.camera_info.model) {
+                cameraModelElement.textContent = systemData.camera_info.model;
             }
-
-            // Update memory usage
-            const memoryElement = document.getElementById('memory-usage');
-            if (memoryElement && systemInfo.memory_usage && systemInfo.memory_usage.percentage !== undefined) {
-                memoryElement.textContent = `${systemInfo.memory_usage.percentage}%`;
+            
+            if (cameraResolutionElement && systemData.camera_info.resolution) {
+                cameraResolutionElement.textContent = `${systemData.camera_info.resolution[0]}x${systemData.camera_info.resolution[1]}`;
             }
-
-            // Update disk usage
-            const diskElement = document.getElementById('disk-usage');
-            if (diskElement && systemInfo.disk_usage && systemInfo.disk_usage.percentage !== undefined) {
-                diskElement.textContent = `${systemInfo.disk_usage.percentage}%`;
+            
+            if (cameraFpsElement && systemData.camera_info.framerate) {
+                cameraFpsElement.textContent = `${systemData.camera_info.framerate} FPS`;
+            }
+            
+            if (cameraStatusElement && systemData.camera_info.status) {
+                cameraStatusElement.textContent = systemData.camera_info.status;
+            }
+        }
+        
+        // Update system uptime
+        if (systemData.uptime) {
+            const uptimeElement = document.getElementById('main-system-uptime');
+            if (uptimeElement) {
+                const uptime = this.formatUptime(systemData.uptime);
+                uptimeElement.textContent = uptime;
             }
         }
     },
 
-    updateSystemInfo: function(healthData) {
-        console.log('Updating system info with data:', healthData);
+    /**
+     * Format uptime from seconds to human readable format
+     */
+    formatUptime: function(seconds) {
+        if (!seconds || seconds <= 0) return 'N/A';
         
-        // Extract system info from health data - fix the path to match the API response structure
-        const systemInfo = healthData.data && healthData.data.system ? healthData.data.system : {};
-        console.log('Extracted systemInfo:', systemInfo);
+        const days = Math.floor(seconds / 86400);
+        const hours = Math.floor((seconds % 86400) / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
         
-        // Update CPU architecture information
-        const cpuElement = document.getElementById('system-info-cpu');
-        if (cpuElement && systemInfo.cpu_info) {
-            const cpuInfo = systemInfo.cpu_info;
-            let cpuText = 'Unknown';
-            
-            if (cpuInfo.model && cpuInfo.model !== 'Unknown') {
-                // For Raspberry Pi, show model and architecture
-                if (cpuInfo.model.includes('Raspberry Pi')) {
-                    cpuText = `${cpuInfo.model} ${cpuInfo.architecture}`;
-                } else {
-                    cpuText = `${cpuInfo.model} ${cpuInfo.architecture}`;
-                }
-            } else if (cpuInfo.architecture) {
-                cpuText = cpuInfo.architecture;
-            }
-            
-            cpuElement.textContent = cpuText;
-        }
-        
-        // Update RAM information
-        const ramElement = document.getElementById('system-info-ram');
-        if (ramElement && systemInfo.memory_usage) {
-            const totalGB = systemInfo.memory_usage.total;
-            ramElement.textContent = `${totalGB} GB`;
-        }
-        
-        // Update disk information
-        const diskElement = document.getElementById('system-info-disk');
-        if (diskElement && systemInfo.disk_usage) {
-            const totalGB = systemInfo.disk_usage.total;
-            diskElement.textContent = `${totalGB} GB`;
-        }
-        
-        // Update OS information
-        const osElement = document.getElementById('system-info-os');
-        if (osElement && systemInfo.os_info) {
-            const osInfo = systemInfo.os_info;
-            let osText = 'Unknown';
-            
-            if (osInfo.distribution && osInfo.distribution !== 'Unknown') {
-                // Show distribution name and kernel version
-                if (osInfo.kernel_version && osInfo.kernel_version !== 'Unknown') {
-                    osText = `${osInfo.distribution} (Kernel ${osInfo.kernel_version})`;
-                } else {
-                    osText = osInfo.distribution;
-                }
-            } else if (osInfo.name && osInfo.release) {
-                osText = `${osInfo.name} ${osInfo.release}`;
-            } else if (osInfo.name) {
-                osText = osInfo.name;
-            }
-            
-            osElement.textContent = osText;
-        }
-        
-        // Update AI Accelerator information
-        const aiAcceleratorElement = document.getElementById('system-info-ai-accelerator');
-        console.log('AI Accelerator element found:', aiAcceleratorElement);
-        console.log('AI Accelerator info in systemInfo:', systemInfo.ai_accelerator_info);
-        
-        if (aiAcceleratorElement && systemInfo.ai_accelerator_info) {
-            const aiInfo = systemInfo.ai_accelerator_info;
-            console.log('AI Info object:', aiInfo);
-            let aiText = 'Unknown';
-            
-            if (aiInfo.device_architecture && aiInfo.device_architecture !== 'Unknown' && 
-                aiInfo.firmware_version && aiInfo.firmware_version !== 'Unknown') {
-                aiText = `${aiInfo.device_architecture} (FW ${aiInfo.firmware_version})`;
-            } else if (aiInfo.device_architecture && aiInfo.device_architecture !== 'Unknown') {
-                aiText = aiInfo.device_architecture;
-            } else if (aiInfo.board_name && aiInfo.board_name !== 'Unknown') {
-                aiText = aiInfo.board_name;
-            }
-            
-            console.log('Setting AI Accelerator text to:', aiText);
-            aiAcceleratorElement.textContent = aiText;
-        } else {
-            console.log('AI Accelerator element or info not found');
-        }
+        if (days > 0) return `${days}d ${hours}h`;
+        if (hours > 0) return `${hours}h ${minutes}m`;
+        return `${minutes}m`;
     },
 
     /**
@@ -661,80 +942,64 @@ const DashboardManager = {
     },
 
     /**
-     * Update server communication logs display
-     */
-    updateServerLogs: function(logs) {
-        const logsContainer = document.getElementById('main-server-logs');
-        if (!logsContainer) return;
-
-        // Clear existing logs
-        logsContainer.innerHTML = '';
-
-        if (!logs || logs.length === 0) {
-            logsContainer.innerHTML = '<div class="text-muted p-3">No server communication logs available</div>';
-            return;
-        }
-
-        // Add logs
-        logs.forEach(log => {
-            const logElement = document.createElement('div');
-            logElement.className = 'log-entry p-2 border-bottom';
-            
-            // Determine log type class
-            let logClass = 'text-muted';
-            if (log.status === 'success') {
-                logClass = 'text-success';
-            } else if (log.status === 'failed') {
-                logClass = 'text-danger';
-            } else if (log.status === 'no_data') {
-                logClass = 'text-info';
-            } else if (log.status === 'offline') {
-                logClass = 'text-warning';
-            } else if (log.status === 'connect') {
-                logClass = 'text-primary';
-            }
-
-            // Format message
-            let message = '';
-            if (log.status === 'no_data') {
-                message = `${log.timestamp}: no data to send`;
-            } else if (log.status === 'offline') {
-                message = `${log.timestamp}: ${log.message || 'processing locally (offline mode)'}`;
-            } else if (log.status === 'connect' && log.status === 'success') {
-                message = `${log.timestamp}: connected to server`;
-            } else if (log.status === 'connect' && log.status === 'failed') {
-                message = `${log.timestamp}: connection failed - ${log.message}`;
-            } else if (log.status === 'success' && log.action === 'send_detection') {
-                message = `${log.timestamp}: send lpr detection completed (${log.record_count} records)`;
-            } else if (log.status === 'success' && log.action === 'send_health') {
-                message = `${log.timestamp}: send health status completed (${log.record_count} records)`;
-            } else {
-                message = `${log.timestamp}: ${log.message || log.action}`;
-            }
-
-            logElement.innerHTML = `<small class="${logClass}">${message}</small>`;
-            logsContainer.appendChild(logElement);
-        });
-
-        // Auto-scroll to bottom
-        logsContainer.scrollTop = logsContainer.scrollHeight;
-    },
-
-    /**
-     * Fetch and update server logs from API
+     * Update server logs from API
      */
     updateServerLogsFromAPI: function() {
-        AICameraUtils.apiRequest('/websocket-sender/logs?limit=20')
+        // Get WebSocket sender logs (optional)
+        AICameraUtils.apiRequest('/websocket-sender/logs?limit=10')
             .then(data => {
                 if (data.success && data.logs) {
                     this.updateServerLogs(data.logs);
                 }
             })
             .catch(error => {
-                console.error('Failed to fetch server logs:', error);
-                // Add error message to logs
-                AICameraUtils.addLogMessage('main-server-logs', 'Failed to fetch server logs: ' + error.message, 'error');
+                console.log('WebSocket sender logs not available (optional module)');
+                // Show message that logs are not available
+                const logsContainer = document.getElementById('main-server-logs');
+                if (logsContainer) {
+                    logsContainer.innerHTML = '<div class="text-muted p-3">WebSocket sender not available (optional module)</div>';
+                }
             });
+    },
+
+    /**
+     * Update server logs display
+     */
+    updateServerLogs: function(logs) {
+        const logsContainer = document.getElementById('main-server-logs');
+        if (!logsContainer) {
+            console.warn('Server logs container not found');
+            return;
+        }
+
+        // Clear existing logs
+        logsContainer.innerHTML = '';
+
+        if (!logs || logs.length === 0) {
+            logsContainer.innerHTML = '<div class="text-muted p-3">No server logs available...</div>';
+            return;
+        }
+
+        // Add log entries
+        logs.forEach(log => {
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            
+            const timestamp = new Date(log.timestamp).toLocaleTimeString();
+            const statusClass = log.status === 'success' ? 'log-success' : 
+                              log.status === 'error' ? 'log-error' : 'log-info';
+            
+            logEntry.innerHTML = `
+                <span class="log-timestamp">${timestamp}</span>
+                <span class="log-status ${statusClass}">${log.status}</span>
+                <span class="log-message">${log.message}</span>
+            `;
+            
+            logsContainer.appendChild(logEntry);
+        });
+
+        // Scroll to bottom
+        logsContainer.scrollTop = logsContainer.scrollHeight;
     },
 
     /**

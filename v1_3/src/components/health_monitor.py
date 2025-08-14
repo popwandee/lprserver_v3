@@ -545,6 +545,56 @@ class HealthMonitor:
             self._log_result(component, "FAIL", f"Network connectivity check failed: {e}")
             return False
     
+    def check_storage_management(self) -> bool:
+        """
+        Check storage management system.
+        
+        Returns:
+            bool: True if storage management is healthy, False otherwise
+        """
+        component = "Storage Management"
+        try:
+            # Get storage service from DI container
+            from v1_3.src.core.dependency_container import get_service
+            storage_service = get_service('storage_service')
+            
+            if not storage_service:
+                self._log_result(component, "FAIL", "Storage service not available")
+                return False
+            
+            # Get storage status
+            status_data = storage_service.get_storage_status()
+            
+            if not status_data.get('success'):
+                self._log_result(component, "FAIL", f"Storage service error: {status_data.get('error', 'Unknown error')}")
+                return False
+            
+            status = status_data.get('data', {})
+            disk_usage = status.get('disk_usage', {})
+            free_gb = disk_usage.get('free_gb', 0)
+            
+            details = {
+                'free_space_gb': round(free_gb, 2),
+                'total_space_gb': round(disk_usage.get('total_gb', 0), 2),
+                'used_space_gb': round(disk_usage.get('used_gb', 0), 2),
+                'usage_percentage': round(disk_usage.get('usage_percentage', 0), 1),
+                'monitoring_active': status.get('status', {}).get('running', False)
+            }
+            
+            # Check if free space is sufficient (at least 5 GB)
+            if free_gb >= 5.0:
+                self._log_result(component, "PASS", 
+                    f"Storage management OK: {free_gb:.2f} GB free space available", details)
+                return True
+            else:
+                self._log_result(component, "FAIL", 
+                    f"Low storage space: {free_gb:.2f} GB free (minimum 5 GB required)", details)
+                return False
+                
+        except Exception as e:
+            self._log_result(component, "FAIL", f"Storage management check failed: {e}")
+            return False
+    
     def run_all_checks(self) -> Dict[str, Any]:
         """
         Run all health checks and return comprehensive status.
@@ -563,7 +613,8 @@ class HealthMonitor:
                 'models': self.check_model_loading(),
                 'easyocr': self.check_easyocr_init(),
                 'database': self.check_database_connection(),
-                'network': self.check_network_connectivity()
+                'network': self.check_network_connectivity(),
+                'storage': self.check_storage_management()
             }
             
             # Determine overall status - be more lenient with non-critical checks
@@ -574,7 +625,7 @@ class HealthMonitor:
             failed_check_names = [name for name, status in checks.items() if not status]
             
             # Critical checks: camera, models, database
-            critical_checks = ['camera', 'models', 'database']
+            critical_checks = ['camera', 'models', 'database', 'storage']
             critical_failures = [check for check in failed_check_names if check in critical_checks]
             
             # Non-critical checks: network (can be warning)
@@ -709,7 +760,7 @@ class HealthMonitor:
         try:
             while not self.stop_event.is_set():
                 # Run health checks
-                self.run_all_checks()
+                health_result = self.run_all_checks()
                 
                 # Wait for next check
                 self.stop_event.wait(interval)

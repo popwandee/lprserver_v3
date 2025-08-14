@@ -1087,6 +1087,223 @@ const offlineStatusDisplay = {
         displayText: '2025-08-10 11:30:00'
     }
 };
+```
+
+## 16. WebSocket Communication Variables
+
+### 16.1 WebSocket Event Variables
+
+**Socket.IO Event Names:**
+```javascript
+// Client -> Server Events
+const SOCKETIO_CLIENT_EVENTS = {
+    CAMERA_REGISTER: 'camera_register',
+    LPR_DATA: 'lpr_data',
+    HEALTH_STATUS: 'health_status',
+    PING: 'ping'
+};
+
+// Server -> Client Events
+const SOCKETIO_SERVER_EVENTS = {
+    CONNECT: 'connect',
+    DISCONNECT: 'disconnect',
+    ERROR: 'error',
+    PONG: 'pong',
+    LPR_RESPONSE: 'lpr_response',
+    HEALTH_RESPONSE: 'health_response'
+};
+```
+
+**REST API Endpoints:**
+```javascript
+const REST_API_ENDPOINTS = {
+    CAMERA_REGISTER: '/api/cameras/register',
+    DETECTION: '/api/detection',
+    HEALTH: '/api/health',
+    TEST: '/api/test',
+    STATISTICS: '/api/statistics'
+};
+```
+
+### 16.2 WebSocket Data Format Variables
+
+**Camera Registration Data:**
+```javascript
+const cameraRegistrationData = {
+    camera_id: '1',
+    checkpoint_id: '1',
+    timestamp: '2024-12-19T10:00:00Z'
+};
+```
+
+**LPR Detection Data:**
+```javascript
+const lprDetectionData = {
+    type: 'detection_result',
+    camera_id: '1',
+    checkpoint_id: '1',
+    timestamp: '2024-12-19T10:00:00Z',
+    vehicles_count: 1,
+    plates_count: 1,
+    ocr_results: ['ABC1234'],
+    vehicle_detections: [...],
+    plate_detections: [...],
+    processing_time_ms: 150,
+    annotated_image: 'base64_encoded_image_data',
+    cropped_plates: ['base64_plate1', 'base64_plate2']
+};
+```
+
+**Health Status Data:**
+```javascript
+const healthStatusData = {
+    type: 'health_check',
+    camera_id: '1',
+    checkpoint_id: '1',
+    timestamp: '2024-12-19T10:00:00Z',
+    component: 'camera',
+    status: 'healthy',
+    message: 'Camera working normally',
+    details: {
+        cpu_usage: 45.2,
+        memory_usage: 67.8,
+        disk_usage: 23.1
+    }
+};
+```
+
+### 16.3 WebSocket Status Variables
+
+**Connection Status:**
+```javascript
+const websocketStatus = {
+    connected: true,
+    server_type: 'socketio',  // 'socketio' or 'rest'
+    server_url: 'ws://100.95.46.128:8765',
+    retry_count: 0,
+    last_connection: '2024-12-19T10:00:00Z',
+    fallback_mode: false
+};
+```
+
+**Data Transmission Status:**
+```javascript
+const dataTransmissionStatus = {
+    total_detections_sent: 1234,
+    total_health_sent: 567,
+    last_detection_sent: '2024-12-19T10:00:00Z',
+    last_health_sent: '2024-12-19T10:00:00Z',
+    detection_thread_alive: true,
+    health_thread_alive: true
+};
+```
+
+## 17. Storage Management Variables
+
+### 17.1 Storage Status Variables
+
+**Disk Usage Variables:**
+```javascript
+const diskUsageVariables = {
+    total_space_gb: 57.44,
+    used_space_gb: 20.64,
+    free_space_gb: 36.80,
+    usage_percentage: 35.9,
+    status: 'healthy'  // 'healthy', 'warning', 'critical'
+};
+```
+
+**Folder Statistics Variables:**
+```javascript
+const folderStatisticsVariables = {
+    total_files: 1234,
+    total_size_gb: 15.6,
+    sent_files: 890,
+    unsent_files: 344,
+    oldest_file: '2024-12-12T10:00:00Z',
+    newest_file: '2024-12-19T10:00:00Z'
+};
+```
+
+### 17.2 Storage Configuration Variables
+
+**Storage Settings:**
+```javascript
+const storageConfigurationVariables = {
+    min_free_space_gb: 10.0,
+    retention_days: 7,
+    batch_size: 100,
+    monitor_interval: 300,  // seconds
+    folder_path: '/home/camuser/aicamera/captured_images',
+    auto_cleanup_enabled: true
+};
+```
+
+**Cleanup Settings:**
+```javascript
+const cleanupSettingsVariables = {
+    priority_sent: true,  // Delete sent files first
+    batch_processing: true,
+    dry_run: false,
+    max_files_per_batch: 100
+};
+```
+
+### 17.3 Storage Action Variables
+
+**Cleanup Results:**
+```javascript
+const cleanupResultsVariables = {
+    files_deleted: 45,
+    space_freed_gb: 2.3,
+    sent_files_deleted: 30,
+    unsent_files_deleted: 15,
+    errors: 0,
+    duration_ms: 1500
+};
+```
+
+**Monitoring Status:**
+```javascript
+const monitoringStatusVariables = {
+    monitoring_active: true,
+    last_check: '2024-12-19T10:00:00Z',
+    next_check: '2024-12-19T10:05:00Z',
+    checks_performed: 1234,
+    cleanups_performed: 45
+};
+```
+
+### 17.4 Storage WebSocket Events
+
+**Storage WebSocket Event Names:**
+```javascript
+const STORAGE_WEBSOCKET_EVENTS = {
+    // Client -> Server
+    STORAGE_STATUS_REQUEST: 'storage_status_request',
+    STORAGE_CLEANUP_REQUEST: 'storage_cleanup_request',
+    STORAGE_CONFIG_UPDATE: 'storage_config_update',
+    
+    // Server -> Client
+    STORAGE_STATUS_UPDATE: 'storage_status_update',
+    STORAGE_CLEANUP_RESULT: 'storage_cleanup_result',
+    STORAGE_CONFIG_UPDATED: 'storage_config_updated'
+};
+```
+
+**Storage Status Response:**
+```javascript
+const storageStatusResponse = {
+    success: true,
+    data: {
+        disk_usage: diskUsageVariables,
+        folder_stats: folderStatisticsVariables,
+        configuration: storageConfigurationVariables,
+        monitoring: monitoringStatusVariables
+    },
+    timestamp: '2024-12-19T10:00:00Z'
+};
+```
 
 // Online Mode Status Display Variables
 const onlineStatusDisplay = {
