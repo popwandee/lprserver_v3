@@ -1,7 +1,7 @@
 # AI Camera v1.3.1 - Executive Summary
 ## การพัฒนาระบบ Communication และ Storage Management
 
-**วันที่:** 14 มกราคม 2025  
+**วันที่:** 14 สิงหาคม 2025  
 **Version:** v1.3.1  
 **ผู้พัฒนา:** AI Camera Development Team  
 
@@ -234,6 +234,7 @@ sudo journalctl -u aicamera_v1.3.service -f
 ## 📞 **ข้อมูลติดต่อ**
 
 **Development Team:** AI Camera Development Team  
+**Git Repository:** https://github.com/popwandee/aicamera  
 **Documentation:** v1_3/ARCHITECTURE.md, v1_3/README.md  
 **Specification:** v1_3/WEBSOCKET_COMMUNICATION_SPEC.md  
 
