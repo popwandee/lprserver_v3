@@ -88,16 +88,27 @@ def register_services():
     Register all services with the dependency container.
     This should be called during application startup.
     """
+    # Core services
     from services.websocket_service import WebSocketService
     from services.blacklist_service import BlacklistService
     from services.health_service import HealthService
     from services.database_service import DatabaseService
+    
+    # Unified communication system services
+    from services.unified_communication_service import UnifiedCommunicationService
+    from services.data_processor import DataProcessor
+    from services.mqtt_service import MQTTService
     
     # Register core services
     container.register('websocket_service', WebSocketService)
     container.register('blacklist_service', BlacklistService)
     container.register('health_service', HealthService)
     container.register('database_service', DatabaseService)
+    
+    # Register unified communication services
+    container.register('unified_communication_service', UnifiedCommunicationService)
+    container.register('data_processor', DataProcessor)
+    container.register('mqtt_service', MQTTService)
     
     logger.info("All services registered with dependency container")
 
