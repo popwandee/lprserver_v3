@@ -1,0 +1,210 @@
+@startuml LPR_Server_Database_ER_Diagram
+
+!define TABLE(name,desc) class name as "desc" << (T,#FFAAAA) >>
+!define PK primary_key
+!define FK foreign_key
+!define INDEX index
+
+title LPR Server v3 - Database Entity Relationship Diagram
+
+' Checkpoints Entity
+TABLE(checkpoints, "checkpoints") {
+    PK id : SERIAL
+    checkpoint_id : VARCHAR(50) UNIQUE
+    name : VARCHAR(100)
+    location : VARCHAR(200)
+    latitude : DECIMAL(10,8)
+    longitude : DECIMAL(11,8)
+    description : TEXT
+    status : VARCHAR(20)
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+' Cameras Entity
+TABLE(cameras, "cameras") {
+    PK id : SERIAL
+    camera_id : VARCHAR(50) UNIQUE
+    FK checkpoint_id : VARCHAR(50)
+    name : VARCHAR(100)
+    model : VARCHAR(100)
+    ip_address : INET
+    mac_address : MACADDR
+    status : VARCHAR(20)
+    health_status : VARCHAR(20)
+    health_details : JSONB
+    registered_at : TIMESTAMP
+    last_activity : TIMESTAMP
+    last_health_check : TIMESTAMP
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+' Detections Entity
+TABLE(detections, "detections") {
+    PK id : SERIAL
+    detection_id : UUID UNIQUE
+    FK camera_id : VARCHAR(50)
+    FK checkpoint_id : VARCHAR(50)
+    timestamp : TIMESTAMP
+    vehicles_count : INTEGER
+    plates_count : INTEGER
+    processing_time_ms : INTEGER
+    annotated_image_path : VARCHAR(500)
+    annotated_image_data : BYTEA
+    confidence_score : DECIMAL(5,4)
+    detection_type : VARCHAR(50)
+    metadata : JSONB
+    created_at : TIMESTAMP
+}
+
+' Vehicles Entity
+TABLE(vehicles, "vehicles") {
+    PK id : SERIAL
+    FK detection_id : UUID
+    vehicle_index : INTEGER
+    bbox_x1 : INTEGER
+    bbox_y1 : INTEGER
+    bbox_x2 : INTEGER
+    bbox_y2 : INTEGER
+    confidence : DECIMAL(5,4)
+    vehicle_class : VARCHAR(50)
+    vehicle_type : VARCHAR(50)
+    color : VARCHAR(50)
+    brand : VARCHAR(100)
+    model : VARCHAR(100)
+    year : INTEGER
+    metadata : JSONB
+    created_at : TIMESTAMP
+}
+
+' Plates Entity
+TABLE(plates, "plates") {
+    PK id : SERIAL
+    FK detection_id : UUID
+    FK vehicle_id : INTEGER
+    plate_index : INTEGER
+    plate_number : VARCHAR(20)
+    bbox_x1 : INTEGER
+    bbox_y1 : INTEGER
+    bbox_x2 : INTEGER
+    bbox_y2 : INTEGER
+    confidence : DECIMAL(5,4)
+    plate_type : VARCHAR(50)
+    country : VARCHAR(50)
+    province : VARCHAR(100)
+    cropped_image_path : VARCHAR(500)
+    cropped_image_data : BYTEA
+    ocr_raw_result : TEXT
+    ocr_processed_result : VARCHAR(20)
+    is_valid : BOOLEAN
+    metadata : JSONB
+    created_at : TIMESTAMP
+}
+
+' Health Logs Entity
+TABLE(health_logs, "health_logs") {
+    PK id : SERIAL
+    health_id : UUID UNIQUE
+    FK camera_id : VARCHAR(50)
+    FK checkpoint_id : VARCHAR(50)
+    timestamp : TIMESTAMP
+    component : VARCHAR(50)
+    status : VARCHAR(20)
+    message : TEXT
+    cpu_usage : DECIMAL(5,2)
+    memory_usage : DECIMAL(5,2)
+    disk_usage : DECIMAL(5,2)
+    network_status : VARCHAR(20)
+    temperature : DECIMAL(5,2)
+    details : JSONB
+    created_at : TIMESTAMP
+}
+
+' Blacklist Entity
+TABLE(blacklist, "blacklist") {
+    PK id : SERIAL
+    plate_number : VARCHAR(20)
+    reason : TEXT
+    alert_level : VARCHAR(20)
+    is_active : BOOLEAN
+    created_by : VARCHAR(100)
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    expires_at : TIMESTAMP
+    notes : TEXT
+}
+
+' Analytics Entity
+TABLE(analytics, "analytics") {
+    PK id : SERIAL
+    date : DATE
+    FK checkpoint_id : VARCHAR(50)
+    FK camera_id : VARCHAR(50)
+    total_detections : INTEGER
+    total_vehicles : INTEGER
+    total_plates : INTEGER
+    unique_plates : INTEGER
+    blacklist_hits : INTEGER
+    avg_processing_time_ms : DECIMAL(10,2)
+    peak_hour : INTEGER
+    peak_count : INTEGER
+    hourly_breakdown : JSONB
+    vehicle_type_breakdown : JSONB
+    plate_type_breakdown : JSONB
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+' System Logs Entity
+TABLE(system_logs, "system_logs") {
+    PK id : SERIAL
+    timestamp : TIMESTAMP
+    level : VARCHAR(10)
+    component : VARCHAR(50)
+    message : TEXT
+    details : JSONB
+    ip_address : INET
+    user_agent : TEXT
+    session_id : VARCHAR(100)
+    request_id : VARCHAR(100)
+}
+
+' Views
+class "daily_statistics" as daily_stats << (V,#AAFFAA) >>
+class "recent_detections" as recent_det << (V,#AAFFAA) >>
+class "camera_health" as camera_health << (V,#AAFFAA) >>
+
+' Relationships
+checkpoints ||--o{ cameras : "has"
+checkpoints ||--o{ detections : "receives"
+cameras ||--o{ detections : "captures"
+cameras ||--o{ health_logs : "monitors"
+checkpoints ||--o{ health_logs : "monitors"
+detections ||--o{ vehicles : "contains"
+detections ||--o{ plates : "contains"
+vehicles ||--o{ plates : "has"
+checkpoints ||--o{ analytics : "analyzes"
+cameras ||--o{ analytics : "analyzes"
+plates }o--|| blacklist : "checks"
+
+' Notes
+note top of checkpoints : "จุดตรวจสอบต่างๆ ในระบบ"
+note top of cameras : "กล้อง AI ที่ติดตั้งในแต่ละจุด"
+note top of detections : "ข้อมูลการตรวจจับจาก AI Camera"
+note top of vehicles : "ข้อมูลรถที่ตรวจพบ"
+note top of plates : "ข้อมูลป้ายทะเบียนที่อ่านได้"
+note top of health_logs : "ข้อมูลสุขภาพของกล้อง"
+note top of blacklist : "รายชื่อป้ายทะเบียนที่ต้องเฝ้าระวัง"
+note top of analytics : "ข้อมูลสถิติและวิเคราะห์"
+note top of system_logs : "บันทึกการทำงานของระบบ"
+
+' Indexes
+note bottom of detections : "Indexes:\n- idx_detections_timestamp\n- idx_detections_camera_id\n- idx_detections_checkpoint_id"
+note bottom of plates : "Indexes:\n- idx_plates_plate_number\n- idx_plates_detection_id\n- idx_plates_confidence"
+note bottom of vehicles : "Indexes:\n- idx_vehicles_detection_id\n- idx_vehicles_vehicle_class"
+note bottom of health_logs : "Indexes:\n- idx_health_logs_timestamp\n- idx_health_logs_camera_id"
+
+@enduml
+
+
