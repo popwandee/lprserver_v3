@@ -19,8 +19,9 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
     DEBUG = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
     
-    # Database configuration
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///lprserver.db'
+    # Database configuration - PostgreSQL
+    # Format: postgresql://username:password@host:port/database_name
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'postgresql://lpruser:your_new_secure_password@localhost:5432/lprserver_v3'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # File storage configuration
@@ -60,7 +61,7 @@ class Config:
 class DevelopmentConfig(Config):
     """Development configuration"""
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///lprserver_dev.db'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'postgresql://lpruser:your_password@localhost:5432/lprserver_v3_dev'
     LOG_LEVEL = 'DEBUG'
     
     # Development-specific settings
@@ -84,7 +85,8 @@ class ProductionConfig(Config):
 class TestingConfig(Config):
     """Testing configuration"""
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    # Use PostgreSQL for testing as well, but with a test database
+    SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') or 'postgresql://lpruser:your_password@localhost:5432/lprserver_v3_test'
     WTF_CSRF_ENABLED = False
     LOG_LEVEL = 'DEBUG'
     

@@ -6,7 +6,7 @@
 
 ### ระบบหลัก
 - ✅ รับข้อมูลจาก Edge Camera ผ่าน WebSocket (Port 8765)
-- ✅ บันทึกข้อมูลลงฐานข้อมูล SQLite
+- ✅ บันทึกข้อมูลลงฐานข้อมูล PostgreSQL
 - ✅ บันทึกภาพลงใน storage directory
 - ✅ แสดงผลในรูปแบบตารางพร้อมการกรองข้อมูล
 - ✅ แดชบอร์ดแสดงสถิติการใช้งานแบบ real-time
@@ -55,7 +55,8 @@ WebSocket Server (Port 8765)
 ### เทคโนโลยีที่ใช้
 - **Flask**: Web framework สำหรับ HTTP endpoints
 - **Flask-SocketIO**: WebSocket server สำหรับ real-time communication
-- **In-Memory Storage**: เก็บข้อมูลในหน่วยความจำ (สำหรับ demo)
+- **PostgreSQL**: ฐานข้อมูลหลักสำหรับจัดเก็บข้อมูล
+- **SQLAlchemy**: ORM สำหรับจัดการฐานข้อมูล
 
 ### การรองรับ Client Types
 - ✅ **Socket.IO Clients**: Real-time communication สำหรับ cameras และ dashboards
