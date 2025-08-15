@@ -98,6 +98,12 @@ STORAGE_MONITOR_ENABLED = True  # Enable storage monitoring
 STORAGE_MONITOR_INTERVAL = 300  # Storage monitoring interval in seconds (5 minutes)
 STORAGE_MIN_FREE_SPACE_GB = 10.0  # Minimum free space in GB before cleanup
 STORAGE_RETENTION_DAYS = 7  # Number of days to keep images
+
+# Experiment configuration
+EXPERIMENT_RESULTS_DIR = os.path.join(BASE_DIR, 'experiment_results')
+EXPERIMENT_ENABLED = os.getenv('EXPERIMENT_ENABLED', 'true').lower() == 'true'  # Enable/disable experiment functionality
+EXPERIMENT_AUTO_SAVE = os.getenv('EXPERIMENT_AUTO_SAVE', 'true').lower() == 'true'  # Auto-save experiment results
+EXPERIMENT_MAX_RETRIES = int(os.getenv('EXPERIMENT_MAX_RETRIES', '3'))  # Maximum retries for failed experiment steps
 STORAGE_BATCH_SIZE = 100  # Number of files to delete in each batch
 STORAGE_FOLDER_PATH = os.path.join(BASE_DIR, 'captured_images')  # Path to monitored folder
 

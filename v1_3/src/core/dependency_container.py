@@ -29,7 +29,8 @@ from v1_3.src.core.config import (
     FLASK_HOST, FLASK_PORT, SECRET_KEY,
     VEHICLE_DETECTION_MODEL, LICENSE_PLATE_DETECTION_MODEL,
     EASYOCR_LANGUAGES, IMAGE_SAVE_DIR, DETECTION_INTERVAL,
-    WEBSOCKET_SENDER_ENABLED, STORAGE_MONITOR_ENABLED
+    WEBSOCKET_SENDER_ENABLED, STORAGE_MONITOR_ENABLED,
+    EXPERIMENT_ENABLED
 )
 
 T = TypeVar('T')
@@ -188,6 +189,18 @@ class DependencyContainer:
                 self.logger.warning(f"StorageService not available: {e}")
         else:
             self.logger.info("Storage Management not registered (disabled in config)")
+        
+        # Experiment Service (Optional)
+        if EXPERIMENT_ENABLED:
+            try:
+                from v1_3.src.services.experiment_service import ExperimentService
+                self.register_service('experiment_service', ExperimentService, 
+                                    singleton=True, dependencies={'logger': 'logger'})
+                self.logger.info("Experiment Service registered (enabled in config)")
+            except ImportError:
+                self.logger.warning("ExperimentService not available")
+        else:
+            self.logger.info("Experiment Service not registered (disabled in config)")
             
     def _create_logger(self, **kwargs) -> logging.Logger:
         """Create a logger instance."""
