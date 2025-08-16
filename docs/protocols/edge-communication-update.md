@@ -1,5 +1,7 @@
 # Edge Communication Update Summary
 
+> Note: This update summary is historical. For current protocol details, refer to: `../protocols/websocket-communication-spec.md`.
+
 ## 🚀 **การปรับปรุงระบบเพื่อรองรับ Edge Communication**
 
 ### 📋 **สิ่งที่ได้ทำการปรับปรุง**

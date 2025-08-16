@@ -1,5 +1,7 @@
 # คู่มือการใช้งาน Tailscale สำหรับ LPR Server - Quick Start
 
+> Note: Superseded by the canonical server setup guide: `./tailscale-server-setup.md`. Use this file only as a quick reference.
+
 ## ภาพรวม
 
 เอกสารนี้เป็นคู่มือสรุปสำหรับการใช้งาน Tailscale กับ LPR Server v3

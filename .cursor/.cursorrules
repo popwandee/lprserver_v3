@@ -1,0 +1,134 @@
+{
+  "name": "LPR Server & Edge Development",
+  "description": "ALPR server on Ubuntu (Flask + Gunicorn + Nginx) and Edge on Raspberry Pi OS Bookworm, connected via Tailscale VPN.",
+  "rules": [
+    "Use Flask application factory with Blueprints (modular monolith).",
+    "Expose REST APIs and WebSocket via Flask-SocketIO; keep endpoints backward-compatible.",
+    "Production: Run Gunicorn (unix socket) behind Nginx on Ubuntu; manage with systemd.",
+    "Edge: Raspberry Pi 5 on Bookworm with Camera Module 3 and Hailo-8 HAT+; keep SDK installs isolated.",
+    "Store configuration in .env (python-dotenv); avoid hard-coded secrets; rotate SECRET_KEY.",
+    "Database: SQLAlchemy; PostgreSQL for production.",
+    "Logging: standardize to logs/ (dev) and /var/log/lprserver (prod); use structured JSON logs where feasible.",
+    "Networking: use Tailscale MagicDNS hostnames; avoid hard-coded IPs; restrict inbound via ACL; open ports 80/443/8765 as needed.",
+    "Dev across Windows/macOS/Linux: use venv; pin Python version; prefer LF line endings; test on all OS; use WSL2 on Windows if needed.",
+    "Reverse proxy static files via Nginx; serve app via unix socket; avoid running Werkzeug in production.",
+    "Security: enforce RBAC; validate user input; sanitize uploads; enable HTTPS (Let's Encrypt) when internet-facing.",
+    "CI: run lint/tests before merge; keep requirements.txt pinned; document breaking changes in docs/."
+  ],
+  "technologies":  {
+    "edge_platform": {
+      "hardware": "Raspberry Pi 5 (ARM64)",
+      "os": "Raspberry Pi OS (Brookwarm) (Debian-based)",
+      "ai_acceleration": "Hailo-8 AI accelerator",
+      "languages": ["Python 3.10+", "C++"],
+      "frameworks": [
+        "Hailo TAPPAS",
+        "OpenCV",
+        "NumPy",
+        "Picamera2",
+        "Flask/Gunicorn",
+        "WebSocket",
+        "REST API",
+        "MQTT"
+      ],
+      "systemd": "Service management for auto-startup"
+    },
+    "server_platform": {
+        "hardware": "Ubuntu Server",
+        "os": "Ubuntu 22.04+/24.04 LTS",
+        "languages": ["Python 3.10+", "Bootstrap 5","Chart.js"],
+        "frameworks": [
+          "Flask",
+          "Flask-SocketIO",
+          "Gunicorn",
+          "Nginx",
+          "SQLAlchemy",
+          "PostgreSQL",
+          "Python 3.10+",
+            "Bootstrap 5",
+            "Chart.js",
+            "DataTables",
+            "systemd",
+            "python-dotenv",
+            "Tailscale",
+            "Raspberry Pi OS Bookworm",
+            "Hailo-8 SDK",
+            "Ubuntu 22.04+/24.04 LTS",
+            "WebSocket",
+            "REST API",
+            "MQTT"
+        ]
+      },
+      "networking": {
+        "vpn": "Tailscale (mesh VPN)",
+        "protocols": ["HTTP/HTTPS", "WebSocket", "MQTT"],
+        "security": "Tailscale ACLs and authentication"
+      },
+      "development": {
+        "ides": ["VS Code", "Cursor"],
+        "version_control": "Git with Git LFS for large files",
+        "ci_cd": "GitHub Actions",
+        "testing": ["pytest", "unittest"],
+        "monitoring": ["Prometheus", "Grafana", "systemd journal"]
+      }
+    },
+    "project_structure": {
+      "edge": {
+        "main_app": "v1_3/src/",
+        "ai_models": "resources/",
+        "config": "config/",
+        "logs": "logs/",
+        "systemd": "systemd_service/",
+      "venv": "venv_hailo/"
+      },
+      "server": {
+        "api": "lpr_server/api/",
+        "database": "lpr_server/db/",
+        "nginx": "lpr_server/nginx/"
+      },
+      "shared": {
+        "common_libs": "shared/",
+        "protocols": "protocols/",
+        "database_schema": "database_schema/",
+        "testing": "tests/"
+      }
+    },
+    "development_guidelines": {
+      "code_style": {
+        "python": "PEP 8 with Black formatter",
+        "javascript": "ESLint with Prettier",
+        "documentation": "Google-style docstrings"
+      },
+      "testing": {
+        "unit_tests": "90%+ coverage",
+        "integration_tests": "End-to-end testing",
+        "performance_tests": "Load testing for Edge devices"
+      },
+      "deployment": {
+        "edge": "systemd service with auto-restart",
+        "server": "systemd service with health checks",
+        "rollback": "Version tagging and quick rollback capability"
+      },
+      "monitoring": {
+        "metrics": "System resources, AI inference latency",
+        "logging": "Structured logging with correlation IDs, less concurrency in loop",
+        "alerts": "Critical system failures and performance degradation"
+      }
+    },
+    "tailscale_config": {
+      "best_practices": [
+        "Use unique hostnames for each device (aicamera1, lpr-server1)",
+        "Configure proper ACLs for device-to-device communication",
+        "Enable subnet routes for local network access",
+        "Use exit nodes for internet access when needed",
+        "Implement proper DNS resolution",
+        "Monitor Tailscale status and connectivity"
+      ],
+      "troubleshooting": [
+        "Check Tailscale daemon status: sudo systemctl status tailscaled",
+        "Verify connectivity: tailscale ping <hostname>",
+        "Check logs: sudo journalctl -u tailscaled -f",
+        "Restart service if needed: sudo systemctl restart tailscaled"
+      ]
+    }
+  }

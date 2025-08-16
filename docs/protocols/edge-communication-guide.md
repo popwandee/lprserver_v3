@@ -1,5 +1,8 @@
 # Edge Communication Guide
 
+> Note: This document is superseded by the canonical WebSocket specification. See: `../protocols/websocket-communication-spec.md`.
+
+
 ## 📡 การสื่อสารระหว่าง Edge AI Camera และ LPR Server
 
 ### 🔧 **การตั้งค่า Server**
