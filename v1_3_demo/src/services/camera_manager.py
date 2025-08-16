@@ -53,6 +53,10 @@ class CameraManager:
         self.auto_streaming_enabled = AUTO_START_STREAMING  # Auto-streaming from config
         self.startup_time = None
         
+        # Metadata tracking (NEW) - Event-based only
+        self.last_metadata = {}
+        self.last_metadata_update = None
+        
     def initialize(self):
         """
         Initialize camera manager with auto-start capability.
@@ -138,6 +142,10 @@ class CameraManager:
                 self.logger.info("Camera started successfully")
                 if not self.startup_time:
                     self.startup_time = datetime.now()
+                
+                # Capture initial metadata after camera starts (NEW)
+                self._update_metadata()
+                
                 return True
             else:
                 self.logger.error("Failed to start camera")
@@ -156,6 +164,8 @@ class CameraManager:
         """
         try:
             if self.camera_handler:
+
+                
                 success = self.camera_handler.stop_camera()
                 if success:
                     self.logger.info("Camera stopped successfully")
@@ -186,6 +196,27 @@ class CameraManager:
             self.logger.error(f"Error restarting camera: {e}")
             return False
     
+    def _update_metadata(self):
+        """
+        Update camera metadata from camera handler.
+        Called after camera starts or configuration changes.
+        """
+        try:
+            if self.camera_handler and self.camera_handler.streaming:
+                metadata = self.camera_handler.get_metadata()
+                if metadata:
+                    self.last_metadata = metadata
+                    self.last_metadata_update = datetime.now()
+                    self.logger.info("Camera metadata updated successfully")
+                else:
+                    self.logger.warning("No metadata available from camera")
+            else:
+                self.logger.debug("Camera not streaming, skipping metadata update")
+        except Exception as e:
+            self.logger.warning(f"Error updating metadata: {e}")
+    
+
+    
     def get_status(self):
         """
         Get comprehensive camera status.
@@ -213,6 +244,7 @@ class CameraManager:
                 'frame_count': camera_status.get('frame_count', 0),
                 'average_fps': camera_status.get('average_fps', 0),
                 'config': camera_status.get('configuration', {}),
+                'metadata': self.last_metadata,  # Add metadata to status
                 'camera_handler': camera_status
             }
             

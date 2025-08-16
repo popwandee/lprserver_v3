@@ -218,13 +218,11 @@ def camera_config():
         
         if request.method == 'GET':
             # Get current configuration
-            config = camera_manager.get_configuration()
-            settings = camera_manager.get_available_settings()
+            config = camera_manager.get_available_settings()
             
             return jsonify({
                 'success': True,
                 'config': config,
-                'settings': settings,
                 'timestamp': datetime.now().isoformat()
             })
         else:
@@ -233,12 +231,12 @@ def camera_config():
             if not data:
                 return jsonify({'error': 'No configuration data provided'}), 400
             
-            updated_config = camera_manager.update_configuration(data)
+            result = camera_manager.update_configuration(data)
             
             return jsonify({
-                'success': True,
-                'config': updated_config,
-                'message': 'Configuration updated successfully',
+                'success': result.get('success', False),
+                'message': result.get('message', ''),
+                'error': result.get('error', ''),
                 'timestamp': datetime.now().isoformat()
             })
     except Exception as e:
@@ -682,6 +680,156 @@ def camera_debug():
         
     except Exception as e:
         logger.error(f"Error in camera debug: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+
+@camera_bp.route('/debug_metadata')
+def debug_camera_metadata():
+    """
+    Debug endpoint to test metadata capture step by step.
+    
+    Returns:
+        dict: JSON response with debug information
+    """
+    try:
+        camera_manager = get_service('camera_manager')
+        if not camera_manager:
+            return jsonify({
+                'success': False,
+                'error': 'Camera manager not available',
+                'timestamp': datetime.now().isoformat()
+            }), 500
+        
+        camera_handler = camera_manager.camera_handler
+        if not camera_handler:
+            return jsonify({
+                'success': False,
+                'error': 'Camera handler not available',
+                'timestamp': datetime.now().isoformat()
+            }), 500
+        
+        # Get debug information from camera handler
+        debug_info = camera_handler.debug_metadata_capture()
+        
+        return jsonify({
+            'success': True,
+            'debug_info': debug_info,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in debug metadata: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+
+@camera_bp.route('/metadata')
+def camera_metadata_viewer():
+    """
+    Camera metadata viewer page.
+    
+    Returns:
+        str: Rendered HTML template with metadata information
+    """
+    try:
+        camera_manager = get_service('camera_manager')
+        if not camera_manager:
+            return render_template('camera/metadata_viewer.html',
+                                 camera_status={'error': 'Camera manager not available'},
+                                 title="Camera Metadata Viewer")
+        
+        # Get comprehensive camera status and metadata
+        camera_status = camera_manager.get_status()
+        
+        # Get camera handler for detailed metadata
+        camera_handler = camera_manager.camera_handler if hasattr(camera_manager, 'camera_handler') else None
+        
+        # Debug metadata capture
+        debug_info = None
+        if camera_handler:
+            try:
+                debug_info = camera_handler.debug_metadata_capture()
+            except Exception as e:
+                logger.error(f"Error in debug metadata capture: {e}")
+                debug_info = {'error': str(e)}
+        
+        # Prepare metadata for template
+        metadata_data = {
+            'camera_status': camera_status,
+            'camera_properties': camera_status.get('camera_handler', {}).get('camera_properties', {}),
+            'current_config': camera_status.get('camera_handler', {}).get('current_config', {}),
+            'camera_controls': camera_status.get('camera_handler', {}).get('configuration', {}).get('controls', {}),
+            'frame_metadata': camera_status.get('metadata', {}),
+            'frame_statistics': {
+                'frame_count': camera_status.get('frame_count', 0),
+                'average_fps': camera_status.get('average_fps', 0.0),
+                'last_frame_time': camera_status.get('timestamp', 'N/A')
+            },
+            'available_modes': camera_status.get('camera_handler', {}).get('sensor_modes', []),
+            'sensor_modes_count': camera_status.get('camera_handler', {}).get('sensor_modes_count', 0),
+            'debug_info': debug_info
+        }
+        
+        return render_template('camera/metadata_viewer.html',
+                             **metadata_data,
+                             title="Camera Metadata Viewer")
+                             
+    except Exception as e:
+        logger.error(f"Error in camera metadata viewer: {e}")
+        return render_template('camera/metadata_viewer.html',
+                             camera_status={'error': str(e)},
+                             title="Camera Metadata Viewer")
+
+
+@camera_bp.route('/api/metadata')
+def get_camera_metadata_api():
+    """
+    API endpoint to get camera metadata in JSON format.
+    
+    Returns:
+        dict: JSON response with camera metadata
+    """
+    try:
+        camera_manager = get_service('camera_manager')
+        if not camera_manager:
+            return jsonify({
+                'success': False,
+                'error': 'Camera manager not available',
+                'timestamp': datetime.now().isoformat()
+            }), 500
+        
+        # Get comprehensive camera status and metadata
+        camera_status = camera_manager.get_status()
+        
+        # Prepare metadata for API response
+        metadata_response = {
+            'success': True,
+            'camera_status': camera_status,
+            'camera_properties': camera_status.get('camera_handler', {}).get('camera_properties', {}),
+            'current_config': camera_status.get('camera_handler', {}).get('current_config', {}),
+            'camera_controls': camera_status.get('camera_handler', {}).get('configuration', {}).get('controls', {}),
+            'frame_metadata': camera_status.get('metadata', {}),
+            'frame_statistics': {
+                'frame_count': camera_status.get('frame_count', 0),
+                'average_fps': camera_status.get('average_fps', 0.0),
+                'last_frame_time': camera_status.get('timestamp', 'N/A')
+            },
+            'available_modes': camera_status.get('camera_handler', {}).get('sensor_modes', []),
+            'sensor_modes_count': camera_status.get('camera_handler', {}).get('sensor_modes_count', 0),
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        return jsonify(metadata_response)
+        
+    except Exception as e:
+        logger.error(f"Error getting camera metadata API: {e}")
         return jsonify({
             'success': False,
             'error': str(e),

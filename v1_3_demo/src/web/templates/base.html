@@ -38,10 +38,18 @@
                             <i class="fas fa-home"></i> Dashboard
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if active_page == 'camera' %}active{% endif %}" href="/camera">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {% if active_page == 'camera' %}active{% endif %}" href="#" id="cameraDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-video"></i> Camera
                         </a>
+                        <ul class="dropdown-menu" aria-labelledby="cameraDropdown">
+                            <li><a class="dropdown-item" href="/camera">
+                                <i class="fas fa-video"></i> Camera Dashboard
+                            </a></li>
+                            <li><a class="dropdown-item" href="/camera/metadata">
+                                <i class="fas fa-chart-bar"></i> Metadata Viewer
+                            </a></li>
+                        </ul>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if active_page == 'detection' %}active{% endif %}" href="/detection">

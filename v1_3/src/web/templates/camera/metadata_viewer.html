@@ -1,0 +1,914 @@
+{% extends "base.html" %}
+
+{% block title %}Camera Metadata Viewer - AI Camera v1.3{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        📊 Camera Metadata Viewer
+                        <small class="text-muted">Comprehensive Picamera2 Information</small>
+                    </h3>
+                    <div class="card-tools">
+                        <button class="btn btn-sm btn-primary" onclick="MetadataViewer.refreshMetadata()">
+                            🔄 Refresh Metadata
+                        </button>
+                        <button class="btn btn-sm btn-secondary" onclick="MetadataViewer.exportMetadata()">
+                            📥 Export JSON
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                                    <div id="metadata-content">
+                    {% if camera_status and camera_status.error %}
+                        <div class="text-center text-danger">
+                            <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                            <h4>Error Loading Metadata</h4>
+                            <p>{{ camera_status.error }}</p>
+                            <button class="btn btn-primary" onclick="MetadataViewer.loadMetadata()">
+                                Try Again
+                            </button>
+                        </div>
+                    {% else %}
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="sr-only">Loading metadata...</span>
+                            </div>
+                            <p class="mt-2">Loading camera metadata...</p>
+                        </div>
+                    {% endif %}
+                </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Metadata Display Templates -->
+<script type="text/template" id="metadata-template">
+    <div class="metadata-container">
+        <!-- Debug Information -->
+        {{#if debug_info}}
+        <div class="metadata-section">
+            <h4 class="section-title">🔧 Debug Information</h4>
+            <div class="debug-container">
+                <!-- Camera Status -->
+                <div class="debug-group">
+                    <h5>📷 Camera Status</h5>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="info-card">
+                                <div class="info-label">Initialized</div>
+                                <div class="info-value status-{{debug_info.camera_initialized ? 'ok' : 'error'}}">
+                                    {{debug_info.camera_initialized ? 'Yes' : 'No'}}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-card">
+                                <div class="info-label">Streaming</div>
+                                <div class="info-value status-{{debug_info.camera_streaming ? 'ok' : 'error'}}">
+                                    {{debug_info.camera_streaming ? 'Yes' : 'No'}}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-card">
+                                <div class="info-label">Picam2 Exists</div>
+                                <div class="info-value status-{{debug_info.picam2_exists ? 'ok' : 'error'}}">
+                                    {{debug_info.picam2_exists ? 'Yes' : 'No'}}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-card">
+                                <div class="info-label">Picam2 Started</div>
+                                <div class="info-value status-{{debug_info.picam2_started ? 'ok' : 'error'}}">
+                                    {{debug_info.picam2_started ? 'Yes' : 'No'}}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Debug Steps -->
+                {{#if debug_info.steps}}
+                <div class="debug-group">
+                    <h5>⚙️ Debug Steps</h5>
+                    <div class="steps-container">
+                        <div class="step-item {{debug_info.steps.step1_camera_ready ? 'step-success' : 'step-error'}}" data-step="step1_camera_ready">
+                            <span class="step-number">1</span>
+                            <span class="step-text">Camera Ready</span>
+                            <span class="step-status">{{debug_info.steps.step1_camera_ready ? '✅' : '❌'}}</span>
+                        </div>
+                        <div class="step-item {{debug_info.steps.step2_picam2_started ? 'step-success' : 'step-error'}}" data-step="step2_picam2_started">
+                            <span class="step-number">2</span>
+                            <span class="step-text">Picam2 Started</span>
+                            <span class="step-status">{{debug_info.steps.step2_picam2_started ? '✅' : '❌'}}</span>
+                        </div>
+                        <div class="step-item {{debug_info.steps.step3_capture_request ? 'step-success' : 'step-error'}}" data-step="step3_capture_request">
+                            <span class="step-number">3</span>
+                            <span class="step-text">Capture Request</span>
+                            <span class="step-status">{{debug_info.steps.step3_capture_request ? '✅' : '❌'}}</span>
+                        </div>
+                        <div class="step-item {{debug_info.steps.step4_get_metadata ? 'step-success' : 'step-error'}}" data-step="step4_get_metadata">
+                            <span class="step-number">4</span>
+                            <span class="step-text">Get Metadata</span>
+                            <span class="step-status">{{debug_info.steps.step4_get_metadata ? '✅' : '❌'}}</span>
+                        </div>
+                        <div class="step-item {{debug_info.steps.step5_extract_metadata ? 'step-success' : 'step-error'}}" data-step="step5_extract_metadata">
+                            <span class="step-number">5</span>
+                            <span class="step-text">Extract Metadata</span>
+                            <span class="step-status">{{debug_info.steps.step5_extract_metadata ? '✅' : '❌'}}</span>
+                        </div>
+                        <div class="step-item {{debug_info.steps.step6_release_request ? 'step-success' : 'step-error'}}" data-step="step6_release_request">
+                            <span class="step-number">6</span>
+                            <span class="step-text">Release Request</span>
+                            <span class="step-status">{{debug_info.steps.step6_release_request ? '✅' : '❌'}}</span>
+                        </div>
+                    </div>
+                </div>
+                {{/if}}
+
+                <!-- Request Object Info -->
+                {{#if debug_info.steps.request_object}}
+                <div class="debug-group">
+                    <h5>📦 Request Object</h5>
+                    <div class="info-card">
+                        <div class="info-label">Type</div>
+                        <div class="info-value">{{debug_info.steps.request_object}}</div>
+                    </div>
+                </div>
+                {{/if}}
+
+                <!-- Metadata Keys -->
+                {{#if debug_info.steps.metadata_keys}}
+                <div class="debug-group">
+                    <h5>🔑 Available Metadata Keys</h5>
+                    <div class="metadata-keys">
+                        {{#each debug_info.steps.metadata_keys}}
+                        <span class="metadata-key-badge">{{this}}</span>
+                        {{/each}}
+                    </div>
+                </div>
+                {{/if}}
+
+                <!-- Extracted Metadata -->
+                {{#if debug_info.extracted_metadata}}
+                <div class="debug-group">
+                    <h5>📊 Extracted Metadata</h5>
+                    <div class="metadata-grid">
+                        {{#each debug_info.extracted_metadata}}
+                        <div class="metadata-item">
+                            <div class="metadata-key">{{@key}}</div>
+                            <div class="metadata-value">{{this}}</div>
+                        </div>
+                        {{/each}}
+                    </div>
+                </div>
+                {{/if}}
+
+                <!-- Error Information -->
+                {{#if debug_info.error}}
+                <div class="debug-group">
+                    <h5>❌ Error Information</h5>
+                    <div class="error-card">
+                        <div class="error-message">{{debug_info.error}}</div>
+                    </div>
+                </div>
+                {{/if}}
+
+                <!-- Success Status -->
+                {{#if debug_info.success}}
+                <div class="debug-group">
+                    <h5>🎉 Debug Status</h5>
+                    <div class="success-card">
+                        <div class="success-message">✅ All debug steps completed successfully!</div>
+                    </div>
+                </div>
+                {{/if}}
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- Camera Status -->
+        <div class="metadata-section">
+            <h4 class="section-title">📷 Camera Status</h4>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="info-card">
+                        <div class="info-label">Initialized</div>
+                        <div class="info-value status-{{camera_status.initialized ? 'ok' : 'error'}}">
+                            {{camera_status.initialized ? 'Yes' : 'No'}}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="info-card">
+                        <div class="info-label">Streaming</div>
+                        <div class="info-value status-{{camera_status.streaming ? 'ok' : 'error'}}">
+                            {{camera_status.streaming ? 'Yes' : 'No'}}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="info-card">
+                        <div class="info-label">Recording</div>
+                        <div class="info-value status-{{camera_status.recording ? 'ok' : 'warning'}}">
+                            {{camera_status.recording ? 'Yes' : 'No'}}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Camera Properties -->
+        {{#if camera_properties}}
+        <div class="metadata-section">
+            <h4 class="section-title">🔧 Camera Properties</h4>
+            <div class="metadata-grid">
+                {{#each camera_properties}}
+                <div class="metadata-item">
+                    <div class="metadata-key">{{@key}}</div>
+                    <div class="metadata-value">{{this}}</div>
+                </div>
+                {{/each}}
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- Current Configuration -->
+        {{#if current_config}}
+        <div class="metadata-section">
+            <h4 class="section-title">⚙️ Current Configuration</h4>
+            <div class="config-details">
+                {{#if current_config.main}}
+                <div class="config-group">
+                    <h5>Main Stream</h5>
+                    <div class="metadata-grid">
+                        {{#each current_config.main}}
+                        <div class="metadata-item">
+                            <div class="metadata-key">{{@key}}</div>
+                            <div class="metadata-value">{{this}}</div>
+                        </div>
+                        {{/each}}
+                    </div>
+                </div>
+                {{/if}}
+                
+                {{#if current_config.lores}}
+                <div class="config-group">
+                    <h5>Low Resolution Stream</h5>
+                    <div class="metadata-grid">
+                        {{#each current_config.lores}}
+                        <div class="metadata-item">
+                            <div class="metadata-key">{{@key}}</div>
+                            <div class="metadata-value">{{this}}</div>
+                        </div>
+                        {{/each}}
+                    </div>
+                </div>
+                {{/if}}
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- Camera Controls -->
+        {{#if camera_controls}}
+        <div class="metadata-section">
+            <h4 class="section-title">🎛️ Camera Controls</h4>
+            <div class="metadata-grid">
+                {{#each camera_controls}}
+                <div class="metadata-item">
+                    <div class="metadata-key">{{@key}}</div>
+                    <div class="metadata-value">{{this}}</div>
+                </div>
+                {{/each}}
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- Frame Metadata -->
+        {{#if frame_metadata}}
+        <div class="metadata-section">
+            <h4 class="section-title">🎬 Frame Metadata</h4>
+            <div class="metadata-grid">
+                {{#each frame_metadata}}
+                <div class="metadata-item">
+                    <div class="metadata-key">{{@key}}</div>
+                    <div class="metadata-value">{{this}}</div>
+                </div>
+                {{/each}}
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- Frame Statistics -->
+        {{#if frame_statistics}}
+        <div class="metadata-section">
+            <h4 class="section-title">📈 Frame Statistics</h4>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="info-card">
+                        <div class="info-label">Frame Count</div>
+                        <div class="info-value">{{frame_statistics.frame_count}}</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="info-card">
+                        <div class="info-label">Average FPS</div>
+                        <div class="info-value">{{frame_statistics.average_fps}}</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="info-card">
+                        <div class="info-label">Last Frame Time</div>
+                        <div class="info-value">{{frame_statistics.last_frame_time}}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- Sensor Modes -->
+        {{#if available_modes}}
+        <div class="metadata-section">
+            <h4 class="section-title">📐 Available Sensor Modes ({{sensor_modes_count}})</h4>
+            <div class="sensor-modes">
+                {{#each available_modes}}
+                <div class="mode-item">
+                    <div class="mode-header">Mode {{@index}}</div>
+                    <div class="mode-details">
+                        {{#each this}}
+                        <div class="mode-detail">
+                            <span class="detail-key">{{@key}}:</span>
+                            <span class="detail-value">{{this}}</span>
+                        </div>
+                        {{/each}}
+                    </div>
+                </div>
+                {{/each}}
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- Stream Information -->
+        {{#if streams}}
+        <div class="metadata-section">
+            <h4 class="section-title">🌊 Stream Information</h4>
+            <div class="metadata-grid">
+                {{#each streams}}
+                <div class="metadata-item">
+                    <div class="metadata-key">{{@key}}</div>
+                    <div class="metadata-value">{{this}}</div>
+                </div>
+                {{/each}}
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- Configuration Details -->
+        {{#if configuration_details}}
+        <div class="metadata-section">
+            <h4 class="section-title">🔍 Configuration Details</h4>
+            <div class="metadata-grid">
+                {{#each configuration_details}}
+                <div class="metadata-item">
+                    <div class="metadata-key">{{@key}}</div>
+                    <div class="metadata-value">{{this}}</div>
+                </div>
+                {{/each}}
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- Camera Config -->
+        {{#if camera_config}}
+        <div class="metadata-section">
+            <h4 class="section-title">📋 Camera Config</h4>
+            <div class="metadata-grid">
+                {{#each camera_config}}
+                <div class="metadata-item">
+                    <div class="metadata-key">{{@key}}</div>
+                    <div class="metadata-value">{{this}}</div>
+                </div>
+                {{/each}}
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- Metadata Timestamp -->
+        <div class="metadata-section">
+            <h4 class="section-title">⏰ Metadata Information</h4>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="info-card">
+                        <div class="info-label">Last Updated</div>
+                        <div class="info-value">{{formatTimestamp metadata_timestamp}}</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-card">
+                        <div class="info-label">Metadata Categories</div>
+                        <div class="info-value">{{metadataCategories}}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</script>
+{% endblock %}
+
+{% block styles %}
+<style>
+.metadata-container {
+    max-width: 100%;
+}
+
+.metadata-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    border: 1px solid #e3e6f0;
+    border-radius: 0.35rem;
+    background-color: #f8f9fc;
+}
+
+.section-title {
+    color: #5a5c69;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #4e73df;
+    padding-bottom: 0.5rem;
+}
+
+.metadata-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+.metadata-item {
+    background: white;
+    padding: 1rem;
+    border-radius: 0.35rem;
+    border: 1px solid #e3e6f0;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+}
+
+.metadata-key {
+    font-weight: 600;
+    color: #5a5c69;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.metadata-value {
+    color: #858796;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    word-break: break-all;
+    max-height: 100px;
+    overflow-y: auto;
+}
+
+.info-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 0.35rem;
+    border: 1px solid #e3e6f0;
+    text-align: center;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+}
+
+.info-label {
+    font-size: 0.8rem;
+    color: #858796;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+}
+
+.info-value {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #5a5c69;
+}
+
+.status-ok {
+    color: #1cc88a !important;
+}
+
+.status-error {
+    color: #e74a3b !important;
+}
+
+.status-warning {
+    color: #f6c23e !important;
+}
+
+.config-group {
+    margin-bottom: 1.5rem;
+}
+
+.config-group h5 {
+    color: #4e73df;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #e3e6f0;
+    padding-bottom: 0.5rem;
+}
+
+.sensor-modes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 1rem;
+}
+
+.mode-item {
+    background: white;
+    padding: 1rem;
+    border-radius: 0.35rem;
+    border: 1px solid #e3e6f0;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+}
+
+.mode-header {
+    font-weight: 600;
+    color: #4e73df;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #e3e6f0;
+    padding-bottom: 0.5rem;
+}
+
+.mode-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.5rem;
+}
+
+.mode-detail {
+    font-size: 0.85rem;
+}
+
+.detail-key {
+    font-weight: 600;
+    color: #5a5c69;
+}
+
+.detail-value {
+    color: #858796;
+    font-family: 'Courier New', monospace;
+}
+
+.card-tools {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.debug-container {
+    background-color: #f8f9fc;
+    border-radius: 0.35rem;
+    padding: 1rem;
+}
+
+.debug-group {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    border: 1px solid #e3e6f0;
+    border-radius: 0.35rem;
+    background-color: white;
+}
+
+.debug-group h5 {
+    color: #5a5c69;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #e3e6f0;
+    padding-bottom: 0.5rem;
+}
+
+.steps-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.step-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    border-radius: 0.35rem;
+    border: 1px solid #e3e6f0;
+    background-color: #f8f9fc;
+}
+
+.step-item.step-success {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+}
+
+.step-item.step-error {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+.step-number {
+    background-color: #4e73df;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: bold;
+    margin-right: 0.75rem;
+}
+
+.step-text {
+    flex: 1;
+    font-weight: 500;
+}
+
+.step-status {
+    font-size: 1.2rem;
+}
+
+.metadata-keys {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.metadata-key-badge {
+    background-color: #4e73df;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.error-card {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+    padding: 1rem;
+    border-radius: 0.35rem;
+}
+
+.error-message {
+    font-weight: 500;
+}
+
+.success-card {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+    padding: 1rem;
+    border-radius: 0.35rem;
+}
+
+.success-message {
+    font-weight: 500;
+}
+
+.status-ok {
+    color: #28a745;
+    font-weight: 600;
+}
+
+.status-error {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+.status-warning {
+    color: #ffc107;
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .metadata-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .sensor-modes {
+        grid-template-columns: 1fr;
+    }
+    
+    .mode-details {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const MetadataViewer = {
+    socket: null,
+    metadata: null,
+
+    init: function() {
+        this.initializeWebSocket();
+        this.setupEventHandlers();
+        this.loadMetadata();
+    },
+
+    initializeWebSocket: function() {
+        if (typeof io === 'undefined') {
+            console.warn('Socket.IO not available');
+            return;
+        }
+
+        this.socket = io('/camera');
+        this.socket.on('connect', () => {
+            console.log('Connected to camera service for metadata');
+            this.socket.emit('camera_status_request');
+        });
+
+        this.socket.on('camera_status_update', (status) => {
+            if (status.metadata) {
+                this.metadata = status.metadata;
+                this.renderMetadata();
+            }
+        });
+    },
+
+    setupEventHandlers: function() {
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            if (this.socket && this.socket.connected) {
+                this.socket.emit('camera_status_request');
+            }
+        }, 30000);
+    },
+
+    loadMetadata: function() {
+        // Load initial metadata
+        fetch('/camera/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.status) {
+                    // Combine status data with debug info
+                    this.metadata = {
+                        ...data.status,
+                        debug_info: data.status.debug_info || null
+                    };
+                    this.renderMetadata();
+                } else if (data.status && data.status.error) {
+                    this.showError(data.status.error);
+                } else {
+                    this.showError('No metadata available');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading metadata:', error);
+                this.showError('Failed to load metadata: ' + error.message);
+            });
+    },
+
+    renderMetadata: function() {
+        if (!this.metadata) {
+            this.showError('No metadata available');
+            return;
+        }
+
+        const template = document.getElementById('metadata-template').innerHTML;
+        const context = {
+            ...this.metadata,
+            formatTimestamp: (timestamp) => {
+                if (!timestamp) return 'N/A';
+                try {
+                    return new Date(timestamp * 1000).toLocaleString();
+                } catch (e) {
+                    return timestamp;
+                }
+            },
+            metadataCategories: Object.keys(this.metadata).length
+        };
+
+        const html = this.renderTemplate(template, context);
+        document.getElementById('metadata-content').innerHTML = html;
+        
+        // Add debug information if available
+        if (this.metadata.debug_info) {
+            this.renderDebugInfo(this.metadata.debug_info);
+        }
+    },
+
+    renderDebugInfo: function(debugInfo) {
+        console.log('Rendering debug info:', debugInfo);
+        
+        // Update debug status indicators
+        if (debugInfo.steps) {
+            Object.keys(debugInfo.steps).forEach(stepKey => {
+                const stepElement = document.querySelector(`[data-step="${stepKey}"]`);
+                if (stepElement) {
+                    stepElement.classList.toggle('step-success', debugInfo.steps[stepKey]);
+                    stepElement.classList.toggle('step-error', !debugInfo.steps[stepKey]);
+                }
+            });
+        }
+        
+        // Show success/error messages
+        if (debugInfo.success) {
+            this.showDebugSuccess('All debug steps completed successfully!');
+        } else if (debugInfo.error) {
+            this.showDebugError(debugInfo.error);
+        }
+    },
+
+    showDebugSuccess: function(message) {
+        const successDiv = document.createElement('div');
+        successDiv.className = 'alert alert-success mt-3';
+        successDiv.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+        document.getElementById('metadata-content').appendChild(successDiv);
+    },
+
+    showDebugError: function(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-danger mt-3';
+        errorDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Debug Error: ${message}`;
+        document.getElementById('metadata-content').appendChild(errorDiv);
+    },
+
+    renderTemplate: function(template, context) {
+        return template.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
+            const keys = key.trim().split('.');
+            let value = context;
+            
+            for (const k of keys) {
+                if (value && typeof value === 'object' && k in value) {
+                    value = value[k];
+                } else {
+                    return '';
+                }
+            }
+            
+            if (typeof value === 'object') {
+                return JSON.stringify(value, null, 2);
+            }
+            
+            return value || '';
+        });
+    },
+
+    refreshMetadata: function() {
+        if (this.socket && this.socket.connected) {
+            this.socket.emit('camera_status_request');
+            AICameraUtils.showToast('Refreshing metadata...', 'info');
+        } else {
+            this.loadMetadata();
+        }
+    },
+
+    exportMetadata: function() {
+        if (!this.metadata) {
+            AICameraUtils.showToast('No metadata to export', 'warning');
+            return;
+        }
+
+        const dataStr = JSON.stringify(this.metadata, null, 2);
+        const dataBlob = new Blob([dataStr], {type: 'application/json'});
+        const url = URL.createObjectURL(dataBlob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `camera_metadata_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+        link.click();
+        
+        URL.revokeObjectURL(url);
+        AICameraUtils.showToast('Metadata exported successfully', 'success');
+    },
+
+    showError: function(message) {
+        document.getElementById('metadata-content').innerHTML = `
+            <div class="text-center text-danger">
+                <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                <h4>Error Loading Metadata</h4>
+                <p>${message}</p>
+                <button class="btn btn-primary" onclick="MetadataViewer.loadMetadata()">
+                    Try Again
+                </button>
+            </div>
+        `;
+    }
+};
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    MetadataViewer.init();
+});
+</script>
+{% endblock %}

@@ -260,12 +260,32 @@ const MainDashboard = {
             }
         }
 
-        if (resolutionElement && status.config && status.config.resolution) {
-            resolutionElement.textContent = `${status.config.resolution[0]}x${status.config.resolution[1]}`;
+        // Extract metadata information
+        const metadata = status.metadata || {};
+        const currentConfig = metadata.current_config || {};
+        const mainConfig = currentConfig.main || {};
+        
+        // Get resolution from metadata
+        if (resolutionElement) {
+            let resolution = 'Unknown';
+            if (mainConfig.size && Array.isArray(mainConfig.size)) {
+                resolution = `${mainConfig.size[0]}x${mainConfig.size[1]}`;
+            } else if (status.config && status.config.resolution) {
+                resolution = `${status.config.resolution[0]}x${status.config.resolution[1]}`;
+            }
+            resolutionElement.textContent = resolution;
         }
 
-        if (fpsElement && status.config && status.config.framerate) {
-            fpsElement.textContent = status.config.framerate;
+        // Get framerate from metadata
+        if (fpsElement) {
+            let framerate = 'Unknown';
+            if (mainConfig.controls && mainConfig.controls.FrameDurationLimits) {
+                const frameDuration = mainConfig.controls.FrameDurationLimits[0];
+                framerate = `${Math.round(1000000 / frameDuration)} FPS`;
+            } else if (status.config && status.config.framerate) {
+                framerate = `${status.config.framerate} FPS`;
+            }
+            fpsElement.textContent = framerate;
         }
     },
 

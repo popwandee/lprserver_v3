@@ -13,6 +13,7 @@ Features:
 - Configuration management
 - Error handling and recovery
 - Auto-start capability
+- Metadata tracking (NEW)
 
 Author: AI Camera Team
 Version: 1.3
@@ -42,6 +43,7 @@ class CameraManager:
     - Configuration management
     - Status monitoring
     - Auto-start functionality (NEW)
+    - Metadata tracking (NEW)
     
     Thread-safe: Uses CameraHandler's singleton pattern for safe camera access
     """
@@ -52,6 +54,10 @@ class CameraManager:
         self.auto_start_enabled = AUTO_START_CAMERA  # Auto-start from config
         self.auto_streaming_enabled = AUTO_START_STREAMING  # Auto-streaming from config
         self.startup_time = None
+        
+        # Metadata tracking (NEW) - Event-based only
+        self.last_metadata = {}
+        self.last_metadata_update = None
         
     def initialize(self):
         """
@@ -97,7 +103,7 @@ class CameraManager:
         try:
             self.logger.info("🚀 Starting auto-start sequence...")
             
-            # Start camera using existing start method
+            # Start camera
             if self.start():
                 self.logger.info("✅ Camera auto-started successfully")
                 self.startup_time = datetime.now()
@@ -135,9 +141,12 @@ class CameraManager:
             
             success = self.camera_handler.start_camera()
             if success:
+                self.startup_time = datetime.now()
                 self.logger.info("Camera started successfully")
-                if not self.startup_time:
-                    self.startup_time = datetime.now()
+                
+                # Capture initial metadata after camera starts (NEW)
+                self._update_metadata()
+                
                 return True
             else:
                 self.logger.error("Failed to start camera")
@@ -155,15 +164,18 @@ class CameraManager:
             bool: True if camera stopped successfully, False otherwise
         """
         try:
-            if self.camera_handler:
-                success = self.camera_handler.stop_camera()
-                if success:
-                    self.logger.info("Camera stopped successfully")
-                else:
-                    self.logger.error("Failed to stop camera")
-                return success
-            else:
+            if not self.camera_handler:
                 self.logger.error("Camera handler not available")
+                return False
+            
+
+            
+            success = self.camera_handler.stop_camera()
+            if success:
+                self.logger.info("Camera stopped successfully")
+                return True
+            else:
+                self.logger.error("Failed to stop camera")
                 return False
                 
         except Exception as e:
@@ -186,12 +198,33 @@ class CameraManager:
             self.logger.error(f"Error restarting camera: {e}")
             return False
     
+    def _update_metadata(self):
+        """
+        Update camera metadata from camera handler.
+        Called after camera starts or configuration changes.
+        """
+        try:
+            if self.camera_handler and self.camera_handler.streaming:
+                metadata = self.camera_handler.get_metadata()
+                if metadata:
+                    self.last_metadata = metadata
+                    self.last_metadata_update = datetime.now()
+                    self.logger.info("Camera metadata updated successfully")
+                else:
+                    self.logger.warning("No metadata available from camera")
+            else:
+                self.logger.debug("Camera not streaming, skipping metadata update")
+        except Exception as e:
+            self.logger.warning(f"Error updating metadata: {e}")
+    
+
+    
     def get_status(self):
         """
         Get comprehensive camera status.
         
         Returns:
-            dict: Camera status information including auto-start details
+            dict: Camera status information including metadata
         """
         try:
             if not self.camera_handler:
@@ -208,11 +241,12 @@ class CameraManager:
             status = {
                 'initialized': camera_status.get('initialized', False),
                 'streaming': camera_status.get('streaming', False),
-                'auto_start_enabled': self.auto_start_enabled,  # NEW
+                'auto_start_enabled': self.auto_start_enabled,
                 'uptime': None,
                 'frame_count': camera_status.get('frame_count', 0),
                 'average_fps': camera_status.get('average_fps', 0),
                 'config': camera_status.get('configuration', {}),
+                'metadata': self.last_metadata,  # Add metadata to status
                 'camera_handler': camera_status
             }
             
@@ -231,6 +265,49 @@ class CameraManager:
                 'error': str(e)
             }
     
+    def update_configuration(self, config):
+        """
+        Update camera configuration.
+        
+        Args:
+            config (dict): New configuration settings
+            
+        Returns:
+            dict: Response with success status and message
+        """
+        try:
+            if not self.camera_handler:
+                return {
+                    'success': False,
+                    'error': 'Camera handler not available'
+                }
+            
+            # Update configuration in camera handler
+            success = self.camera_handler.update_configuration(config)
+            
+            if success:
+                # Update metadata after configuration change (NEW)
+                self._update_metadata()
+                
+                self.logger.info("Camera configuration updated successfully")
+                return {
+                    'success': True,
+                    'message': 'Configuration updated successfully'
+                }
+            else:
+                self.logger.error("Failed to update camera configuration")
+                return {
+                    'success': False,
+                    'error': 'Failed to update configuration'
+                }
+                
+        except Exception as e:
+            self.logger.error(f"Error updating configuration: {e}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
     def health_check(self):
         """
         Perform health check on camera system.
@@ -245,10 +322,11 @@ class CameraManager:
                 'status': 'healthy' if status.get('initialized', False) else 'unhealthy',
                 'camera_initialized': status.get('initialized', False),
                 'streaming_active': status.get('streaming', False),
-                'auto_start_enabled': status.get('auto_start_enabled', False),  # NEW
+                'auto_start_enabled': status.get('auto_start_enabled', False),
                 'uptime': status.get('uptime', 0),
                 'frame_count': status.get('frame_count', 0),
                 'average_fps': status.get('average_fps', 0),
+                'metadata': status.get('metadata', {}),  # Include metadata in health check
                 'timestamp': datetime.now().isoformat()
             }
             
@@ -298,123 +376,68 @@ class CameraManager:
             frame_data = self.camera_handler.capture_frame()
             if frame_data is not None and isinstance(frame_data, dict) and 'frame' in frame_data:
                 frame = frame_data['frame']
-                if frame is not None:
-                    self.logger.debug("Frame captured successfully for detection")
-                    return frame  # Return the actual numpy array
-                else:
-                    self.logger.debug("Frame is None in frame_data")
-                    return None
+                return frame
             else:
-                self.logger.debug("No frame available from camera or invalid frame_data format")
+                self.logger.warning("Invalid frame data received")
                 return None
                 
         except Exception as e:
             self.logger.error(f"Error capturing frame: {e}")
             return None
     
-    def get_configuration(self):
+    def get_stream_generator(self):
         """
-        Get current camera configuration.
+        Get video stream generator for web interface.
         
         Returns:
-            dict: Current camera configuration
-        """
-        try:
-            if self.camera_handler:
-                config = self.camera_handler.get_configuration()
-                # Ensure all values are JSON serializable
-                return make_json_serializable(config)
-            else:
-                return {}
-        except Exception as e:
-            self.logger.error(f"Error getting configuration: {e}")
-            return {}
-    
-    def update_configuration(self, config: Dict[str, Any]):
-        """
-        Update camera configuration.
-        
-        Args:
-            config (dict): New configuration settings
-            
-        Returns:
-            dict: Updated configuration
-        """
-        try:
-            if self.camera_handler:
-                self.logger.info("Updating camera configuration...")
-                success = self.camera_handler.update_configuration(config)
-                if success:
-                    self.logger.info("Camera configuration updated and restarted successfully")
-                    return self.get_configuration()
-                else:
-                    self.logger.error("Failed to update camera configuration")
-                    return self.get_configuration()
-            else:
-                self.logger.error("Camera handler not available")
-                return {}
-        except Exception as e:
-            self.logger.error(f"Error updating configuration: {e}")
-            return self.get_configuration()
-    
-    def capture_image(self):
-        """
-        Capture a single image.
-        
-        Returns:
-            dict: Image capture result with path and metadata
+            generator: Video stream generator
         """
         try:
             if not self.camera_handler:
-                self.logger.error("Camera handler not available")
+                self.logger.error("Camera handler not available for streaming")
                 return None
             
-            frame_data = self.camera_handler.capture_frame()
-            if frame_data and 'frame' in frame_data:
-                # Save image logic here if needed
-                return {
-                    'success': True,
-                    'size': frame_data['frame'].shape if frame_data['frame'] is not None else None,
-                    'saved_path': None  # Add path if saving is implemented
-                }
-            else:
-                self.logger.error("Failed to capture image")
-                return None
+            return self.camera_handler.get_stream_generator()
+            
         except Exception as e:
-            self.logger.error(f"Error capturing image: {e}")
+            self.logger.error(f"Error getting stream generator: {e}")
             return None
     
-    def get_frame(self, timeout=0.1):
+    def set_auto_start(self, enabled):
         """
-        Get a single frame with timeout.
+        Set auto-start configuration.
         
         Args:
-            timeout (float): Timeout in seconds
-            
-        Returns:
-            dict: Frame data or None if timeout
+            enabled (bool): Whether to enable auto-start
         """
-        try:
-            if not self.camera_handler:
-                return None
-            
-            frame_data = self.camera_handler.capture_frame()
-            return frame_data
-        except Exception as e:
-            self.logger.error(f"Error getting frame: {e}")
-            return None
+        self.auto_start_enabled = enabled
+        self.logger.info(f"Auto-start {'enabled' if enabled else 'disabled'}")
+    
+    def get_uptime(self):
+        """
+        Get camera uptime in seconds.
+        
+        Returns:
+            float: Uptime in seconds, 0 if not started
+        """
+        if self.startup_time:
+            return (datetime.now() - self.startup_time).total_seconds()
+        return 0.0
     
     def cleanup(self):
         """
-        Cleanup camera resources.
+        Cleanup camera manager resources.
         """
         try:
             self.logger.info("Cleaning up camera manager...")
             
+
+            
             if self.camera_handler:
-                self.camera_handler.cleanup()
+                self.camera_handler.close_camera()
             
             self.logger.info("Camera manager cleanup completed")
+            
         except Exception as e:
             self.logger.error(f"Error during cleanup: {e}")
 

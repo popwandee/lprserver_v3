@@ -503,35 +503,171 @@ class CameraHandler:
             if request:
                 request.release()
     
-    def get_metadata(self) -> Optional[Dict[str, Any]]:
+    def debug_metadata_capture(self) -> Dict[str, Any]:
         """
-        Get current camera metadata using capture_request().
-        Based on v1_2 successful implementation.
+        Debug method to check metadata capture step by step.
         
         Returns:
-            Optional[Dict[str, Any]]: Camera metadata, None if failed
+            Dict[str, Any]: Debug information about metadata capture
+        """
+        debug_info = {
+            'camera_initialized': self.initialized,
+            'camera_streaming': self.streaming,
+            'picam2_exists': self.picam2 is not None,
+            'picam2_started': getattr(self.picam2, 'started', False) if self.picam2 else False,
+            'steps': {},
+            'error': None
+        }
+        
+        try:
+            # Step 1: Check if camera is ready
+            if not self.streaming or not self.picam2:
+                debug_info['error'] = "Camera not streaming or not initialized"
+                return debug_info
+            
+            debug_info['steps']['step1_camera_ready'] = True
+            
+            # Step 2: Check if picam2 is started
+            if not getattr(self.picam2, 'started', False):
+                debug_info['error'] = "Picam2 not started"
+                return debug_info
+            
+            debug_info['steps']['step2_picam2_started'] = True
+            
+            # Step 3: Try to capture request
+            request = None
+            try:
+                request = self.picam2.capture_request()
+                debug_info['steps']['step3_capture_request'] = True
+                debug_info['steps']['request_object'] = str(type(request))
+            except Exception as e:
+                debug_info['error'] = f"Failed to capture request: {e}"
+                return debug_info
+            
+            # Step 4: Try to get metadata
+            try:
+                metadata = request.get_metadata()
+                debug_info['steps']['step4_get_metadata'] = True
+                debug_info['steps']['metadata_type'] = str(type(metadata))
+                debug_info['steps']['metadata_keys'] = list(metadata.keys()) if metadata else []
+            except Exception as e:
+                debug_info['error'] = f"Failed to get metadata: {e}"
+                request.release()
+                return debug_info
+            
+            # Step 5: Extract specific metadata fields
+            try:
+                extracted_metadata = {
+                    'frame_timestamp': metadata.get("SensorTimestamp"),
+                    'exposure_time': metadata.get("ExposureTime"),
+                    'analogue_gain': metadata.get("AnalogueGain"),
+                    'digital_gain': metadata.get("DigitalGain"),
+                    'total_gain': metadata.get("AnalogueGain", 1.0) * metadata.get("DigitalGain", 1.0),
+                    'awb_gains': metadata.get("AwbGains"),
+                    'colour_gains': metadata.get("ColourGains"),
+                    'focus_fom': metadata.get("FocusFoM"),
+                    'af_state': metadata.get("AfState"),
+                    'lens_position': metadata.get("LensPosition"),
+                    'frame_duration': metadata.get("FrameDuration"),
+                    'sensor_timestamp': metadata.get("SensorTimestamp"),
+                    'request_timestamp': metadata.get("RequestTimestamp"),
+                    'complete_metadata': make_json_serializable(metadata)
+                }
+                debug_info['steps']['step5_extract_metadata'] = True
+                debug_info['extracted_metadata'] = extracted_metadata
+            except Exception as e:
+                debug_info['error'] = f"Failed to extract metadata: {e}"
+                request.release()
+                return debug_info
+            
+            # Step 6: Release request
+            try:
+                request.release()
+                debug_info['steps']['step6_release_request'] = True
+            except Exception as e:
+                debug_info['error'] = f"Failed to release request: {e}"
+                return debug_info
+            
+            debug_info['success'] = True
+            
+        except Exception as e:
+            debug_info['error'] = f"Unexpected error in debug_metadata_capture: {e}"
+        
+        return debug_info
+
+    def get_metadata(self) -> Optional[Dict[str, Any]]:
+        """
+        Get comprehensive camera metadata from Picamera2 during video streaming.
+        Follows proper Picamera2 workflow: capture_request() -> get_metadata() -> release()
+        
+        Returns:
+            Optional[Dict[str, Any]]: Complete camera metadata including exposure, gain, timestamp
         """
         if not self.streaming or not self.picam2:
             self.logger.error("Camera not streaming or not initialized")
             return None
             
+        if not getattr(self.picam2, 'started', False):
+            self.logger.error("Picam2 not started - cannot capture metadata")
+            return None
+            
         request = None
         try:
-            # Use capture_request() approach from v1_2
+            # Step 1: Capture request from streaming camera
+            self.logger.debug("Capturing request from Picam2...")
             request = self.picam2.capture_request()
+            
+            if not request:
+                self.logger.error("Failed to capture request - request is None")
+                return None
+            
+            # Step 2: Extract metadata using get_metadata()
+            self.logger.debug("Extracting metadata from request...")
             metadata = request.get_metadata()
+            
+            if not metadata:
+                self.logger.error("Failed to get metadata - metadata is None")
+                request.release()
+                return None
+            
+            # Step 3: Release the request
             request.release()
             request = None
             
-            # Convert to JSON-serializable format
-            return make_json_serializable(metadata)
+            # Step 4: Extract key metadata fields for OCR correlation
+            extracted_metadata = {
+                'frame_timestamp': metadata.get("SensorTimestamp"),
+                'exposure_time': metadata.get("ExposureTime"),
+                'analogue_gain': metadata.get("AnalogueGain"),
+                'digital_gain': metadata.get("DigitalGain"),
+                'total_gain': metadata.get("AnalogueGain", 1.0) * metadata.get("DigitalGain", 1.0),
+                'awb_gains': metadata.get("AwbGains"),
+                'colour_gains': metadata.get("ColourGains"),
+                'focus_fom': metadata.get("FocusFoM"),
+                'af_state': metadata.get("AfState"),
+                'lens_position': metadata.get("LensPosition"),
+                'frame_duration': metadata.get("FrameDuration"),
+                'sensor_timestamp': metadata.get("SensorTimestamp"),
+                'request_timestamp': metadata.get("RequestTimestamp"),
+                'complete_metadata': make_json_serializable(metadata)
+            }
+            
+            # Log key metadata for OCR correlation
+            self.logger.debug(f"Frame metadata - Timestamp: {extracted_metadata['frame_timestamp']}, "
+                            f"Exposure: {extracted_metadata['exposure_time']}, "
+                            f"Gain: {extracted_metadata['analogue_gain']}")
+            
+            return extracted_metadata
                 
         except Exception as e:
             self.logger.error(f"Failed to get metadata: {e}")
             return None
         finally:
             if request:
-                request.release()
+                try:
+                    request.release()
+                except:
+                    pass
     
     def set_controls(self, controls: Dict[str, Any]) -> bool:
         """
@@ -680,6 +816,34 @@ class CameraHandler:
                 'streaming': False,
                 'error': str(e)
             }
+    
+    def get_configuration(self) -> Dict[str, Any]:
+        """
+        Get current camera configuration.
+        
+        Returns:
+            Dict[str, Any]: Configuration information
+        """
+        try:
+            with self._lock:
+                if not self.initialized:
+                    return {}
+                
+                config = {}
+                
+                # Get current configuration from picam2
+                if self.current_config:
+                    config = make_json_serializable(self.current_config)
+                
+                # Add basic configuration info
+                if self.camera_properties:
+                    config['camera_properties'] = make_json_serializable(self.camera_properties)
+                
+                return config
+                
+        except Exception as e:
+            self.logger.error(f"Failed to get configuration: {e}")
+            return {}
     
     def _update_frame_stats(self):
         """Update frame count and FPS statistics."""

@@ -206,6 +206,35 @@ const CameraManager = {
         const statusContent = document.getElementById('status-content');
         if (!statusContent) return;
 
+        // Extract metadata information
+        const metadata = status.metadata || {};
+        const cameraProps = metadata.camera_properties || {};
+        const currentConfig = metadata.current_config || {};
+        const mainConfig = currentConfig.main || {};
+        
+        // Get resolution from metadata
+        let resolution = 'Unknown';
+        if (mainConfig.size && Array.isArray(mainConfig.size)) {
+            resolution = `${mainConfig.size[0]}x${mainConfig.size[1]}`;
+        } else if (status.config && status.config.resolution) {
+            resolution = `${status.config.resolution[0]}x${status.config.resolution[1]}`;
+        }
+        
+        // Get sensor model from metadata
+        let sensorModel = 'Unknown';
+        if (cameraProps && cameraProps.Model) {
+            sensorModel = cameraProps.Model;
+        }
+        
+        // Get framerate from metadata
+        let framerate = 'Unknown';
+        if (mainConfig.controls && mainConfig.controls.FrameDurationLimits) {
+            const frameDuration = mainConfig.controls.FrameDurationLimits[0];
+            framerate = `${Math.round(1000000 / frameDuration)} FPS`;
+        } else if (status.config && status.config.framerate) {
+            framerate = `${status.config.framerate} FPS`;
+        }
+
         const statusHtml = `
             <div class="row">
                 <div class="col-6">
@@ -220,12 +249,12 @@ const CameraManager = {
             <hr>
             <div class="row">
                 <div class="col-6">
-                    <small class="text-muted">Frame Count:</small><br>
-                    <strong>${status.frame_count || 0}</strong>
+                    <small class="text-muted">Resolution:</small><br>
+                    <strong>${resolution}</strong>
                 </div>
                 <div class="col-6">
-                    <small class="text-muted">Avg FPS:</small><br>
-                    <strong>${status.average_fps ? status.average_fps.toFixed(1) : '0'}</strong>
+                    <small class="text-muted">Frame Rate:</small><br>
+                    <strong>${framerate}</strong>
                 </div>
             </div>
             ${status.uptime ? `
@@ -234,6 +263,15 @@ const CameraManager = {
                     <div class="col-12">
                         <small class="text-muted">Uptime:</small><br>
                         <strong>${AICameraUtils.formatDuration(status.uptime)}</strong>
+                    </div>
+                </div>
+            ` : ''}
+            ${sensorModel !== 'Unknown' ? `
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <small class="text-muted">Sensor Model:</small><br>
+                        <strong>${sensorModel}</strong>
                     </div>
                 </div>
             ` : ''}

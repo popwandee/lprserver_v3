@@ -505,11 +505,11 @@ class CameraHandler:
     
     def get_metadata(self) -> Optional[Dict[str, Any]]:
         """
-        Get current camera metadata using capture_request().
-        Based on v1_2 successful implementation.
+        Get comprehensive camera metadata from Picamera2 during video streaming.
+        Follows proper Picamera2 workflow: capture_request() -> get_metadata() -> release()
         
         Returns:
-            Optional[Dict[str, Any]]: Camera metadata, None if failed
+            Optional[Dict[str, Any]]: Complete camera metadata including exposure, gain, timestamp
         """
         if not self.streaming or not self.picam2:
             self.logger.error("Camera not streaming or not initialized")
@@ -517,14 +517,40 @@ class CameraHandler:
             
         request = None
         try:
-            # Use capture_request() approach from v1_2
+            # Step 1: Capture request from streaming camera
             request = self.picam2.capture_request()
+            
+            # Step 2: Extract metadata using get_metadata()
             metadata = request.get_metadata()
+            
+            # Step 3: Release the request
             request.release()
             request = None
             
-            # Convert to JSON-serializable format
-            return make_json_serializable(metadata)
+            # Step 4: Extract key metadata fields for OCR correlation
+            extracted_metadata = {
+                'frame_timestamp': metadata.get("SensorTimestamp"),
+                'exposure_time': metadata.get("ExposureTime"),
+                'analogue_gain': metadata.get("AnalogueGain"),
+                'digital_gain': metadata.get("DigitalGain"),
+                'total_gain': metadata.get("AnalogueGain", 1.0) * metadata.get("DigitalGain", 1.0),
+                'awb_gains': metadata.get("AwbGains"),
+                'colour_gains': metadata.get("ColourGains"),
+                'focus_fom': metadata.get("FocusFoM"),
+                'af_state': metadata.get("AfState"),
+                'lens_position': metadata.get("LensPosition"),
+                'frame_duration': metadata.get("FrameDuration"),
+                'sensor_timestamp': metadata.get("SensorTimestamp"),
+                'request_timestamp': metadata.get("RequestTimestamp"),
+                'complete_metadata': make_json_serializable(metadata)
+            }
+            
+            # Log key metadata for OCR correlation
+            self.logger.debug(f"Frame metadata - Timestamp: {extracted_metadata['frame_timestamp']}, "
+                            f"Exposure: {extracted_metadata['exposure_time']}, "
+                            f"Gain: {extracted_metadata['analogue_gain']}")
+            
+            return extracted_metadata
                 
         except Exception as e:
             self.logger.error(f"Failed to get metadata: {e}")
@@ -680,6 +706,34 @@ class CameraHandler:
                 'streaming': False,
                 'error': str(e)
             }
+    
+    def get_configuration(self) -> Dict[str, Any]:
+        """
+        Get current camera configuration.
+        
+        Returns:
+            Dict[str, Any]: Configuration information
+        """
+        try:
+            with self._lock:
+                if not self.initialized:
+                    return {}
+                
+                config = {}
+                
+                # Get current configuration from picam2
+                if self.current_config:
+                    config = make_json_serializable(self.current_config)
+                
+                # Add basic configuration info
+                if self.camera_properties:
+                    config['camera_properties'] = make_json_serializable(self.camera_properties)
+                
+                return config
+                
+        except Exception as e:
+            self.logger.error(f"Failed to get configuration: {e}")
+            return {}
     
     def _update_frame_stats(self):
         """Update frame count and FPS statistics."""
