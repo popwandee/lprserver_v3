@@ -739,52 +739,87 @@ def camera_metadata_viewer():
         str: Rendered HTML template with metadata information
     """
     try:
+        logger.info("Starting camera metadata viewer...")
+        
         camera_manager = get_service('camera_manager')
         if not camera_manager:
+            logger.error("Camera manager not available")
             return render_template('camera/metadata_viewer.html',
                                  camera_status={'error': 'Camera manager not available'},
                                  title="Camera Metadata Viewer")
         
+        logger.info("Camera manager found, getting status...")
+        
         # Get comprehensive camera status and metadata
-        camera_status = camera_manager.get_status()
+        try:
+            camera_status = camera_manager.get_status()
+            logger.info("Camera status retrieved successfully")
+        except Exception as e:
+            logger.error(f"Error getting camera status: {e}")
+            return render_template('camera/metadata_viewer.html',
+                                 camera_status={'error': f'Failed to get camera status: {e}'},
+                                 title="Camera Metadata Viewer")
         
         # Get camera handler for detailed metadata
-        camera_handler = camera_manager.camera_handler if hasattr(camera_manager, 'camera_handler') else None
+        camera_handler = None
+        try:
+            if hasattr(camera_manager, 'camera_handler'):
+                camera_handler = camera_manager.camera_handler
+                logger.info("Camera handler found")
+            else:
+                logger.warning("Camera handler not available")
+        except Exception as e:
+            logger.error(f"Error accessing camera handler: {e}")
         
         # Debug metadata capture
         debug_info = None
         if camera_handler:
             try:
+                logger.info("Starting debug metadata capture...")
                 debug_info = camera_handler.debug_metadata_capture()
+                logger.info("Debug metadata capture completed")
             except Exception as e:
                 logger.error(f"Error in debug metadata capture: {e}")
                 debug_info = {'error': str(e)}
+        else:
+            debug_info = {'error': 'Camera handler not available'}
         
-        # Prepare metadata for template
-        metadata_data = {
-            'camera_status': camera_status,
-            'camera_properties': camera_status.get('camera_handler', {}).get('camera_properties', {}),
-            'current_config': camera_status.get('camera_handler', {}).get('current_config', {}),
-            'camera_controls': camera_status.get('camera_handler', {}).get('configuration', {}).get('controls', {}),
-            'frame_metadata': camera_status.get('metadata', {}),
-            'frame_statistics': {
-                'frame_count': camera_status.get('frame_count', 0),
-                'average_fps': camera_status.get('average_fps', 0.0),
-                'last_frame_time': camera_status.get('timestamp', 'N/A')
-            },
-            'available_modes': camera_status.get('camera_handler', {}).get('sensor_modes', []),
-            'sensor_modes_count': camera_status.get('camera_handler', {}).get('sensor_modes_count', 0),
-            'debug_info': debug_info
-        }
+        # Prepare metadata for template with safe defaults
+        try:
+            metadata_data = {
+                'camera_status': camera_status or {},
+                'camera_properties': camera_status.get('camera_handler', {}).get('camera_properties', {}) if camera_status else {},
+                'current_config': camera_status.get('camera_handler', {}).get('current_config', {}) if camera_status else {},
+                'camera_controls': camera_status.get('camera_handler', {}).get('configuration', {}).get('controls', {}) if camera_status else {},
+                'frame_metadata': camera_status.get('metadata', {}) if camera_status else {},
+                'frame_statistics': {
+                    'frame_count': camera_status.get('frame_count', 0) if camera_status else 0,
+                    'average_fps': camera_status.get('average_fps', 0.0) if camera_status else 0.0,
+                    'last_frame_time': camera_status.get('timestamp', 'N/A') if camera_status else 'N/A'
+                },
+                'available_modes': camera_status.get('camera_handler', {}).get('sensor_modes', []) if camera_status else [],
+                'sensor_modes_count': camera_status.get('camera_handler', {}).get('sensor_modes_count', 0) if camera_status else 0,
+                'debug_info': debug_info
+            }
+            logger.info("Metadata data prepared successfully")
+        except Exception as e:
+            logger.error(f"Error preparing metadata data: {e}")
+            metadata_data = {
+                'camera_status': {'error': f'Failed to prepare metadata: {e}'},
+                'debug_info': {'error': str(e)}
+            }
         
+        logger.info("Rendering metadata viewer template...")
         return render_template('camera/metadata_viewer.html',
                              **metadata_data,
                              title="Camera Metadata Viewer")
                              
     except Exception as e:
-        logger.error(f"Error in camera metadata viewer: {e}")
+        logger.error(f"Unexpected error in camera metadata viewer: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
         return render_template('camera/metadata_viewer.html',
-                             camera_status={'error': str(e)},
+                             camera_status={'error': f'Unexpected error: {e}'},
                              title="Camera Metadata Viewer")
 
 
