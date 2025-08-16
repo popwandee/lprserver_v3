@@ -1,0 +1,76 @@
+{
+  "tagOwners": {
+    "tag:edge": ["email@gmail.com"],
+    "tag:server": ["email@gmail.com"],
+    "tag:dev": ["email@gmail.com"]
+  },
+  "acls": [
+    // Allow edge devices to communicate with LPR server
+    {
+      "action": "accept",
+      "src": ["tag:edge"],
+      "dst": ["tag:server:*"]
+    },
+    // Allow LPR server to communicate with edge devices
+    {
+      "action": "accept", 
+      "src": ["tag:server"],
+      "dst": ["tag:edge:*"]
+    },
+    // Allow development machines to access server
+    {
+      "action": "accept", 
+      "src": ["tag:dev"],
+      "dst": ["tag:server:*"]
+    },
+    // Allow server to communicate with dev machines
+    {
+      "action": "accept", 
+      "src": ["tag:server"],
+      "dst": ["tag:dev:*"]
+    },
+    // Allow development machines to access edge devices
+    {
+      "action": "accept", 
+      "src": ["tag:dev"],
+      "dst": ["tag:edge:*"]
+    },
+    // Allow edge devices to communicate with dev machines
+    {
+      "action": "accept", 
+      "src": ["tag:edge"],
+      "dst": ["tag:dev:*"]
+    },
+    // Allow devices to access their own subnet
+    {
+      "action": "accept",
+      "src": ["*"],
+      "dst": ["*:*"]
+    }
+  ],
+  "hosts": {
+    "aicamera1": "100.xx.xx.xx",
+    "lprserver": "100.xx.xx.xx",
+    "dev-windows": "100.xx.xx.xx",
+    "dev-mac": "100.xx.xx.xx",
+    "dev-linux": "100.xx.xx.xx"
+  },
+  "groups": {
+    "group:admins": ["email@gmail.com"],
+    "group:developers": ["email@gmail.com"]
+  },
+  "ssh": [
+    {
+      "action": "accept",
+      "src": ["tag:dev"],
+      "dst": ["tag:edge:22"],
+      "users": ["camuser"]
+    },
+    {
+      "action": "accept",
+      "src": ["tag:dev"],
+      "dst": ["tag:server:22"],
+      "users": ["ubuntu", "root"]
+    }
+  ]
+}

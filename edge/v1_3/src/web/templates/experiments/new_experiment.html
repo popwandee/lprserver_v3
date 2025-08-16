@@ -1,0 +1,365 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-plus"></i> New Experiment
+                    </h3>
+                    <div class="card-tools">
+                        <a href="{{ url_for('experiments.dashboard') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if error %}
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i> {{ error }}
+                    </div>
+                    {% endif %}
+
+                    <form method="POST" id="experimentForm">
+                        <!-- Basic Information -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="experiment_type">Experiment Type</label>
+                                    <select class="form-control" id="experiment_type" name="experiment_type" required>
+                                        <option value="">Select Experiment Type</option>
+                                        <option value="night_mode_lens_comparison">Night Mode Lens Comparison</option>
+                                        <option value="day_mode_lens_comparison">Day Mode Lens Comparison</option>
+                                        <option value="parameter_search">Camera Parameter Search</option>
+                                        <option value="distance_testing">Distance Testing</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="experiment_name">Experiment Name (Optional)</label>
+                                    <input type="text" class="form-control" id="experiment_name" name="experiment_name" 
+                                           placeholder="e.g., Night Mode IMX708 vs NoIR">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Camera Configuration -->
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h5><i class="fas fa-camera"></i> Camera Configuration</h5>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Camera Types</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="camera_type" value="IMX708" id="camera_imx708">
+                                        <label class="form-check-label" for="camera_imx708">
+                                            IMX708 (Standard)
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="camera_type" value="IMX708Wide" id="camera_imx708wide">
+                                        <label class="form-check-label" for="camera_imx708wide">
+                                            IMX708 Wide FoV
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="camera_type" value="IMX708NoIR" id="camera_imx708noir">
+                                        <label class="form-check-label" for="camera_imx708noir">
+                                            IMX708 NoIR
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Lens Covers</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="lens_cover" value="Curve" id="lens_curve">
+                                        <label class="form-check-label" for="lens_curve">
+                                            Curve
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="lens_cover" value="Flat" id="lens_flat">
+                                        <label class="form-check-label" for="lens_flat">
+                                            Flat
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Distance Configuration -->
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h5><i class="fas fa-ruler-horizontal"></i> Distance Configuration</h5>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="start_distance_m">Start Distance (meters)</label>
+                                    <input type="number" class="form-control" id="start_distance_m" name="start_distance_m" 
+                                           value="1" min="1" max="20" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="end_distance_m">End Distance (meters)</label>
+                                    <input type="number" class="form-control" id="end_distance_m" name="end_distance_m" 
+                                           value="10" min="1" max="20" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="step_distance_m">Step Size (meters)</label>
+                                    <input type="number" class="form-control" id="step_distance_m" name="step_distance_m" 
+                                           value="1" min="0.5" max="5" step="0.5" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Light Mode Configuration -->
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h5><i class="fas fa-sun"></i> Light Mode Configuration</h5>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="is_night_mode" id="is_night_mode">
+                                        <label class="form-check-label" for="is_night_mode">
+                                            <i class="fas fa-moon"></i> Night Mode
+                                        </label>
+                                    </div>
+                                    <small class="form-text text-muted">
+                                        Enable for low-light conditions. This will use optimized camera parameters.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Night Mode Parameters (Hidden by default) -->
+                        <div id="nightModeParams" style="display: none;">
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <h5><i class="fas fa-cog"></i> Night Mode Parameters</h5>
+                                </div>
+                                
+                                <!-- Exposure Times -->
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Exposure Times (microseconds)</label>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="night_exposure_times" value="100000" id="exp_100k">
+                                            <label class="form-check-label" for="exp_100k">100,000 μs</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="night_exposure_times" value="200000" id="exp_200k">
+                                            <label class="form-check-label" for="exp_200k">200,000 μs</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="night_exposure_times" value="300000" id="exp_300k">
+                                            <label class="form-check-label" for="exp_300k">300,000 μs</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="night_exposure_times" value="400000" id="exp_400k">
+                                            <label class="form-check-label" for="exp_400k">400,000 μs</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="night_exposure_times" value="499989" id="exp_500k">
+                                            <label class="form-check-label" for="exp_500k">499,989 μs (Recommended)</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Analog Gains -->
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Analog Gains</label>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="night_analog_gains" value="1.0" id="gain_1">
+                                            <label class="form-check-label" for="gain_1">1.0x</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="night_analog_gains" value="2.0" id="gain_2">
+                                            <label class="form-check-label" for="gain_2">2.0x</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="night_analog_gains" value="4.0" id="gain_4">
+                                            <label class="form-check-label" for="gain_4">4.0x</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="night_analog_gains" value="8.0" id="gain_8">
+                                            <label class="form-check-label" for="gain_8">8.0x</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="night_analog_gains" value="16.0" id="gain_16">
+                                            <label class="form-check-label" for="gain_16">16.0x (Recommended)</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Lens Positions -->
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Manual Lens Positions</label>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="night_lens_positions" value="0.05" id="lens_005">
+                                            <label class="form-check-label" for="lens_005">0.05</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="night_lens_positions" value="0.07" id="lens_007">
+                                            <label class="form-check-label" for="lens_007">0.07 (Recommended)</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="night_lens_positions" value="0.10" id="lens_010">
+                                            <label class="form-check-label" for="lens_010">0.10</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Sharpness Values -->
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Sharpness Values</label>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="night_sharpness_values" value="1.0" id="sharp_1">
+                                            <label class="form-check-label" for="sharp_1">1.0</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="night_sharpness_values" value="2.0" id="sharp_2">
+                                            <label class="form-check-label" for="sharp_2">2.0 (Recommended)</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="night_sharpness_values" value="3.0" id="sharp_3">
+                                            <label class="form-check-label" for="sharp_3">3.0</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Noise Reduction Modes -->
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Noise Reduction Modes</label>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="night_noise_reduction_modes" value="0" id="noise_0">
+                                            <label class="form-check-label" for="noise_0">Off (Recommended)</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="night_noise_reduction_modes" value="1" id="noise_1">
+                                            <label class="form-check-label" for="noise_1">Low</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="night_noise_reduction_modes" value="2" id="noise_2">
+                                            <label class="form-check-label" for="noise_2">High</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-play"></i> Start Experiment
+                                    </button>
+                                    <a href="{{ url_for('experiments.dashboard') }}" class="btn btn-secondary">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Show/hide night mode parameters based on checkbox
+    $('#is_night_mode').change(function() {
+        if ($(this).is(':checked')) {
+            $('#nightModeParams').show();
+        } else {
+            $('#nightModeParams').hide();
+        }
+    });
+
+    // Form validation
+    $('#experimentForm').submit(function(e) {
+        // Check if at least one camera type is selected
+        if ($('input[name="camera_type"]:checked').length === 0) {
+            alert('Please select at least one camera type.');
+            e.preventDefault();
+            return false;
+        }
+
+        // Check if at least one lens cover is selected
+        if ($('input[name="lens_cover"]:checked').length === 0) {
+            alert('Please select at least one lens cover.');
+            e.preventDefault();
+            return false;
+        }
+
+        // Check distance range
+        var startDist = parseInt($('#start_distance_m').val());
+        var endDist = parseInt($('#end_distance_m').val());
+        if (startDist >= endDist) {
+            alert('End distance must be greater than start distance.');
+            e.preventDefault();
+            return false;
+        }
+
+        // If night mode is enabled, check if at least one parameter is selected
+        if ($('#is_night_mode').is(':checked')) {
+            var hasExposure = $('input[name="night_exposure_times"]:checked').length > 0;
+            var hasGain = $('input[name="night_analog_gains"]:checked').length > 0;
+            var hasLens = $('input[name="night_lens_positions"]:checked').length > 0;
+            var hasSharpness = $('input[name="night_sharpness_values"]:checked').length > 0;
+            var hasNoise = $('input[name="night_noise_reduction_modes"]:checked').length > 0;
+
+            if (!hasExposure || !hasGain || !hasLens || !hasSharpness || !hasNoise) {
+                alert('Please select at least one value for each night mode parameter.');
+                e.preventDefault();
+                return false;
+            }
+        }
+
+        return true;
+    });
+
+    // Auto-select recommended values for night mode
+    $('#is_night_mode').change(function() {
+        if ($(this).is(':checked')) {
+            // Select recommended values
+            $('#exp_500k').prop('checked', true);
+            $('#gain_16').prop('checked', true);
+            $('#lens_007').prop('checked', true);
+            $('#sharp_2').prop('checked', true);
+            $('#noise_0').prop('checked', true);
+        }
+    });
+
+    // Handle experiment type selection
+    $('#experiment_type').change(function() {
+        var selectedType = $(this).val();
+        if (selectedType === 'night_mode_lens_comparison') {
+            $('#is_night_mode').prop('checked', true).trigger('change');
+        } else if (selectedType === 'day_mode_lens_comparison') {
+            $('#is_night_mode').prop('checked', false).trigger('change');
+        }
+    });
+});
+</script>
+{% endblock %}

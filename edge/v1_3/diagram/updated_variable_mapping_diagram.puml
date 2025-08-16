@@ -1,0 +1,1179 @@
+@startuml AI_Camera_v1_3_Updated_Variable_Mapping
+
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam noteBackgroundColor #E3F2FD
+skinparam noteBorderColor #1976D2
+skinparam packageBackgroundColor #F8F9FA
+skinparam packageBorderColor #DEE2E6
+skinparam classBackgroundColor #FFFFFF
+skinparam classBorderColor #6C757D
+
+title AI Camera v1.3 - Updated Variable Mapping & Naming Convention Guide
+subtitle Prevent Variable Conflicts & Ensure Consistency (with Health Monitoring)
+
+package "Backend Layer (Python)" <<Rectangle>> {
+    
+    package "API Response Variables (snake_case)" {
+        class CameraStatusAPI {
+            + success: bool
+            + status: dict
+            + timestamp: str
+            --
+            **Camera Status Fields:**
+            + initialized: bool
+            + streaming: bool
+            + frame_count: int
+            + average_fps: float
+            + uptime: float
+            + auto_start_enabled: bool
+            --
+            **Camera Handler Fields:**
+            + camera_handler: dict
+            + current_config: dict
+            + camera_properties: dict
+            --
+            **Config Structure:**
+            + config.main.size: List[int, int]
+            + config.controls.FrameDurationLimits: List[int, int]
+            + camera_properties.Model: str
+        }
+        
+        class DetectionStatusAPI {
+            + success: bool
+            + status: dict
+            + timestamp: str
+            --
+            **Detection Status Fields:**
+            + service_running: bool
+            + detection_active: bool
+            + detection_processor_status: dict
+            + detection_interval: float
+            + confidence_threshold: float
+            + plate_confidence_threshold: float
+            + total_detections: int
+            + last_detection_time: str
+            --
+            **Processor Status Fields:**
+            + models_loaded: bool
+            + vehicle_model_available: bool
+            + lp_detection_model_available: bool
+            + lp_ocr_model_available: bool
+            + easyocr_available: bool
+        }
+        
+        class HealthStatusAPI {
+            + success: bool
+            + data: dict
+            + timestamp: str
+            --
+            **Health Data Structure:**
+            + overall_status: str
+            + components: dict
+            + system: dict
+            + error_details: dict
+            + last_check: str
+            --
+            **Component Status Fields:**
+            + camera.status: str
+            + camera.initialized: bool
+            + camera.streaming: bool
+            + camera.auto_start_enabled: bool
+            + camera.last_check: str
+            --
+            + detection.status: str
+            + detection.models_loaded: bool
+            + detection.easyocr_available: bool
+            + detection.detection_active: bool
+            + detection.service_running: bool
+            + detection.thread_alive: bool
+            + detection.auto_start: bool
+            + detection.last_check: str
+            --
+            + database.status: str
+            + database.connected: bool
+            + database.database_path: str
+            + database.last_check: str
+            --
+            + system.status: str
+            + system.last_check: str
+            --
+            **System Resource Fields:**
+            + system.cpu_usage: float
+            + system.cpu_count: int
+            + system.memory_usage.used: float
+            + system.memory_usage.total: float
+            + system.memory_usage.percentage: float
+            + system.disk_usage.used: float
+            + system.disk_usage.total: float
+            + system.disk_usage.percentage: float
+            + system.uptime: float
+        }
+        
+        class HealthLogsAPI {
+            + success: bool
+            + data: dict
+            + timestamp: str
+            --
+            **Logs Data Structure:**
+            + logs: List[dict]
+            + pagination: dict
+            + level_filter: str
+            --
+            **Log Entry Fields:**
+            + timestamp: str
+            + level: str
+            + module: str
+            + message: str
+            + details: str
+            --
+            **Pagination Fields:**
+            + current_page: int
+            + total_pages: int
+            + total_count: int
+            + per_page: int
+            + has_next: bool
+            + has_prev: bool
+        }
+    }
+    
+    package "Internal Variables (snake_case)" {
+        class CameraHandlerVars {
+            **Private Attributes:**
+            - _instance: Optional[CameraHandler]
+            - _lock: threading.Lock
+            - picam2: Optional[Picamera2]
+            - initialized: bool
+            - streaming: bool
+            - current_config: Optional[Dict]
+            - camera_properties: Dict
+            - frame_count: int
+            - startup_time: float
+            --
+            **Method Parameters:**
+            + config: Dict
+            + resolution: Tuple[int, int]
+            + framerate: int
+            + brightness: float
+            + contrast: float
+            + saturation: float
+            + awb_mode: str
+        }
+        
+        class DetectionProcessorVars {
+            **Private Attributes:**
+            - model_path: str
+            - confidence_threshold: float
+            - detection_interval: float
+            - models_loaded: bool
+            - vehicle_model_available: bool
+            - lp_detection_model_available: bool
+            - lp_ocr_model_available: bool
+            - easyocr_available: bool
+            --
+            **Method Parameters:**
+            + frame: np.ndarray
+            + detection_results: List[Dict]
+            + bbox_coordinates: List[int]
+            + license_plate_text: str
+        }
+        
+        class HealthMonitorVars {
+            **Private Attributes:**
+            - db_manager: Optional[DatabaseManager]
+            - camera_manager: Optional[CameraManager]
+            - detection_manager: Optional[DetectionManager]
+            - running: bool
+            - stop_event: Event
+            - monitor_thread: Optional[Thread]
+            - logger: Logger
+            --
+            **Health Check Methods:**
+            + check_camera(): bool
+            + check_disk_space(path: str, required_gb: float): bool
+            + check_cpu_ram(): bool
+            + check_model_loading(): bool
+            + check_easyocr_init(): bool
+            + check_database_connection(): bool
+            + check_network_connectivity(): bool
+            --
+            **Monitoring Methods:**
+            + start_monitoring(interval: int): bool
+            + stop_monitoring(): void
+            + run_all_checks(): Dict[str, Any]
+            + get_latest_health_checks(limit: int): List[Dict[str, Any]]
+        }
+        
+        class HealthServiceVars {
+            **Private Attributes:**
+            - health_monitor: HealthMonitor
+            - logger: Logger
+            - last_system_status: Optional[Dict]
+            - last_check_time: Optional[datetime]
+            --
+            **Health Status Methods:**
+            + get_system_health(): Dict[str, Any]
+            + get_health_logs(level: str, limit: int, page: int): Dict[str, Any]
+            + start_monitoring(interval: int): bool
+            + stop_monitoring(): void
+            --
+            **Component Status Methods:**
+            + _build_component_status(health_result: Dict): Dict[str, Any]
+            + _get_system_info(): Dict[str, Any]
+            + _get_component_issues(component_name: str, component_data: Dict): List[str]
+            --
+            **Auto-Startup Methods:**
+            + _setup_auto_start_monitoring(): void
+            + _should_start_monitoring(): bool
+            + _get_component_readiness(): tuple
+            + _is_detection_processor_ready(detection_status: Dict): bool
+        }
+        
+        class ServiceManagerVars {
+            **Camera Manager:**
+            - camera_handler: CameraHandler
+            - auto_start_enabled: bool
+            - auto_streaming_enabled: bool
+            - startup_time: datetime
+            - logger: Logger
+            --
+            **Detection Manager:**
+            - detection_processor: DetectionProcessor
+            - camera_manager: CameraManager
+            - database_manager: DatabaseManager
+            - service_running: bool
+            - detection_active: bool
+            - auto_start_enabled: bool
+            --
+            **WebSocket Sender:**
+            - socketio: SocketIO
+            - connected_clients: Dict[str, Dict]
+            - logger: Logger
+        }
+    }
+}
+
+package "Frontend Layer (JavaScript)" <<Rectangle>> {
+    
+    package "API Request Variables (camelCase)" {
+        class CameraStatusJS {
+            **Received from API (converted):**
+            + success: boolean
+            + status: object
+            + timestamp: string
+            --
+            **Camera Status (camelCase):**
+            + initialized: boolean
+            + streaming: boolean
+            + frameCount: number
+            + averageFps: number
+            + uptime: number
+            + autoStartEnabled: boolean
+            --
+            **Camera Handler (camelCase):**
+            + cameraHandler: object
+            + currentConfig: object
+            + cameraProperties: object
+            --
+            **Config Access:**
+            + status.cameraHandler.currentConfig.main.size
+            + status.cameraHandler.currentConfig.controls.FrameDurationLimits
+            + status.cameraHandler.cameraProperties.Model
+        }
+        
+        class DetectionStatusJS {
+            **Received from API (converted):**
+            + success: boolean
+            + status: object
+            + timestamp: string
+            --
+            **Detection Status (camelCase):**
+            + serviceRunning: boolean
+            + detectionActive: boolean
+            + detectionProcessorStatus: object
+            + detectionInterval: number
+            + confidenceThreshold: number
+            + plateConfidenceThreshold: number
+            + totalDetections: number
+            + lastDetectionTime: string
+            --
+            **Processor Status (camelCase):**
+            + modelsLoaded: boolean
+            + vehicleModelAvailable: boolean
+            + lpDetectionModelAvailable: boolean
+            + lpOcrModelAvailable: boolean
+            + easyocrAvailable: boolean
+        }
+        
+        class HealthStatusJS {
+            **Received from API (converted):**
+            + success: boolean
+            + data: object
+            + timestamp: string
+            --
+            **Health Data (camelCase):**
+            + overallStatus: string
+            + components: object
+            + system: object
+            + errorDetails: object
+            + lastCheck: string
+            --
+            **Component Status (camelCase):**
+            + components.camera.status: string
+            + components.camera.initialized: boolean
+            + components.camera.streaming: boolean
+            + components.camera.autoStartEnabled: boolean
+            + components.camera.lastCheck: string
+            --
+            + components.detection.status: string
+            + components.detection.modelsLoaded: boolean
+            + components.detection.easyocrAvailable: boolean
+            + components.detection.detectionActive: boolean
+            + components.detection.serviceRunning: boolean
+            + components.detection.threadAlive: boolean
+            + components.detection.autoStart: boolean
+            + components.detection.lastCheck: string
+            --
+            + components.database.status: string
+            + components.database.connected: boolean
+            + components.database.databasePath: string
+            + components.database.lastCheck: string
+            --
+            + components.system.status: string
+            + components.system.lastCheck: string
+            --
+            **System Resources (camelCase):**
+            + system.cpuUsage: number
+            + system.cpuCount: number
+            + system.memoryUsage.used: number
+            + system.memoryUsage.total: number
+            + system.memoryUsage.percentage: number
+            + system.diskUsage.used: number
+            + system.diskUsage.total: number
+            + system.diskUsage.percentage: number
+            + system.uptime: number
+        }
+        
+        class HealthLogsJS {
+            **Received from API (converted):**
+            + success: boolean
+            + data: object
+            + timestamp: string
+            --
+            **Logs Data (camelCase):**
+            + logs: Array<object>
+            + pagination: object
+            + levelFilter: string
+            --
+            **Log Entry (camelCase):**
+            + timestamp: string
+            + level: string
+            + module: string
+            + message: string
+            + details: string
+            --
+            **Pagination (camelCase):**
+            + currentPage: number
+            + totalPages: number
+            + totalCount: number
+            + perPage: number
+            + hasNext: boolean
+            + hasPrev: boolean
+        }
+    }
+    
+    package "UI State Variables (camelCase)" {
+        class DashboardStateVars {
+            **Element References:**
+            + resolutionElement: HTMLElement
+            + fpsElement: HTMLElement
+            + modelElement: HTMLElement
+            + featureResolutionElement: HTMLElement
+            + featureFpsElement: HTMLElement
+            + featureModelElement: HTMLElement
+            --
+            **Display Values:**
+            + cameraStatusText: string
+            + cameraStatusClass: string
+            + isStreaming: boolean
+            + isConfiguring: boolean
+            + systemUptime: string
+            --
+            **Update Intervals:**
+            + statusUpdateInterval: number
+            + refreshTimer: NodeJS.Timer
+        }
+        
+        class HealthDashboardVars {
+            **Health Dashboard State:**
+            + socket: Socket
+            + refreshInterval: number
+            + autoStartNotificationShown: boolean
+            --
+            **Health Status Display:**
+            + overallStatus: string
+            + componentStatus: object
+            + systemResources: object
+            + errorDetails: object
+            --
+            **Component Status Display:**
+            + cameraStatus: string
+            + detectionStatus: string
+            + databaseStatus: string
+            + systemStatus: string
+            --
+            **System Resources Display:**
+            + cpuUsage: number
+            + memoryUsage: number
+            + diskUsage: number
+            + uptime: string
+            --
+            **Health Logs Display:**
+            + logsData: Array<object>
+            + currentPage: number
+            + totalPages: number
+            + levelFilter: string
+            --
+            **Progress Bar Variables:**
+            + progressBars: object
+            + progressClasses: object
+            + tooltipData: object
+        }
+        
+        class WebSocketVars {
+            **Connection Management:**
+            + socket: Socket
+            + isConnected: boolean
+            + reconnectAttempts: number
+            + maxReconnectAttempts: number
+            --
+            **Event Handlers:**
+            + onCameraStatusUpdate: Function
+            + onDetectionStatusUpdate: Function
+            + onSystemHealthUpdate: Function
+            + onHealthStatusUpdate: Function
+            + onHealthLogsUpdate: Function
+            + onHealthMonitorResponse: Function
+            + onHealthCheckResponse: Function
+            + onConnectionError: Function
+            --
+            **Event Data:**
+            + eventData: object
+            + responseData: object
+            + errorInfo: object
+        }
+    }
+    
+    package "Utility Functions (camelCase)" {
+        class AICameraUtilsVars {
+            **Function Parameters:**
+            + elementId: string
+            + containerId: string
+            + message: string
+            + messageType: string
+            + timestamp: string
+            + isOnline: boolean
+            + statusText: string
+            --
+            **API Request:**
+            + apiUrl: string
+            + requestOptions: object
+            + responseData: object
+            + errorMessage: string
+            --
+            **Formatting:**
+            + formattedDateTime: string
+            + formattedDuration: string
+            + formattedFileSize: string
+        }
+        
+        class HealthUtilsVars {
+            **Health Utility Functions:**
+            + formatTimestamp(timestamp: string): string
+            + formatUptime(seconds: number): string
+            + getStatusClass(status: string): string
+            + getProgressClass(value: number): string
+            + getLogLevelClass(level: string): string
+            + showNotification(message: string, type: string): void
+            + debounce(func: Function, wait: number): Function
+            + throttle(func: Function, limit: number): Function
+        }
+    }
+}
+
+package "HTML Template Layer" <<Rectangle>> {
+    
+    package "Element IDs (kebab-case)" {
+        class MainDashboardElements {
+            **System Information Section (Row 1 - Centered):**
+            + system-info-cpu
+            + system-info-ai-accelerator
+            + system-info-os
+            --
+            **Hardware Information Section (Row 2 - Column 1):**
+            + system-info-ram
+            + system-info-disk
+            + feature-camera-model
+            + feature-camera-resolution  
+            + feature-camera-fps
+            + feature-camera-status
+            --
+            **Development Information Section (Row 2 - Column 2):**
+            + (Static content - no dynamic spans)
+            --
+            **Component and Services Section (Row 2 - Column 3):**
+            + (Static content - no dynamic spans)
+            --
+            **Removed Elements (No longer used):**
+            + main-camera-model
+            + main-camera-resolution
+            + main-camera-fps
+            + main-camera-detail-status
+            + main-database-detail-status
+            + main-system-uptime
+            + main-camera-status
+            + main-detection-status
+            + main-database-status
+            + main-system-status
+            --
+            **Log Containers:**
+            + main-system-log
+            + detection-log
+            + health-log
+        }
+        
+        class CameraDashboardElements {
+            **Camera Control:**
+            + camera-start-btn
+            + camera-stop-btn
+            + camera-restart-btn
+            + camera-capture-btn
+            --
+            **Configuration Form:**
+            + camera-resolution-select
+            + camera-framerate-input
+            + camera-brightness-input
+            + camera-contrast-input
+            + camera-saturation-input
+            + camera-awb-select
+            --
+            **Status Display:**
+            + camera-status-indicator
+            + camera-stream-container
+            + camera-config-display
+        }
+        
+        class DetectionDashboardElements {
+            **Detection Control:**
+            + detection-start-btn
+            + detection-stop-btn
+            + detection-configure-btn
+            --
+            **Configuration:**
+            + detection-interval-input
+            + confidence-threshold-input
+            + plate-confidence-input
+            + save-images-checkbox
+            + save-database-checkbox
+            --
+            **Results Display:**
+            + detection-results-table
+            + detection-count-display
+            + detection-log-container
+        }
+        
+        class HealthDashboardElements {
+            **Health Status Display:**
+            + health-grid
+            + overall-status-card
+            + camera-status-card
+            + detection-status-card
+            + database-status-card
+            + system-resources-card
+            --
+            **System Resources:**
+            + cpu-usage-progress
+            + memory-usage-progress
+            + disk-usage-progress
+            + uptime-display
+            --
+            **Health Logs:**
+            + logs-container
+            + log-level-filter
+            + pagination-controls
+            + pagination-info
+            + pagination-buttons
+            --
+            **Status Indicators:**
+            + status-indicator-healthy
+            + status-indicator-unhealthy
+            + status-indicator-critical
+            + status-indicator-unknown
+        }
+    }
+    
+    package "CSS Classes (kebab-case)" {
+        class StatusClasses {
+            **Status Indicators:**
+            + status-online
+            + status-offline
+            + status-warning
+            + status-error
+            + status-healthy
+            + status-unhealthy
+            + status-critical
+            + status-unknown
+            --
+            **Card Styles:**
+            + card-primary
+            + card-success
+            + card-warning
+            + card-danger
+            + health-card
+            + system-resources
+            --
+            **Button States:**
+            + btn-active
+            + btn-disabled
+            + btn-loading
+            + btn-health
+            + btn-primary
+            + btn-secondary
+            + btn-warning
+            + btn-danger
+        }
+        
+        class ProgressBarClasses {
+            **Progress Bar Styles:**
+            + progress-bar
+            + progress-bar-large
+            + progress-fill
+            + progress-fill-large
+            + progress-healthy
+            + progress-unhealthy
+            + progress-critical
+            + progress-warning
+        }
+        
+        class LogClasses {
+            **Log Level Styles:**
+            + log-pass
+            + log-fail
+            + log-warning
+            + log-info
+            + log-entry
+            + log-success
+            + log-error
+        }
+    }
+}
+
+package "WebSocket Events" <<Rectangle>> {
+    
+    package "Event Names (snake_case)" {
+        class ClientToServerEvents {
+            **Camera Events:**
+            + camera_status_request
+            + camera_control
+            + camera_config_update
+            --
+            **Detection Events:**
+            + detection_status_request
+            + detection_control
+            + detection_config_update
+            --
+            **Health Events:**
+            + health_status_request
+            + health_logs_request
+            + health_monitor_start
+            + health_monitor_stop
+            + health_check_run
+            + join_health_room
+            + leave_health_room
+            --
+            **System Events:**
+            + system_health_request
+            + system_log_request
+        }
+        
+        class ServerToClientEvents {
+            **Camera Events:**
+            + camera_status_update
+            + camera_control_response
+            + camera_config_response
+            --
+            **Detection Events:**
+            + detection_status_update
+            + detection_result
+            + detection_control_response
+            --
+            **Health Events:**
+            + health_status_update
+            + health_logs_update
+            + health_monitor_response
+            + health_check_response
+            + health_room_joined
+            + health_room_left
+            --
+            **System Events:**
+            + system_health_update
+            + system_notification
+        }
+    }
+    
+    package "Event Data Structures" {
+        class CameraEventData {
+            **Control Commands:**
+            + command: 'start' | 'stop' | 'restart' | 'capture'
+            + success: boolean
+            + message: string
+            + error: string | null
+            --
+            **Config Updates:**
+            + config: object
+            + resolution: [number, number]
+            + framerate: number
+            + brightness: number
+            + contrast: number
+        }
+        
+        class DetectionEventData {
+            **Control Commands:**
+            + command: 'start' | 'stop'
+            + success: boolean
+            + message: string
+            --
+            **Detection Results:**
+            + timestamp: string
+            + detections: Array<object>
+            + image_path: string
+            + confidence: number
+            + bbox: [number, number, number, number]
+        }
+        
+        class HealthEventData {
+            **Health Status Request:**
+            + (no parameters required)
+            --
+            **Health Logs Request:**
+            + level: string (optional)
+            + page: number (optional)
+            + limit: number (optional)
+            --
+            **Health Monitor Control:**
+            + interval: number (optional)
+            + command: 'start' | 'stop'
+            --
+            **Health Check Response:**
+            + success: boolean
+            + data: object (health status)
+            + timestamp: string
+            --
+            **Health Monitor Response:**
+            + success: boolean
+            + message: string
+            + error: string (optional)
+            + timestamp: string
+        }
+    }
+}
+
+' Mapping Relationships
+CameraStatusAPI ..> CameraStatusJS : "API Response\nsnake_case → camelCase"
+DetectionStatusAPI ..> DetectionStatusJS : "API Response\nsnake_case → camelCase"
+HealthStatusAPI ..> HealthStatusJS : "API Response\nsnake_case → camelCase"
+HealthLogsAPI ..> HealthLogsJS : "API Response\nsnake_case → camelCase"
+
+CameraHandlerVars ..> CameraStatusAPI : "Internal State → API"
+DetectionProcessorVars ..> DetectionStatusAPI : "Internal State → API"
+HealthMonitorVars ..> HealthStatusAPI : "Internal State → API"
+HealthServiceVars ..> HealthStatusAPI : "Business Logic → API"
+ServiceManagerVars ..> CameraStatusAPI : "Service Layer → API"
+
+CameraStatusJS ..> DashboardStateVars : "API Data → UI State"
+DetectionStatusJS ..> DashboardStateVars : "API Data → UI State"
+HealthStatusJS ..> HealthDashboardVars : "API Data → UI State"
+HealthLogsJS ..> HealthDashboardVars : "API Data → UI State"
+
+DashboardStateVars ..> MainDashboardElements : "State → DOM Elements"
+HealthDashboardVars ..> HealthDashboardElements : "State → DOM Elements"
+WebSocketVars ..> MainDashboardElements : "Events → DOM Updates"
+WebSocketVars ..> HealthDashboardElements : "Events → DOM Updates"
+
+ClientToServerEvents ..> ServerToClientEvents : "WebSocket Communication"
+CameraEventData ..> DetectionEventData : "Event Data Exchange"
+HealthEventData ..> HealthEventData : "Health Event Exchange"
+
+note top of HealthStatusAPI
+  **Health Status API Response Format**
+  - Uses snake_case naming
+  - Nested objects for complex data
+  - Timestamp in ISO format
+  - Boolean success indicator
+  - Comprehensive component status
+  
+  **Key Health Paths:**
+  - data.overall_status
+  - data.components.camera.status
+  - data.components.detection.status
+  - data.system.cpu_usage
+  - data.system.memory_usage.percentage
+  - data.system.disk_usage.percentage
+end note
+
+note top of HealthStatusJS
+  **Frontend Health Variable Conversion**
+  - Converts snake_case to camelCase
+  - Maintains object structure
+  - Preserves data types
+  - Handles nested properties
+  
+  **JavaScript Health Access:**
+  - data.overallStatus
+  - data.components.camera.status
+  - data.components.detection.status
+  - data.system.cpuUsage
+  - data.system.memoryUsage.percentage
+  - data.system.diskUsage.percentage
+end note
+
+note bottom of HealthDashboardElements
+  **Health Dashboard Element ID Convention**
+  - Uses kebab-case for consistency
+  - Prefixed by section (health-, system-)
+  - Descriptive and unique
+  - Prevents duplicate ID conflicts
+  
+  **Health-Specific Examples:**
+  - health-grid (main container)
+  - overall-status-card (overall health)
+  - camera-status-card (camera component)
+  - detection-status-card (detection component)
+  - system-resources-card (system resources)
+  - logs-container (health logs)
+end note
+
+note right of HealthEventData
+  **Health WebSocket Event Naming**
+  - Uses snake_case for event names
+  - Descriptive action-based naming
+  - Consistent request/response pattern
+  - Clear client/server direction
+  
+  **Health Event Pattern:**
+  - health_status_request → health_status_update
+  - health_logs_request → health_logs_update
+  - health_monitor_start → health_monitor_response
+  - health_check_run → health_check_response
+end note
+
+note left of ProgressBarClasses
+  **Health Progress Bar Classes**
+  - Uses kebab-case convention
+  - Semantic naming (progress-healthy)
+  - Bootstrap-compatible
+  - Consistent state representation
+  
+  **Health State Mapping:**
+  - healthy → progress-healthy (green)
+  - unhealthy → progress-unhealthy (yellow)
+  - critical → progress-critical (red)
+  - warning → progress-warning (orange)
+end note
+
+note bottom of HealthDashboardVars
+  **Health Dashboard State Management**
+  - Real-time health status updates
+  - Auto-startup monitoring coordination
+  - Component-specific error tracking
+  - System resource visualization
+  - Health logs pagination
+  - WebSocket event handling
+  - Progress bar state management
+end note
+
+' WebSocket Sender Offline Mode Variables
+package "WebSocket Sender Offline Mode" as WebSocketOfflineMode {
+  class OfflineModeStatus {
+    + enabled: boolean
+    + running: boolean
+    + connected: boolean
+    + server_url: string|null
+    + offline_mode: boolean
+    + aicamera_id: string
+    + checkpoint_id: string
+    + retry_count: number
+    + total_detections_sent: number
+    + total_health_sent: number
+    + last_detection_check: string
+    + last_health_check: string
+    + detection_thread_alive: boolean
+    + health_thread_alive: boolean
+  }
+  
+  class OfflineModeLogs {
+    + timestamp: string
+    + action: string
+    + status: string
+    + message: string
+    + data_type: string
+    + record_count: number
+    + aicamera_id: string
+    + checkpoint_id: string
+  }
+  
+  class OfflineModeDisplay {
+    + serverConnection: object
+    + dataSending: object
+    + lastSync: object
+    + connectionText: string
+    + dataText: string
+    + statusClass: string
+  }
+}
+
+' Configuration Management Variables
+package "Configuration Management" as ConfigManagement {
+  class EnvironmentConfig {
+    + WEBSOCKET_SERVER_URL: string
+    + AICAMERA_ID: string
+    + CHECKPOINT_ID: string
+    + SECRET_KEY: string
+    + DB_PATH: string
+  }
+  
+  class ImportHelperConfig {
+    + project_root: string
+    + v1_3_path: string
+    + v1_3_src_path: string
+    + current_working_directory: string
+  }
+  
+  class StartupSequence {
+    + step_1_load_env: object
+    + step_2_setup_imports: object
+    + step_3_create_app: object
+    + step_4_initialize_services: object
+  }
+}
+
+' Relationships for Offline Mode
+WebSocketVars ..> OfflineModeStatus : "Status Updates"
+OfflineModeStatus ..> OfflineModeDisplay : "UI State"
+OfflineModeLogs ..> MainDashboardElements : "Log Display"
+OfflineModeDisplay ..> MainDashboardElements : "Status Display"
+
+' Relationships for Configuration
+EnvironmentConfig ..> WebSocketOfflineMode : "Configures"
+ImportHelperConfig ..> StartupSequence : "Manages"
+StartupSequence ..> WebSocketOfflineMode : "Initializes"
+
+note top of WebSocketOfflineMode
+  **WebSocket Sender Offline Mode Features**
+  - Graceful degradation when server unavailable
+  - Local data processing and storage
+  - Auto-recovery when connection restored
+  - Smart reconnection with pending data
+  - Clear status indication (Offline Mode)
+  - Comprehensive logging for offline operations
+  
+  **Offline Mode Status Values:**
+  - connected: false
+  - server_url: null
+  - offline_mode: true
+  - connectionText: "Offline Mode"
+  - dataText: "Active (Local)"
+end note
+
+note top of ConfigManagement
+  **Configuration Management System**
+  - Environment variables from .env.production
+  - Import helper for absolute imports
+  - Startup sequence validation
+  - Path management for deployment
+  - Configuration validation and error handling
+  
+  **Key Configuration Files:**
+  - v1_3/.env.production
+  - v1_3/src/core/config.py
+  - v1_3/src/core/utils/import_helper.py
+  - v1_3/src/app.py
+  - v1_3/src/wsgi.py
+end note
+
+' WebSocket Communication Variables
+package "WebSocket Communication" as WebSocketComm {
+  class WebSocketEvents {
+    + SOCKETIO_CLIENT_EVENTS: object
+    + SOCKETIO_SERVER_EVENTS: object
+    + REST_API_ENDPOINTS: object
+    --
+    **Client Events:**
+    + CAMERA_REGISTER: string
+    + LPR_DATA: string
+    + HEALTH_STATUS: string
+    + PING: string
+    --
+    **Server Events:**
+    + CONNECT: string
+    + DISCONNECT: string
+    + ERROR: string
+    + PONG: string
+    + LPR_RESPONSE: string
+    + HEALTH_RESPONSE: string
+    --
+    **REST Endpoints:**
+    + CAMERA_REGISTER: string
+    + DETECTION: string
+    + HEALTH: string
+    + TEST: string
+    + STATISTICS: string
+  }
+  
+  class WebSocketDataFormats {
+    + cameraRegistrationData: object
+    + lprDetectionData: object
+    + healthStatusData: object
+    --
+    **Registration Data:**
+    + camera_id: string
+    + checkpoint_id: string
+    + timestamp: string
+    --
+    **Detection Data:**
+    + type: string
+    + vehicles_count: number
+    + plates_count: number
+    + ocr_results: array
+    + processing_time_ms: number
+    + annotated_image: string
+    + cropped_plates: array
+    --
+    **Health Data:**
+    + component: string
+    + status: string
+    + message: string
+    + details: object
+  }
+  
+  class WebSocketStatus {
+    + connected: boolean
+    + server_type: string
+    + server_url: string
+    + retry_count: number
+    + last_connection: string
+    + fallback_mode: boolean
+    + total_detections_sent: number
+    + total_health_sent: number
+    + detection_thread_alive: boolean
+    + health_thread_alive: boolean
+  }
+}
+
+' Storage Management Variables
+package "Storage Management" as StorageManagement {
+  class StorageStatus {
+    + disk_usage: object
+    + folder_stats: object
+    + monitoring: object
+    --
+    **Disk Usage:**
+    + total_space_gb: number
+    + used_space_gb: number
+    + free_space_gb: number
+    + usage_percentage: number
+    + status: string
+    --
+    **Folder Stats:**
+    + total_files: number
+    + total_size_gb: number
+    + sent_files: number
+    + unsent_files: number
+    + oldest_file: string
+    + newest_file: string
+    --
+    **Monitoring:**
+    + monitoring_active: boolean
+    + last_check: string
+    + next_check: string
+    + checks_performed: number
+    + cleanups_performed: number
+  }
+  
+  class StorageConfiguration {
+    + min_free_space_gb: number
+    + retention_days: number
+    + batch_size: number
+    + monitor_interval: number
+    + folder_path: string
+    + auto_cleanup_enabled: boolean
+    + priority_sent: boolean
+    + batch_processing: boolean
+    + dry_run: boolean
+    + max_files_per_batch: number
+  }
+  
+  class StorageActions {
+    + cleanup_results: object
+    + storage_events: object
+    --
+    **Cleanup Results:**
+    + files_deleted: number
+    + space_freed_gb: number
+    + sent_files_deleted: number
+    + unsent_files_deleted: number
+    + errors: number
+    + duration_ms: number
+    --
+    **Storage Events:**
+    + STORAGE_STATUS_REQUEST: string
+    + STORAGE_CLEANUP_REQUEST: string
+    + STORAGE_CONFIG_UPDATE: string
+    + STORAGE_STATUS_UPDATE: string
+    + STORAGE_CLEANUP_RESULT: string
+    + STORAGE_CONFIG_UPDATED: string
+  }
+}
+
+' Relationships for WebSocket Communication
+WebSocketComm ..> WebSocketOfflineMode : "Communication Layer"
+WebSocketEvents ..> WebSocketDataFormats : "Event Handling"
+WebSocketDataFormats ..> WebSocketStatus : "Data Transmission"
+WebSocketStatus ..> MainDashboardElements : "Status Display"
+
+' Relationships for Storage Management
+StorageManagement ..> MainDashboardElements : "Storage Dashboard"
+StorageStatus ..> StorageConfiguration : "Configuration Based"
+StorageConfiguration ..> StorageActions : "Action Execution"
+StorageActions ..> StorageStatus : "Status Updates"
+
+note top of WebSocketComm
+  **WebSocket Communication System**
+  - Socket.IO และ REST API support พร้อม fallback mechanism
+  - Real-time communication สำหรับ detection data และ health status
+  - Automatic server type detection (Socket.IO → REST API)
+  - Offline mode support และ auto-recovery
+  - Database integration สำหรับ tracking sent status
+  
+  **Fallback Strategy:**
+  1. Socket.IO (Primary) - Real-time communication
+  2. REST API (Fallback) - When Socket.IO unavailable
+  3. Automatic detection และ switching
+end note
+
+note top of StorageManagement
+  **Storage Management System**
+  - Disk space monitoring และ automatic cleanup
+  - Prioritized file deletion (sent files first)
+  - Batch file deletion สำหรับ large datasets
+  - Configuration management ผ่าน environment variables
+  - Web dashboard สำหรับ storage management
+  
+  **Cleanup Priority:**
+  1. Sent files (already processed)
+  2. Unsent files (if still needed)
+  3. Batch processing for efficiency
+  4. Configuration-based thresholds
+end note
+
+@enduml

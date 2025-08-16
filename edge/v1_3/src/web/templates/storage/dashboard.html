@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% set active_page = "storage" %}
+{% set use_socketio = true %}
+
+{% block title %}Storage Management - AI Camera v1.3{% endblock %}
+
+{% block additional_css %}
+<link href="{{ url_for('static', filename='css/storage.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">
+                <i class="fas fa-hdd"></i> Storage Management
+            </h2>
+        </div>
+    </div>
+
+    <!-- Storage Status Overview -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Disk Usage</h5>
+                    <div class="progress mb-2">
+                        <div id="disk-usage-progress" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <small id="disk-usage-text">Loading...</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Free Space</h5>
+                    <h3 id="free-space-gb" class="text-primary">--</h3>
+                    <small>GB Available</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Image Files</h5>
+                    <h3 id="total-files" class="text-info">--</h3>
+                    <small id="folder-size-text">Loading...</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Monitoring</h5>
+                    <div id="monitoring-status" class="status-indicator">
+                        <span class="status-dot status-offline"></span>
+                        <span id="monitoring-text">Stopped</span>
+                    </div>
+                    <button id="toggle-monitoring-btn" class="btn btn-sm btn-outline-primary mt-2">
+                        Start Monitoring
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Storage Details -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie"></i> Storage Analytics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h6>Sent Files</h6>
+                                <h4 id="sent-files-count" class="text-success">--</h4>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h6>Unsent Files</h6>
+                                <h4 id="unsent-files-count" class="text-warning">--</h4>
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h6>Files Deleted</h6>
+                                <h4 id="files-deleted-count" class="text-danger">--</h4>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h6>Space Freed</h6>
+                                <h4 id="space-freed-gb" class="text-info">--</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cog"></i> Configuration
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="storage-config-form">
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="form-group">
+                                    <label for="min-free-space">Min Free Space (GB)</label>
+                                    <input type="number" class="form-control" id="min-free-space" min="1" max="100" step="0.1">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-group">
+                                    <label for="retention-days">Retention Days</label>
+                                    <input type="number" class="form-control" id="retention-days" min="1" max="365">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-6">
+                                <div class="form-group">
+                                    <label for="batch-size">Batch Size</label>
+                                    <input type="number" class="form-control" id="batch-size" min="1" max="1000">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-group">
+                                    <label for="monitor-interval">Monitor Interval (s)</label>
+                                    <input type="number" class="form-control" id="monitor-interval" min="60" max="3600">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Update Configuration
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions and Alerts -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> Storage Alerts
+                    </h5>
+                    <button id="clear-alerts-btn" class="btn btn-sm btn-outline-danger float-right">
+                        <i class="fas fa-trash"></i> Clear All
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="alerts-container">
+                        <div class="text-center text-muted">
+                            <i class="fas fa-info-circle"></i> No alerts at the moment
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tools"></i> Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <button id="manual-cleanup-btn" class="btn btn-warning btn-block mb-2">
+                        <i class="fas fa-broom"></i> Manual Cleanup
+                    </button>
+                    <button id="refresh-status-btn" class="btn btn-info btn-block mb-2">
+                        <i class="fas fa-sync"></i> Refresh Status
+                    </button>
+                    <button id="get-analytics-btn" class="btn btn-secondary btn-block">
+                        <i class="fas fa-chart-bar"></i> Get Analytics
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommendations -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-lightbulb"></i> Recommendations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="recommendations-container">
+                        <div class="text-center text-muted">
+                            <i class="fas fa-info-circle"></i> Loading recommendations...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block additional_js %}
+<script src="{{ url_for('static', filename='js/storage.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-flask"></i> Experiments Dashboard
+                    </h3>
+                    <div class="card-tools">
+                        <a href="{{ url_for('experiments.new_experiment') }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> New Experiment
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if error %}
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i> {{ error }}
+                    </div>
+                    {% endif %}
+
+                    <!-- Available Experiments -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h4>Available Experiments</h4>
+                            <div class="row">
+                                {% for experiment in available_experiments %}
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-header">
+                                            <h5 class="card-title mb-0">{{ experiment.name }}</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="card-text">{{ experiment.description }}</p>
+                                            <div class="small text-muted">
+                                                <strong>Parameters:</strong><br>
+                                                <ul class="list-unstyled">
+                                                    <li><i class="fas fa-camera"></i> Camera Types: {{ experiment.parameters.camera_types|join(', ') }}</li>
+                                                    <li><i class="fas fa-eye"></i> Lens Covers: {{ experiment.parameters.lens_covers|join(', ') }}</li>
+                                                    <li><i class="fas fa-ruler-horizontal"></i> Distances: {{ experiment.parameters.distances[0] }}-{{ experiment.parameters.distances[-1] }}m</li>
+                                                    <li><i class="fas fa-moon"></i> Night Mode: {{ "Yes" if experiment.parameters.night_mode else "No" }}</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        <div class="card-footer">
+                                            <a href="{{ url_for('experiments.new_experiment') }}?type={{ experiment.id }}" 
+                                               class="btn btn-sm btn-primary">
+                                                <i class="fas fa-play"></i> Start Experiment
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Past Experiments -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h4>Past Experiments</h4>
+                            {% if experiments %}
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Type</th>
+                                            <th>Created</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for experiment in experiments %}
+                                        <tr>
+                                            <td>{{ experiment.id[:8] }}...</td>
+                                            <td>{{ experiment.type }}</td>
+                                            <td>{{ experiment.created_at }}</td>
+                                            <td>
+                                                <span class="badge badge-{{ 'success' if experiment.status == 'completed' else 'warning' }}">
+                                                    {{ experiment.status }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <a href="{{ url_for('experiments.view_results', experiment_id=experiment.id) }}" 
+                                                   class="btn btn-sm btn-info">
+                                                    <i class="fas fa-chart-bar"></i> Results
+                                                </a>
+                                                <a href="{{ url_for('experiments.run_experiment', experiment_id=experiment.id) }}" 
+                                                   class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-play"></i> Run
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center text-muted">
+                                <i class="fas fa-flask fa-3x mb-3"></i>
+                                <p>No experiments have been run yet.</p>
+                                <a href="{{ url_for('experiments.new_experiment') }}" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> Create Your First Experiment
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Auto-refresh experiments list every 30 seconds
+    setInterval(function() {
+        // Could implement AJAX refresh here
+    }, 30000);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,447 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-play"></i> Run Experiment: {{ experiment_config.experiment_type }}
+                    </h3>
+                    <div class="card-tools">
+                        <a href="{{ url_for('experiments.dashboard') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Dashboard
+                        </a>
+                        <a href="{{ url_for('experiments.view_results', experiment_id=experiment_id) }}" class="btn btn-info">
+                            <i class="fas fa-chart-bar"></i> View Results
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Experiment Status -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> 
+                                <strong>Experiment ID:</strong> {{ experiment_id[:8] }}... | 
+                                <strong>Status:</strong> <span id="experimentStatus">Ready</span> |
+                                <strong>Progress:</strong> <span id="experimentProgress">0%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Content -->
+                    <div class="row">
+                        <!-- Left Column: Image Display -->
+                        <div class="col-md-8">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-camera"></i> Live Image
+                                    </h5>
+                                </div>
+                                <div class="card-body text-center">
+                                    <div id="imageContainer" style="min-height: 400px; background-color: #f8f9fa; border: 2px dashed #dee2e6; display: flex; align-items: center; justify-content: center;">
+                                        <div class="text-muted">
+                                            <i class="fas fa-image fa-3x mb-3"></i>
+                                            <p>No image captured yet</p>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3">
+                                        <small class="text-muted" id="imageInfo">Click "Capture Image" to start</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Controls and Results -->
+                        <div class="col-md-4">
+                            <!-- Current Configuration -->
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-cog"></i> Current Configuration
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-group">
+                                        <label for="currentDistance">Distance (meters)</label>
+                                        <select class="form-control" id="currentDistance">
+                                            {% for distance in range(experiment_config.start_distance_m, experiment_config.end_distance_m + 1, experiment_config.step_distance_m) %}
+                                            <option value="{{ distance }}">{{ distance }}m</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="currentCameraType">Camera Type</label>
+                                        <select class="form-control" id="currentCameraType">
+                                            {% for camera_type in experiment_config.camera_type %}
+                                            <option value="{{ camera_type }}">{{ camera_type }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="currentLensCover">Lens Cover</label>
+                                        <select class="form-control" id="currentLensCover">
+                                            {% for lens_cover in experiment_config.lens_cover %}
+                                            <option value="{{ lens_cover }}">{{ lens_cover }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    {% if experiment_config.is_night_mode %}
+                                    <div class="form-group">
+                                        <label for="currentExposureTime">Exposure Time (μs)</label>
+                                        <select class="form-control" id="currentExposureTime">
+                                            {% for exposure_time in experiment_config.night_exposure_times %}
+                                            <option value="{{ exposure_time }}">{{ exposure_time }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="currentAnalogGain">Analog Gain</label>
+                                        <select class="form-control" id="currentAnalogGain">
+                                            {% for analog_gain in experiment_config.night_analog_gains %}
+                                            <option value="{{ analog_gain }}">{{ analog_gain }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="currentLensPosition">Lens Position</label>
+                                        <select class="form-control" id="currentLensPosition">
+                                            {% for lens_position in experiment_config.night_lens_positions %}
+                                            <option value="{{ lens_position }}">{{ lens_position }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="currentSharpness">Sharpness</label>
+                                        <select class="form-control" id="currentSharpness">
+                                            {% for sharpness in experiment_config.night_sharpness_values %}
+                                            <option value="{{ sharpness }}">{{ sharpness }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="currentNoiseReduction">Noise Reduction</label>
+                                        <select class="form-control" id="currentNoiseReduction">
+                                            {% for noise_reduction in experiment_config.night_noise_reduction_modes %}
+                                            <option value="{{ noise_reduction }}">{{ noise_reduction }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Controls -->
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-gamepad"></i> Controls
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-group">
+                                        <button type="button" class="btn btn-primary btn-block" id="captureBtn">
+                                            <i class="fas fa-camera"></i> Capture Image
+                                        </button>
+                                    </div>
+                                    <div class="form-group">
+                                        <button type="button" class="btn btn-success btn-block" id="nextStepBtn" disabled>
+                                            <i class="fas fa-forward"></i> Next Step
+                                        </button>
+                                    </div>
+                                    <div class="form-group">
+                                        <button type="button" class="btn btn-warning btn-block" id="autoRunBtn">
+                                            <i class="fas fa-play-circle"></i> Auto Run
+                                        </button>
+                                    </div>
+                                    <div class="form-group">
+                                        <button type="button" class="btn btn-danger btn-block" id="stopBtn" disabled>
+                                            <i class="fas fa-stop"></i> Stop Experiment
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Results Section -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-chart-line"></i> Real-time Results
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <div class="info-box">
+                                                <span class="info-box-icon bg-info">
+                                                    <i class="fas fa-text-width"></i>
+                                                </span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">OCR Text (Cropped)</span>
+                                                    <span class="info-box-number" id="ocrTextCropped">-</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="info-box">
+                                                <span class="info-box-icon bg-success">
+                                                    <i class="fas fa-percentage"></i>
+                                                </span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">OCR Confidence</span>
+                                                    <span class="info-box-number" id="ocrConfidence">-</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="info-box">
+                                                <span class="info-box-icon bg-warning">
+                                                    <i class="fas fa-crosshairs"></i>
+                                                </span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">Sharpness</span>
+                                                    <span class="info-box-number" id="sharpnessValue">-</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="info-box">
+                                                <span class="info-box-icon bg-danger">
+                                                    <i class="fas fa-eye-slash"></i>
+                                                </span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">Blur Score</span>
+                                                    <span class="info-box-number" id="blurValue">-</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Metadata Table -->
+                                    <div class="row mt-3">
+                                        <div class="col-12">
+                                            <h6>Camera Metadata</h6>
+                                            <div class="table-responsive">
+                                                <table class="table table-sm">
+                                                    <tbody>
+                                                        <tr>
+                                                            <td><strong>Exposure Time:</strong></td>
+                                                            <td id="metadataExposure">-</td>
+                                                            <td><strong>Analog Gain:</strong></td>
+                                                            <td id="metadataAnalogGain">-</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>Lens Position:</strong></td>
+                                                            <td id="metadataLensPosition">-</td>
+                                                            <td><strong>Focus FoM:</strong></td>
+                                                            <td id="metadataFocusFoM">-</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>Sensor Temperature:</strong></td>
+                                                            <td id="metadataTemperature">-</td>
+                                                            <td><strong>Lux:</strong></td>
+                                                            <td id="metadataLux">-</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+<script>
+$(document).ready(function() {
+    // Initialize variables
+    let socket = io();
+    let experimentRunning = false;
+    let currentStep = 0;
+    let totalSteps = 0;
+    let experimentConfig = JSON.parse('{{ experiment_config|tojson|safe }}');
+    let experimentId = '{{ experiment_id }}';
+    
+    // Join experiment room
+    socket.emit('join_experiment', {experiment_id: experimentId});
+    
+    // Calculate total steps
+    function calculateTotalSteps() {
+        let cameraTypes = experimentConfig.camera_type.length;
+        let lensCovers = experimentConfig.lens_cover.length;
+        let distances = Math.ceil((experimentConfig.end_distance_m - experimentConfig.start_distance_m + 1) / experimentConfig.step_distance_m);
+        
+        if (experimentConfig.is_night_mode) {
+            let exposureTimes = experimentConfig.night_exposure_times.length;
+            let analogGains = experimentConfig.night_analog_gains.length;
+            let lensPositions = experimentConfig.night_lens_positions.length;
+            let sharpnessValues = experimentConfig.night_sharpness_values.length;
+            let noiseReductionModes = experimentConfig.night_noise_reduction_modes.length;
+            
+            return cameraTypes * lensCovers * distances * exposureTimes * analogGains * lensPositions * sharpnessValues * noiseReductionModes;
+        } else {
+            return cameraTypes * lensCovers * distances;
+        }
+    }
+    
+    totalSteps = calculateTotalSteps();
+    
+    // Update progress
+    function updateProgress() {
+        let percentage = Math.round((currentStep / totalSteps) * 100);
+        $('#experimentProgress').text(percentage + '%');
+    }
+    
+    // Capture image button
+    $('#captureBtn').click(function() {
+        if (experimentRunning) return;
+        
+        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Capturing...');
+        $('#experimentStatus').text('Capturing Image...');
+        
+        let stepConfig = {
+            current_distance: parseInt($('#currentDistance').val()),
+            current_camera_type: $('#currentCameraType').val(),
+            current_lens_cover: $('#currentLensCover').val(),
+            is_night_mode: experimentConfig.is_night_mode,
+            exposure_time_us: experimentConfig.is_night_mode ? parseInt($('#currentExposureTime').val()) : null,
+            analog_gain: experimentConfig.is_night_mode ? parseFloat($('#currentAnalogGain').val()) : null,
+            lens_position: experimentConfig.is_night_mode ? parseFloat($('#currentLensPosition').val()) : null,
+            sharpness: experimentConfig.is_night_mode ? parseFloat($('#currentSharpness').val()) : null,
+            noise_reduction_mode: experimentConfig.is_night_mode ? parseInt($('#currentNoiseReduction').val()) : null
+        };
+        
+        $.ajax({
+            url: '/experiments/api/run_step/' + experimentId,
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(stepConfig),
+            success: function(response) {
+                if (response.success) {
+                    displayResults(response.data);
+                    $('#nextStepBtn').prop('disabled', false);
+                    currentStep++;
+                    updateProgress();
+                } else {
+                    alert('Error: ' + response.error);
+                }
+            },
+            error: function(xhr, status, error) {
+                alert('Error: ' + error);
+            },
+            complete: function() {
+                $('#captureBtn').prop('disabled', false).html('<i class="fas fa-camera"></i> Capture Image');
+                $('#experimentStatus').text('Ready');
+            }
+        });
+    });
+    
+    // Display results
+    function displayResults(data) {
+        // Update image
+        if (data.image_path) {
+            $('#imageContainer').html('<img src="/static/' + data.image_path + '" class="img-fluid" style="max-height: 400px;">');
+            $('#imageInfo').text('Image captured at ' + data.timestamp);
+        }
+        
+        // Update OCR results
+        $('#ocrTextCropped').text(data.license_text_cropped || '-');
+        $('#ocrConfidence').text((data.confidence_cropped * 100).toFixed(1) + '%');
+        
+        // Update image quality metrics
+        $('#sharpnessValue').text(data.sharpness_laplacian ? data.sharpness_laplacian.toFixed(2) : '-');
+        $('#blurValue').text(data.blur_gaussian ? data.blur_gaussian.toFixed(2) : '-');
+        
+        // Update metadata
+        if (data.metadata) {
+            $('#metadataExposure').text(data.metadata.ExposureTime || '-');
+            $('#metadataAnalogGain').text(data.metadata.AnalogueGain || '-');
+            $('#metadataLensPosition').text(data.metadata.LensPosition || '-');
+            $('#metadataFocusFoM').text(data.metadata.FocusFoM || '-');
+            $('#metadataTemperature').text(data.metadata.SensorTemperature || '-');
+            $('#metadataLux').text(data.metadata.Lux || '-');
+        }
+        
+        // Emit WebSocket event
+        socket.emit('experiment_step_complete', {
+            experiment_id: experimentId,
+            result: data
+        });
+    }
+    
+    // Next step button
+    $('#nextStepBtn').click(function() {
+        // Auto-advance to next combination
+        // This is a simplified version - in a real implementation, you'd cycle through all combinations
+        $('#nextStepBtn').prop('disabled', true);
+        $('#experimentStatus').text('Advancing to next step...');
+        
+        // For now, just reset the button
+        setTimeout(function() {
+            $('#nextStepBtn').prop('disabled', true);
+            $('#experimentStatus').text('Ready');
+        }, 1000);
+    });
+    
+    // Auto run button
+    $('#autoRunBtn').click(function() {
+        if (experimentRunning) return;
+        
+        experimentRunning = true;
+        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Running...');
+        $('#stopBtn').prop('disabled', false);
+        $('#experimentStatus').text('Auto-running experiment...');
+        
+        // This would implement the full auto-run logic
+        // For now, just simulate
+        alert('Auto-run feature would cycle through all parameter combinations automatically.');
+        
+        // Reset after demo
+        setTimeout(function() {
+            experimentRunning = false;
+            $('#autoRunBtn').prop('disabled', false).html('<i class="fas fa-play-circle"></i> Auto Run');
+            $('#stopBtn').prop('disabled', true);
+            $('#experimentStatus').text('Ready');
+        }, 2000);
+    });
+    
+    // Stop button
+    $('#stopBtn').click(function() {
+        experimentRunning = false;
+        $(this).prop('disabled', true);
+        $('#autoRunBtn').prop('disabled', false).html('<i class="fas fa-play-circle"></i> Auto Run');
+        $('#experimentStatus').text('Stopped');
+    });
+    
+    // WebSocket event handlers
+    socket.on('step_result', function(data) {
+        console.log('Received step result:', data);
+    });
+    
+    socket.on('experiment_error', function(data) {
+        alert('Experiment error: ' + data.error);
+        $('#experimentStatus').text('Error');
+    });
+    
+    // Initialize
+    updateProgress();
+});
+</script>
+{% endblock %}

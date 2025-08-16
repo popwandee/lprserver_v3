@@ -1,0 +1,120 @@
+{
+  "name": "AI Camera Edge + LPR Server Development",
+  "description": "Distributed AI system with Edge processing on Raspberry Pi and LPR server on Ubuntu, connected via Tailscale VPN",
+  "rules": [
+    "Focus on resource-constrained environments (Raspberry Pi)",
+    "Optimize for low power consumption and thermal management",
+    "Use lightweight libraries suitable for ARM architecture",
+    "Implement efficient image processing pipelines with Hailo AI acceleration",
+    "Use async/await for non-blocking operations",
+    "Ensure robust network connectivity with Tailscale VPN",
+    "Implement proper error handling for network interruptions",
+    "Use environment-specific configurations for Edge vs Server",
+    "Maintain consistent codebase across development machines (Windows/Mac/Linux)",
+    "Implement proper logging and monitoring for distributed systems",
+    "Implement health checks and auto-recovery mechanisms"
+  ],
+  "technologies": {
+    "edge_platform": {
+      "hardware": "Raspberry Pi 5 (ARM64)",
+      "os": "Raspberry Pi OS (Brookwarm) (Debian-based)",
+      "ai_acceleration": "Hailo-8 AI accelerator",
+      "languages": ["Python 3.10+", "C++"],
+      "frameworks": [
+        "Hailo TAPPAS",
+        "OpenCV",
+        "NumPy",
+        "Picamera2",
+        "Flask/Gunicorn",
+        "WebSocket",
+        "REST API",
+        "MQTT"
+      ],
+      "systemd": "Service management for auto-startup"
+    },
+    "server_platform": {
+      "hardware": "Ubuntu Server",
+      "os": "Ubuntu 22.04+/24.04 LTS",
+      "languages": ["Python 3.10+", "Bootstrap 5","Chart.js"],
+      "frameworks": [
+        "Flask",
+        "Flask-SocketIO",
+        "Gunicorn",
+        "Nginx",
+        "SQLAlchemy",
+        "PostgreSQL"
+      ]
+    },
+    "networking": {
+      "vpn": "Tailscale (mesh VPN)",
+      "protocols": ["HTTP/HTTPS", "WebSocket", "MQTT"],
+      "security": "Tailscale ACLs and authentication"
+    },
+    "development": {
+      "ides": ["VS Code", "PyCharm", "Cursor"],
+      "version_control": "Git with Git LFS for large files",
+      "ci_cd": "GitHub Actions",
+      "testing": ["pytest", "unittest"],
+      "monitoring": ["Prometheus", "Grafana", "systemd journal"]
+    }
+  },
+  "project_structure": {
+    "edge": {
+      "main_app": "v1_3/src/",
+      "ai_models": "resources/",
+      "config": "config/",
+      "logs": "logs/",
+      "systemd": "systemd_service/",
+      "venv": "venv_hailo/"
+    },
+    "server": {
+      "api": "lpr_server/api/",
+      "database": "lpr_server/db/",
+      "nginx": "lpr_server/nginx/"
+    },
+    "shared": {
+      "common_libs": "shared/",
+      "protocols": "protocols/",
+      "database_schema": "database_schema/",
+      "testing": "tests/"
+    }
+  },
+  "development_guidelines": {
+    "code_style": {
+      "python": "PEP 8 with Black formatter",
+      "javascript": "ESLint with Prettier",
+      "documentation": "Google-style docstrings"
+    },
+    "testing": {
+      "unit_tests": "90%+ coverage",
+      "integration_tests": "End-to-end testing",
+      "performance_tests": "Load testing for Edge devices"
+    },
+    "deployment": {
+      "edge": "systemd service with auto-restart",
+      "server": "Systemd service with health check",
+      "rollback": "Version tagging and quick rollback capability"
+    },
+    "monitoring": {
+      "metrics": "System resources, AI inference latency",
+      "logging": "Structured logging with correlation IDs, less concurrency in loop",
+      "alerts": "Critical system failures and performance degradation"
+    }
+  },
+  "tailscale_config": {
+    "best_practices": [
+      "Use unique hostnames for each device (aicamera1, lpr-server1)",
+      "Configure proper ACLs for device-to-device communication",
+      "Enable subnet routes for local network access",
+      "Use exit nodes for internet access when needed",
+      "Implement proper DNS resolution",
+      "Monitor Tailscale status and connectivity"
+    ],
+    "troubleshooting": [
+      "Check Tailscale daemon status: sudo systemctl status tailscaled",
+      "Verify connectivity: tailscale ping <hostname>",
+      "Check logs: sudo journalctl -u tailscaled -f",
+      "Restart service if needed: sudo systemctl restart tailscaled"
+    ]
+  }
+}

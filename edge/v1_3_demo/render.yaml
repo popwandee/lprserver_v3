@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: aicamera-demo
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /demo/status
+    envVars:
+      - key: DEMO_MODE
+        value: true
+      - key: FLASK_ENV
+        value: production
+      - key: PYTHONUNBUFFERED
+        value: 1
+    autoDeploy: true

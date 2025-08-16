@@ -1,0 +1,42 @@
+/* AI Camera v1.3 - Dashboard Specific Styles */
+
+/* Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 80px 0;
+}
+
+/* System Information Cards */
+.system-info-card {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.system-info-card h6 {
+    opacity: 0.9;
+    font-weight: 500;
+}
+
+.system-info-card .card-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+/* Dashboard specific responsive design */
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 40px 0;
+    }
+    
+    .hero-section .display-4 {
+        font-size: 2rem;
+    }
+    
+    .hero-section .lead {
+        font-size: 1rem;
+    }
+}

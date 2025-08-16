@@ -1,0 +1,9 @@
+$ hailortcli parse-hef yolov5m_vehicles.hef
+Architecture HEF was compiled for: HAILO8
+Network group name: auto_group_0, Single Context
+    Network name: auto_group_0/yolov5m_vehicles
+        VStream infos:
+            Input  yolov5m_vehicles/input_layer1 UINT8, F8CR(1080x1920x3)
+            Output yolov5m_vehicles/conv94 UINT8, NHWC(20x20x18)
+            Output yolov5m_vehicles/conv85 UINT8, NHWC(40x40x18)
+            Output yolov5m_vehicles/conv75 UINT8, NHWC(80x80x18)

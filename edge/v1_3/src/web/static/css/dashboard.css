@@ -1,0 +1,161 @@
+/* AI Camera v1.3 - Dashboard Specific Styles */
+
+/* Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 80px 0;
+}
+
+/* System Information Cards */
+.system-info-card {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.system-info-card h6 {
+    opacity: 0.9;
+    font-weight: 500;
+}
+
+.system-info-card .card-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+/* Status Indicators */
+.status-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.status-online {
+    background-color: #28a745;
+    box-shadow: 0 0 8px rgba(40, 167, 69, 0.5);
+}
+
+.status-offline {
+    background-color: #dc3545;
+    box-shadow: 0 0 8px rgba(220, 53, 69, 0.5);
+}
+
+.status-warning {
+    background-color: #ffc107;
+    box-shadow: 0 0 8px rgba(255, 193, 7, 0.5);
+}
+
+/* Log Container */
+.log-container {
+    max-height: 300px;
+    overflow-y: auto;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+}
+
+.log-entry {
+    padding: 8px 12px;
+    border-bottom: 1px solid #dee2e6;
+    font-family: 'Courier New', monospace;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.log-entry:last-child {
+    border-bottom: none;
+}
+
+.log-timestamp {
+    color: #6c757d;
+    font-weight: 500;
+    min-width: 80px;
+}
+
+.log-status {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.log-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.log-error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.log-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.log-warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.log-message {
+    flex: 1;
+    color: #495057;
+}
+
+/* Quick Action Buttons */
+.quick-action-btn {
+    display: inline-block;
+    padding: 20px;
+    margin: 10px;
+    border-radius: 15px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    min-width: 150px;
+    text-align: center;
+}
+
+.quick-action-btn:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    text-decoration: none;
+}
+
+.quick-action-btn i {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    display: block;
+}
+
+/* Dashboard specific responsive design */
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 40px 0;
+    }
+    
+    .hero-section .display-4 {
+        font-size: 2rem;
+    }
+    
+    .hero-section .lead {
+        font-size: 1rem;
+    }
+    
+    .quick-action-btn {
+        min-width: 120px;
+        padding: 15px;
+    }
+    
+    .quick-action-btn i {
+        font-size: 1.5rem;
+    }
+}
