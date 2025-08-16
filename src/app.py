@@ -80,6 +80,20 @@ def create_app(config_class=None):
     # Initialize extensions with app
     db.init_app(app)
     socketio.init_app(app, cors_allowed_origins="*")
+
+    # Template context processor: expose db engine
+    @app.context_processor
+    def inject_db_engine():
+        uri = app.config.get('SQLALCHEMY_DATABASE_URI', '')
+        engine = 'Unknown'
+        if isinstance(uri, str):
+            if uri.startswith('postgresql'):
+                engine = 'PostgreSQL'
+            elif uri.startswith('sqlite'):
+                engine = 'SQLite'
+            elif uri.startswith('mysql'):
+                engine = 'MySQL'
+        return {'db_engine': engine}
     
     # Register blueprints
     try:
