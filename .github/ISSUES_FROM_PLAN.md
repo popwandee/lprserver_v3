@@ -1128,36 +1128,37 @@ Implement message persistence และ QoS สำหรับ MQTT
 ## Labels for Issues
 
 ### Priority Labels
-- `priority-critical`
-- `priority-high`
-- `priority-medium`
-- `priority-low`
+- `critical`
+- `high`
+- `medium`
+- `low`
 
 ### Component Labels
-- `component-edge`
-- `component-server`
-- `component-communication`
-- `component-storage`
-- `component-experiments`
-- `component-ui`
-- `component-api`
-- `component-database`
+- `edge`
+- `server`
+- `communication`
+- `storage`
+- `experiments`
+- `ui`
+- `api`
+- `database`
 
 ### Type Labels
-- `type-feature`
-- `type-task`
-- `type-enhancement`
+- `feature`
+- `task`
+- `enhancement`
 
 ### Milestone Labels
 - `milestone-v1.3`
 - `milestone-v1.4`
 
 ### Status Labels
-- `status-open`
-- `status-in-progress`
-- `status-review`
-- `status-testing`
-- `status-done`
+- `backlog`
+- `open`
+- `in-progress`
+- `review`
+- `testing`
+- `done`
 
 ## Instructions for Creating Issues
 
