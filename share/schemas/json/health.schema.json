@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/health.schema.json",
+  "title": "HealthMessage",
+  "type": "object",
+  "required": ["camera_id", "checkpoint_id", "timestamp", "component", "status"],
+  "properties": {
+    "camera_id": { "type": "string" },
+    "checkpoint_id": { "type": "string" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "component": { "type": "string" },
+    "status": { "type": "string", "enum": ["healthy", "warning", "error"] },
+    "message": { "type": "string" },
+    "details": { "type": "object" },
+    "metadata": { "type": "object" }
+  },
+  "additionalProperties": true
+}

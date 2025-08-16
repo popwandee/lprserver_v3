@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/config.schema.json",
+  "title": "ConfigMessage",
+  "type": "object",
+  "required": ["camera_id", "checkpoint_id", "timestamp", "config_type", "config_data"],
+  "properties": {
+    "camera_id": { "type": "string" },
+    "checkpoint_id": { "type": "string" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "config_type": { "type": "string" },
+    "config_data": { "type": "object" },
+    "metadata": { "type": "object" }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/detection.schema.json",
+  "title": "DetectionMessage",
+  "type": "object",
+  "required": ["camera_id", "checkpoint_id", "timestamp"],
+  "properties": {
+    "camera_id": { "type": "string" },
+    "checkpoint_id": { "type": "string" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "vehicles_count": { "type": "integer", "minimum": 0 },
+    "plates_count": { "type": "integer", "minimum": 0 },
+    "ocr_results": { "type": "array", "items": { "type": "object" } },
+    "vehicle_detections": { "type": "array", "items": { "type": "object" } },
+    "plate_detections": { "type": "array", "items": { "type": "object" } },
+    "processing_time_ms": { "type": "integer", "minimum": 0 },
+    "annotated_image": { "type": "string" },
+    "cropped_plates": { "type": "array", "items": { "type": "string" } },
+    "metadata": { "type": "object" }
+  },
+  "additionalProperties": true
+}
