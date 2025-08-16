@@ -1,0 +1,24 @@
+---
+labels: ["enhancement"]
+discussion:
+  category: Ideas
+  title: "[Proposal] {{ feature_title }}"
+  body: |
+    ## Problem
+    {{ problem }}
+
+    ## Proposal
+    {{ proposal }}
+
+    ## Scope
+    - [ ] server
+    - [ ] edge
+    - [ ] share
+    - [ ] docs
+
+    ## Alternatives
+    {{ alternatives }}
+
+    ## Risks / Compatibility
+    - [ ] Backward compatible
+    - [ ] Breaking change

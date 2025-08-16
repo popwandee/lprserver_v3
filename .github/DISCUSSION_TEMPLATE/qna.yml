@@ -1,0 +1,14 @@
+---
+labels: ["Q&A"]
+discussion:
+  category: Q&A
+  title: "[Q&A] {{ short_question }}"
+  body: |
+    ### Question
+    {{ question }}
+
+    ### Context
+    {{ context }}
+
+    ### Screenshots / Logs
+    {{ screenshots }}

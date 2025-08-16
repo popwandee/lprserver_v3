@@ -1,0 +1,14 @@
+---
+labels: ["docs"]
+discussion:
+  category: Announcements
+  title: "[Announcement] {{ title }}"
+  body: |
+    ## Summary
+    {{ summary }}
+
+    ## Details
+    {{ details }}
+
+    ## Links
+    - Related Issues/PRs: {{ links }}
