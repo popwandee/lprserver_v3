@@ -9,13 +9,14 @@ import json
 import logging
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, Callable, Optional, List
 from threading import Lock, Thread
 import paho.mqtt.client as mqtt
-from paho.mqtt.enums import CallbackAPIVersion
+# For paho-mqtt 1.6.1, CallbackAPIVersion is not available
+# from paho.mqtt.enums import CallbackAPIVersion
 
-from mqtt_config import MQTTConfig, QOS_DETECTION, QOS_HEALTH, QOS_CONFIG, QOS_CONTROL
+from mqtt_config import MQTTConfig, QOS_DETECTION, QOS_HEALTH, QOS_CONFIG, QOS_CONTROL, QOS_SYSTEM, QOS_BLACKLIST
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -68,7 +69,6 @@ class MQTTService:
         
         # Initialize MQTT client
         self.client = mqtt.Client(
-            callback_api_version=CallbackAPIVersion.VERSION2,
             client_id=self.client_id,
             clean_session=True
         )
@@ -204,7 +204,7 @@ class MQTTService:
                 if 'message_id' not in message:
                     message['message_id'] = str(uuid.uuid4())
                 if 'timestamp' not in message:
-                    message['timestamp'] = datetime.utcnow().isoformat()
+                    message['timestamp'] = datetime.now(timezone.utc).isoformat()
             
             # Convert message to JSON
             payload = json.dumps(message, ensure_ascii=False)
@@ -260,7 +260,7 @@ class MQTTService:
         """
         return {
             "status": "healthy" if self.connected else "disconnected",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "connection_status": "connected" if self.connected else "disconnected",
             "broker_host": self.broker_host,
             "broker_port": self.broker_port,
@@ -296,9 +296,12 @@ class MQTTService:
         self.connected = False
         logger.warning(f"Disconnected from MQTT broker: {reason_code}")
         
-        # Attempt reconnection if not intentional disconnect
-        if reason_code != 0:
+        # Only attempt reconnection for specific error codes
+        # Reason code 7 = "Server unavailable" - don't reconnect immediately
+        if reason_code not in [0, 7]:  # 0 = normal disconnect, 7 = server unavailable
             self._schedule_reconnect()
+        else:
+            logger.info("Not scheduling reconnection for normal disconnect or server unavailable")
     
     def _on_message(self, client, userdata, msg):
         """Callback for received messages"""
@@ -483,7 +486,7 @@ class DetectionMessageHandler:
             ack_topic = f"lprserver/cameras/{camera_id}/detection/ack"
             ack_message = {
                 "message_id": str(uuid.uuid4()),
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "original_message_id": message.get('message_id'),
                 "status": "processed",
                 "camera_id": camera_id
@@ -558,7 +561,7 @@ class ControlMessageHandler:
             response_topic = f"lprserver/cameras/{camera_id}/control/response"
             response_message = {
                 "message_id": str(uuid.uuid4()),
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "original_message_id": message.get('message_id'),
                 "command": command,
                 "status": "executed",

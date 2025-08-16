@@ -11,7 +11,7 @@ import json
 import logging
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, Optional, List, Callable
 from threading import Lock, Thread
 from enum import Enum
@@ -271,7 +271,7 @@ class UnifiedCommunicationService:
         """Create a unified message format for all protocols"""
         return {
             "message_id": str(uuid.uuid4()),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "protocol": self.current_protocol.value,
             "edge_device_id": edge_device_id,
             "data_type": data_type,
@@ -606,7 +606,7 @@ class UnifiedCommunicationService:
         """Get comprehensive health status of the communication service"""
         return {
             "status": "healthy" if self.running else "stopped",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "current_protocol": self.current_protocol.value,
             "connectivity_level": self.connectivity_level.value,
             "protocol_health": {

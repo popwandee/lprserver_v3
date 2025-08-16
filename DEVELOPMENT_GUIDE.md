@@ -6,11 +6,12 @@
 
 ### สถาปัตยกรรมที่ปรับปรุงแล้ว (Enhanced Architecture)
 
-ระบบ LPR Server v3 ได้รับการปรับปรุงให้เป็นไปตามมาตรฐานที่กำหนดไว้ โดยใช้แนวคิดหลัก 3 ประการ:
+ระบบ LPR Server v3 ได้รับการปรับปรุงให้เป็นไปตามมาตรฐานที่กำหนดไว้ โดยใช้แนวคิดหลัก 4 ประการ:
 
 1. **Dependency Injection (DI)** - สำหรับการจัดการ Dependencies ระหว่าง Components
 2. **Flask Blueprints** - สำหรับการแบ่งส่วนการทำงานของ Web UI
 3. **Absolute Imports** - สำหรับการจัดการ imports ที่ชัดเจนและสม่ำเสมอ
+4. **Unified Communication System** - สำหรับการจัดการการสื่อสารแบบรวมศูนย์
 
 ### 1. Absolute Imports Pattern
 - **ไฟล์**: `src/core/import_helper.py`
@@ -27,7 +28,7 @@
 - **หน้าที่**: แบ่งส่วนการทำงานของ Web UI ตามหน้าที่
 - **ประโยชน์**: Modular design, ง่ายต่อการ maintain
 
-โปรเจกต์นี้จะใช้ Design Pattern แบบ Dependency Injection เพื่อจัดการ Class ต่างๆ และใช้ Flask Blueprints สำหรับการแบ่งส่วนการทำงานของ Web UI เพื่อเพิ่ม Modularization โดยมี `/core/dependency_container.py` กำกับ module dependencies และใช้ absolute imports ผ่าน `import_helper.py`
+โปรเจกต์นี้จะใช้ Design Pattern แบบ Dependency Injection เพื่อจัดการ Class ต่างๆ และใช้ Flask Blueprints สำหรับการแบ่งส่วนการทำงานของ Web UI เพื่อเพิ่ม Modularization โดยมี `/core/dependency_container.py` กำกับ module dependencies และใช้ absolute imports ผ่าน `import_helper.py` รวมถึงระบบ Unified Communication สำหรับการจัดการการสื่อสารแบบรวมศูนย์
 
 ## 1. Absolute Imports Pattern
 
@@ -114,6 +115,30 @@ lprserver_v3/
 - การทำความสะอาดข้อมูลเก่า
 - การ optimize ฐานข้อมูล
 - การ backup และ restore
+
+### 5. Unified Communication Service (`unified_communication_service.py`)
+**หน้าที่**: จัดการการสื่อสารแบบรวมศูนย์
+- **Multi-Protocol Support**: WebSocket, REST API, MQTT
+- **Automatic Protocol Switching**: เปลี่ยน protocol อัตโนมัติ
+- **Centralized Data Processing**: ประมวลผลข้อมูลจากทุก protocol
+- **Health Monitoring**: ติดตามสถานะการเชื่อมต่อ
+- **PostgreSQL Integration**: บันทึกข้อมูลลงฐานข้อมูลแบบรวมศูนย์
+
+### 6. MQTT Service (`mqtt_service.py`)
+**หน้าที่**: จัดการการสื่อสารผ่าน MQTT
+- การเชื่อมต่อ MQTT broker
+- การ subscribe/publish messages
+- การจัดการ QoS levels
+- การ reconnect อัตโนมัติ
+- การจัดการ message handlers
+
+### 7. Data Processor (`data_processor.py`)
+**หน้าที่**: ประมวลผลข้อมูลจากทุก protocol
+- การ validate และ normalize ข้อมูล
+- การบันทึกลง PostgreSQL
+- การ update analytics
+- การส่ง notifications
+- การประมวลผล business logic
 
 ## Health Monitoring System
 

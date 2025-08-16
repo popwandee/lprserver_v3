@@ -15,7 +15,7 @@ import time
 import uuid
 import logging
 import argparse
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any
 
 # Configure logging
@@ -84,7 +84,7 @@ def create_sample_health_data(edge_device_id: str, status: str = "healthy") -> D
             "disk_usage": 23.1,
             "network_status": "connected",
             "camera_status": "active",
-            "last_detection": datetime.utcnow().isoformat(),
+            "last_detection": datetime.now(timezone.utc).isoformat(),
             "uptime_seconds": 86400,
             "temperature": 42.5
         },

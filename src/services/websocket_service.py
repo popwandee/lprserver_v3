@@ -44,6 +44,12 @@ class WebSocketService:
         self.connected_cameras = {}
         self.socketio = None
         self.db_session = None
+        self._connected = False
+    
+    @property
+    def connected(self):
+        """Check if WebSocket service is connected"""
+        return self._connected and self.socketio is not None
     
     def initialize(self, socketio_instance, db_session):
         """
@@ -55,8 +61,20 @@ class WebSocketService:
         """
         self.socketio = socketio_instance
         self.db_session = db_session
+        self._connected = True
         self._register_events()
         logger.info("WebSocket service initialized with new communication specification")
+    
+    def disconnect(self):
+        """Disconnect WebSocket service"""
+        try:
+            self._connected = False
+            if self.socketio:
+                # Disconnect all clients
+                self.socketio.emit('disconnect', {'message': 'Server shutting down'})
+            logger.info("WebSocket service disconnected")
+        except Exception as e:
+            logger.error(f"Error disconnecting WebSocket service: {e}")
     
     def _register_events(self):
         """Register WebSocket event handlers."""

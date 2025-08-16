@@ -2,10 +2,18 @@
 
 ## ภาพรวม (Overview)
 
-LPR Server v3 ได้รับการปรับปรุงสถาปัตยกรรมให้เป็นไปตามมาตรฐานที่กำหนดไว้ใน DEVELOPMENT_GUIDE.md โดยใช้แนวคิดหลัก 3 ประการ:
+LPR Server v3 ได้รับการปรับปรุงสถาปัตยกรรมให้เป็นไปตามมาตรฐานที่กำหนดไว้ใน DEVELOPMENT_GUIDE.md โดยใช้แนวคิดหลัก 4 ประการ:
 1. **Absolute Imports Pattern** - จัดการ import paths ให้ชัดเจน
 2. **Dependency Injection (DI)** - ลด coupling ระหว่าง components
 3. **Flask Blueprints** - Modular design สำหรับ Web UI
+4. **Unified Communication System** - ระบบสื่อสารแบบรวมศูนย์ (WebSocket, REST API, MQTT)
+
+### ระบบ Unified Communication
+- ✅ **Multi-Protocol Support**: WebSocket (primary), REST API (secondary), MQTT (fallback)
+- ✅ **Automatic Protocol Switching**: เปลี่ยน protocol อัตโนมัติตามสภาพการเชื่อมต่อ
+- ✅ **Centralized Data Processing**: ประมวลผลข้อมูลจากทุก protocol ในที่เดียวกัน
+- ✅ **Health Monitoring**: ติดตามสถานะการเชื่อมต่อและประสิทธิภาพ
+- ✅ **PostgreSQL Integration**: บันทึกข้อมูลลงฐานข้อมูล PostgreSQL แบบรวมศูนย์
 
 ### ระบบหลัก
 - ✅ รับข้อมูลจาก Edge Camera ผ่าน WebSocket (Port 8765)
@@ -41,8 +49,11 @@ LPR Server v3 ได้รับการปรับปรุงสถาปั
 - ✅ ระบบทดสอบอัตโนมัติ (`test_system.py`)
 - ✅ WebSocket test client (`test_client.py`, `simple_test_client.py`)
 - ✅ API test client (`test_api.py`)
+- ✅ **Unified Communication Testing** (`test_unified_communication.py`, `test_simple_communication.py`)
 - ✅ Performance testing
 - ✅ Database integrity checking
+- ✅ Protocol switching testing
+- ✅ Health monitoring testing
 
 ## สถาปัตยกรรมระบบ
 
