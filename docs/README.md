@@ -44,6 +44,8 @@ docs/
 1. **[Tailscale Setup](shared/tailscale-setup.md)** - การตั้งค่า Tailscale เฉพาะโปรเจค
 2. **[Tailscale ACLs](shared/tailscale-acls.json)** - ACLs configuration
 3. **[Fixed ACLs](shared/tailscale-acls-fixed.json)** - ACLs ที่แก้ไขแล้ว
+4. **[Unified Communication Architecture](shared/unified-communication-architecture.md)** - สถาปัตยกรรมการสื่อสารแบบรวม
+5. **[GitHub Issue Guidelines](GITHUB_ISSUE_GUIDELINES.md)** - แนวทางการจัดการ GitHub Issues
 
 ## 🔗 Cross-References
 
