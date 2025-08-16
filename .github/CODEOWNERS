@@ -1,0 +1,7 @@
+# Default owner
+* @popwandee
+
+# Scoped ownership (customize as your team grows)
+/server/ @popwandee
+/edge/ @popwandee
+/share/ @popwandee

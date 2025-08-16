@@ -1,0 +1,44 @@
+name: Server CI
+
+on:
+  pull_request:
+    branches: [ monorepo/initial ]
+    paths:
+      - 'server/**'
+      - '!server/**.md'
+  push:
+    branches: [ monorepo/initial ]
+    paths:
+      - 'server/**'
+      - '!server/**.md'
+
+jobs:
+  server-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        working-directory: server
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Static import check
+        run: |
+          python -m compileall -q server
+
+      - name: App factory smoke (no network)
+        run: |
+          python - <<'PY'
+          import os
+          os.environ['FLASK_CONFIG']='testing'
+          from server.src.app import create_app
+          app = create_app()
+          print('App created:', bool(app))
+          PY

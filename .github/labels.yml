@@ -1,0 +1,27 @@
+- name: server
+  color: 21618C
+  description: Changes in server/
+- name: edge
+  color: B56576
+  description: Changes in edge/
+- name: share
+  color: 6C757D
+  description: Changes in share/
+- name: docs
+  color: 0E8A16
+  description: Documentation and guides
+- name: ci
+  color: 1D76DB
+  description: CI/CD workflows and config
+- name: enhancement
+  color: A2EEEF
+  description: New feature or request
+- name: bug
+  color: D73A4A
+  description: Something isn't working
+- name: chore
+  color: C5DEF5
+  description: Maintenance or refactors
+- name: breaking-change
+  color: B60205
+  description: Backward-incompatible change
