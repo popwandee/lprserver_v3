@@ -1185,3 +1185,271 @@ Implement message persistence และ QoS สำหรับ MQTT
 ---
 
 **Note:** Issues เหล่านี้สร้างจาก development plan และควรได้รับการปรับแต่งตามความเหมาะสมของทีม
+
+## New EPICs for Hardware Integration
+
+### EPIC-HARDWARE-INTEGRATION: Hardware Integration and Software Collaboration
+
+```markdown
+## ✨ Feature Request
+
+**Component:** Hardware Integration
+**Priority:** Critical
+**Milestone:** v1.5
+
+### Problem Statement
+ต้องมีการร่วม Join กันระหว่าง Software ในโปรเจกต์นี้, ซอฟต์แวร์ใน server repo popwandee/lprserver_v3 และ Hardware ชุดจริง (Hailo communication, Jetson, Camera) โดยจะมีการปรับปรุง Layer Software เพื่อให้เข้ากับ Hardware ใหม่
+
+### Proposed Solution
+พัฒนา Layer Software 3 ชั้นเพื่อรองรับ Hardware ใหม่:
+- **Layer 1**: Component/Driver (ปรับปรุงใหม่)
+- **Layer 2**: Service (ปรับปรุงน้อย)
+- **Layer 3**: Web UI (ปรับปรุงน้อย)
+
+### Use Cases
+- Hardware integration with Hailo communication
+- Jetson platform integration
+- Camera hardware integration
+- Cross-team collaboration (Hardware team + STL team)
+- OS and Device Tree integration
+
+### Acceptance Criteria
+- [ ] Layer 1 (Component/Driver) เสร็จสิ้นภายในเดือน พฤศจิกายน 2025
+- [ ] Hardware Architecture documentation อัปเดตภายในสิ้นเดือน สิงหาคม 2025
+- [ ] Integration Milestone กำหนดเสร็จภายในสิ้นเดือน สิงหาคม 2025
+- [ ] Hardware team สร้าง Hardware ตาม specification
+- [ ] STL team เขียน OS, Boot up และ Device Tree
+- [ ] Layer 2 (Service) และ Layer 3 (Web UI) ปรับปรุงน้อยที่สุด
+- [ ] Cross-repository integration ระหว่าง aicamera และ lprserver_v3
+
+### Technical Considerations
+- Hardware driver development for Hailo, Jetson, Camera
+- OS customization and boot process
+- Device Tree configuration
+- Cross-repository communication protocols
+- API compatibility between repositories
+- Testing and validation procedures
+
+### Dependencies
+- Hardware team deliverables
+- STL team OS and Device Tree
+- Repository integration planning
+- API specification agreement
+
+### Checklist
+- [x] I have searched existing issues
+- [x] I have provided clear use cases
+- [x] I have considered technical implications
+```
+
+### EPIC-HARDWARE-ARCHITECTURE: Hardware Architecture Documentation
+
+```markdown
+## ✨ Feature Request
+
+**Component:** Documentation
+**Priority:** High
+**Milestone:** v1.5
+
+### Problem Statement
+ต้องมีการอัปเดตสรุปข้อมูล Hardware Architecture ให้ครบถ้วนและเป็นปัจจุบันเพื่อรองรับการพัฒนา Layer Software
+
+### Proposed Solution
+สร้างและอัปเดตเอกสาร Hardware Architecture ที่ครอบคลุม:
+- Hardware specifications
+- Communication protocols
+- Integration requirements
+- Development guidelines
+
+### Use Cases
+- Reference for software development teams
+- Hardware integration planning
+- Cross-team communication
+- Development timeline planning
+
+### Acceptance Criteria
+- [ ] Hardware Architecture documentation อัปเดตภายในสิ้นเดือน สิงหาคม 2025
+- [ ] ครอบคลุม Hailo, Jetson, Camera specifications
+- [ ] รวม communication protocols และ interfaces
+- [ ] มี integration guidelines และ requirements
+- [ ] มี development timeline และ milestones
+- [ ] มี testing procedures และ validation criteria
+
+### Technical Considerations
+- Hardware specifications documentation
+- Communication protocol specifications
+- Integration interface definitions
+- Development environment setup
+- Testing and validation procedures
+
+### Dependencies
+- Hardware team specifications
+- STL team requirements
+- Integration planning
+
+### Checklist
+- [x] I have searched existing issues
+- [x] I have provided clear use cases
+- [x] I have considered technical implications
+```
+
+### EPIC-INTEGRATION-MILESTONE: Integration Milestone Planning
+
+```markdown
+## ✨ Feature Request
+
+**Component:** Project Management
+**Priority:** High
+**Milestone:** v1.5
+
+### Problem Statement
+ต้องมีการสรุป Milestone ที่จะ Integrated กันระหว่าง Software และ Hardware เพื่อให้การพัฒนาเป็นไปตามแผนและ timeline
+
+### Proposed Solution
+สร้าง Integration Milestone Plan ที่ครอบคลุม:
+- Timeline และ deadlines
+- Team responsibilities
+- Integration checkpoints
+- Risk management
+
+### Use Cases
+- Project timeline management
+- Team coordination
+- Integration planning
+- Risk assessment and mitigation
+
+### Acceptance Criteria
+- [ ] Integration Milestone กำหนดเสร็จภายในสิ้นเดือน สิงหาคม 2025
+- [ ] มี timeline ที่ชัดเจนสำหรับแต่ละ phase
+- [ ] กำหนด team responsibilities และ deliverables
+- [ ] มี integration checkpoints และ validation criteria
+- [ ] มี risk assessment และ mitigation plans
+- [ ] มี communication protocols ระหว่างทีม
+
+### Technical Considerations
+- Project timeline planning
+- Team coordination procedures
+- Integration testing procedures
+- Risk assessment and management
+- Communication protocols
+
+### Dependencies
+- Hardware team timeline
+- STL team timeline
+- Software development timeline
+- Cross-team coordination
+
+### Checklist
+- [x] I have searched existing issues
+- [x] I have provided clear use cases
+- [x] I have considered technical implications
+```
+
+### EPIC-CROSS-REPO-INTEGRATION: Cross-Repository Integration
+
+```markdown
+## ✨ Feature Request
+
+**Component:** Integration
+**Priority:** High
+**Milestone:** v1.5
+
+### Problem Statement
+ต้องมีการ integrate ระหว่าง repository aicamera และ lprserver_v3 เพื่อให้ระบบทำงานร่วมกันได้อย่างสมบูรณ์
+
+### Proposed Solution
+พัฒนา cross-repository integration ที่ครอบคลุม:
+- API compatibility
+- Communication protocols
+- Data synchronization
+- Error handling
+
+### Use Cases
+- Communication between aicamera และ lprserver_v3
+- Data exchange และ synchronization
+- Error handling และ recovery
+- Monitoring และ logging
+
+### Acceptance Criteria
+- [ ] API compatibility ระหว่าง repositories
+- [ ] Communication protocols ทำงานได้
+- [ ] Data synchronization ระหว่าง repositories
+- [ ] Error handling และ recovery mechanisms
+- [ ] Monitoring และ logging systems
+- [ ] Testing procedures และ validation
+
+### Technical Considerations
+- API design และ compatibility
+- Communication protocol implementation
+- Data synchronization mechanisms
+- Error handling และ recovery
+- Monitoring และ logging
+
+### Dependencies
+- API specification agreement
+- Communication protocol design
+- Data format standardization
+- Testing environment setup
+
+### Checklist
+- [x] I have searched existing issues
+- [x] I have provided clear use cases
+- [x] I have considered technical implications
+```
+
+### EPIC-LAYER-1-DEVELOPMENT: Layer 1 Component/Driver Development
+
+```markdown
+## ✨ Feature Request
+
+**Component:** Hardware Integration
+**Priority:** Critical
+**Milestone:** v1.5
+
+### Problem Statement
+ต้องพัฒนา Layer 1 (Component/Driver) ให้เข้ากับ Hardware ใหม่ (Hailo, Jetson, Camera) ให้เสร็จสิ้นภายในเดือน พฤศจิกายน 2025
+
+### Proposed Solution
+พัฒนา Component และ Driver สำหรับ Hardware ใหม่:
+- Hailo communication drivers
+- Jetson platform drivers
+- Camera hardware drivers
+- Integration components
+
+### Use Cases
+- Hardware detection และ initialization
+- Communication กับ Hailo devices
+- Jetson platform integration
+- Camera hardware control
+- Error handling และ recovery
+
+### Acceptance Criteria
+- [ ] Hailo communication drivers เสร็จสิ้น
+- [ ] Jetson platform drivers เสร็จสิ้น
+- [ ] Camera hardware drivers เสร็จสิ้น
+- [ ] Integration components เสร็จสิ้น
+- [ ] Testing และ validation เสร็จสิ้น
+- [ ] Documentation อัปเดต
+- [ ] เสร็จสิ้นภายในเดือน พฤศจิกายน 2025
+
+### Technical Considerations
+- Hardware driver development
+- Communication protocol implementation
+- Platform integration
+- Error handling และ recovery
+- Testing และ validation procedures
+
+### Dependencies
+- Hardware specifications
+- OS และ Device Tree จาก STL team
+- Hardware availability สำหรับ testing
+
+### Checklist
+- [x] I have searched existing issues
+- [x] I have provided clear use cases
+- [x] I have considered technical implications
+```
+
+---
+
+**Note:** Issues เหล่านี้สร้างจาก development plan และควรได้รับการปรับแต่งตามความเหมาะสมของทีม

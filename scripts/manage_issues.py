@@ -275,7 +275,9 @@ class GitHubIssuesManager:
         """
         return [
             "edge", "server", "communication", "storage", 
-            "experiments", "ui", "api", "database"
+            "experiments", "ui", "api", "database",
+            "hardware-integration", "documentation", 
+            "project-management", "integration"
         ]
     
     def list_priorities(self) -> List[str]:
@@ -292,7 +294,7 @@ class GitHubIssuesManager:
         Returns:
             List of milestone names
         """
-        return ["v1.3", "v1.4", "backlog"]
+        return ["v1.3", "v1.4", "v1.5", "backlog"]
 
 def interactive_create_issue(manager: GitHubIssuesManager):
     """Interactive issue creation.

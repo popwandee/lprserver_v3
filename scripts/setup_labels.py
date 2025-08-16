@@ -65,6 +65,10 @@ class GitHubLabelsManager:
             'ui': {'color': 'd93f0b', 'description': 'User interface'},
             'api': {'color': '1d76db', 'description': 'API related'},
             'database': {'color': '5319e7', 'description': 'Database related'},
+            'hardware-integration': {'color': 'f9d0c4', 'description': 'Hardware integration'},
+            'documentation': {'color': '0075ca', 'description': 'Documentation'},
+            'project-management': {'color': 'd876e3', 'description': 'Project management'},
+            'integration': {'color': 'a2eeef', 'description': 'Integration'},
             
             # Type Labels
             'bug': {'color': 'd73a4a', 'description': 'Bug reports'},
@@ -78,6 +82,7 @@ class GitHubLabelsManager:
             # Milestone Labels
             'milestone-v1.3': {'color': '0e8a16', 'description': 'v1.3 release'},
             'milestone-v1.4': {'color': '1d76db', 'description': 'v1.4 release'},
+            'milestone-v1.5': {'color': 'f9d0c4', 'description': 'v1.5 release'},
             'milestone-backlog': {'color': 'fbca04', 'description': 'Future releases'},
             
             # Status Labels

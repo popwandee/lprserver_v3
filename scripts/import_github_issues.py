@@ -127,8 +127,10 @@ class GitHubIssuesImporter:
         epic = None
         task_id = None
         
+        # Check for EPIC format: "EPIC-XXX: Description"
         if title.startswith('EPIC-'):
             epic = title.split(':')[0]
+        # Check for TASK format: "TASK-XXX: Description"  
         elif title.startswith('TASK-'):
             task_id = title.split(':')[0]
             # Extract epic from task
@@ -142,6 +144,10 @@ class GitHubIssuesImporter:
                 epic = 'EPIC-EXP'
             elif task_id.startswith('TASK-MQTT-'):
                 epic = 'EPIC-MQTT'
+        # Check for Feature Request format: "✨ Feature Request"
+        elif '✨ Feature Request' in title or 'Feature Request' in title:
+            # This is likely an epic, try to extract from context
+            epic = self._extract_epic_from_context(markdown_content)
         
         # Extract component and priority
         component = self._extract_component(markdown_content)
@@ -160,6 +166,8 @@ class GitHubIssuesImporter:
             labels.extend(['type-feature', 'type-epic'])
         elif task_id:
             labels.extend(['type-task'])
+        else:
+            labels.extend(['type-feature'])  # Default to feature
         
         # Add milestone label
         if milestone:
@@ -176,6 +184,39 @@ class GitHubIssuesImporter:
             epic=epic,
             task_id=task_id
         )
+    
+    def _extract_epic_from_context(self, content: str) -> Optional[str]:
+        """Extract epic name from issue content context.
+        
+        Args:
+            content: Issue content
+            
+        Returns:
+            Epic name or None
+        """
+        # Look for epic references in the content
+        if 'Unified Communication' in content or 'Communication' in content:
+            return 'EPIC-UNIFIED-COMM'
+        elif 'File Transfer' in content or 'SFTP' in content or 'rsync' in content:
+            return 'EPIC-FILE-TRANSFER'
+        elif 'Storage' in content:
+            return 'EPIC-STORAGE'
+        elif 'Experiments' in content or 'Research' in content:
+            return 'EPIC-EXP'
+        elif 'MQTT' in content:
+            return 'EPIC-MQTT'
+        elif 'Hardware Integration' in content or 'Hardware' in content:
+            return 'EPIC-HARDWARE-INTEGRATION'
+        elif 'Hardware Architecture' in content or 'Architecture' in content:
+            return 'EPIC-HARDWARE-ARCHITECTURE'
+        elif 'Integration Milestone' in content or 'Milestone' in content:
+            return 'EPIC-INTEGRATION-MILESTONE'
+        elif 'Cross-Repository' in content or 'Cross-Repo' in content:
+            return 'EPIC-CROSS-REPO-INTEGRATION'
+        elif 'Layer 1' in content or 'Component/Driver' in content:
+            return 'EPIC-LAYER-1-DEVELOPMENT'
+        
+        return None
     
     def _extract_component(self, content: str) -> Optional[str]:
         """Extract component from issue content."""
