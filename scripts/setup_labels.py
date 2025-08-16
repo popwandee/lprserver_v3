@@ -51,29 +51,29 @@ class GitHubLabelsManager:
         # Define all labels
         self.labels = {
             # Priority Labels
-            'priority-critical': {'color': 'd73a4a', 'description': 'ต้องแก้ไขทันที'},
-            'priority-high': {'color': 'fbca04', 'description': 'แก้ไขภายใน 1 สัปดาห์'},
-            'priority-medium': {'color': '0e8a16', 'description': 'แก้ไขภายใน 1 เดือน'},
-            'priority-low': {'color': '1d76db', 'description': 'แก้ไขเมื่อมีเวลา'},
+            'critical': {'color': 'd73a4a', 'description': 'ต้องแก้ไขทันที'},
+            'high': {'color': 'fbca04', 'description': 'แก้ไขภายใน 1 สัปดาห์'},
+            'medium': {'color': '0e8a16', 'description': 'แก้ไขภายใน 1 เดือน'},
+            'low': {'color': '1d76db', 'description': 'แก้ไขเมื่อมีเวลา'},
             
             # Component Labels
-            'component-edge': {'color': '0052cc', 'description': 'Edge device related'},
-            'component-server': {'color': '5319e7', 'description': 'Server related'},
-            'component-communication': {'color': '84b6eb', 'description': 'Communication protocols'},
-            'component-storage': {'color': 'fbca04', 'description': 'Storage management'},
-            'component-experiments': {'color': '0e8a16', 'description': 'Experiments platform'},
-            'component-ui': {'color': 'd93f0b', 'description': 'User interface'},
-            'component-api': {'color': '1d76db', 'description': 'API related'},
-            'component-database': {'color': '5319e7', 'description': 'Database related'},
+            'edge': {'color': '0052cc', 'description': 'Edge device related'},
+            'server': {'color': '5319e7', 'description': 'Server related'},
+            'communication': {'color': '84b6eb', 'description': 'Communication protocols'},
+            'storage': {'color': 'fbca04', 'description': 'Storage management'},
+            'experiments': {'color': '0e8a16', 'description': 'Experiments platform'},
+            'ui': {'color': 'd93f0b', 'description': 'User interface'},
+            'api': {'color': '1d76db', 'description': 'API related'},
+            'database': {'color': '5319e7', 'description': 'Database related'},
             
             # Type Labels
-            'type-bug': {'color': 'd73a4a', 'description': 'Bug reports'},
-            'type-feature': {'color': '0e8a16', 'description': 'Feature requests'},
-            'type-documentation': {'color': '0075ca', 'description': 'Documentation updates'},
-            'type-task': {'color': 'fbca04', 'description': 'Development tasks'},
-            'type-enhancement': {'color': 'a2eeef', 'description': 'Improvements'},
-            'type-question': {'color': 'd876e3', 'description': 'Questions and discussions'},
-            'type-epic': {'color': '5319e7', 'description': 'Epic issues'},
+            'bug': {'color': 'd73a4a', 'description': 'Bug reports'},
+            'feature': {'color': '0e8a16', 'description': 'Feature requests'},
+            'documentation': {'color': '0075ca', 'description': 'Documentation updates'},
+            'task': {'color': 'fbca04', 'description': 'Development tasks'},
+            'enhancement': {'color': 'a2eeef', 'description': 'Improvements'},
+            'question': {'color': 'd876e3', 'description': 'Questions and discussions'},
+            'epic': {'color': '5319e7', 'description': 'Epic issues'},
             
             # Milestone Labels
             'milestone-v1.3': {'color': '0e8a16', 'description': 'v1.3 release'},
@@ -81,12 +81,13 @@ class GitHubLabelsManager:
             'milestone-backlog': {'color': 'fbca04', 'description': 'Future releases'},
             
             # Status Labels
-            'status-open': {'color': '0e8a16', 'description': 'เปิดใหม่'},
-            'status-in-progress': {'color': 'fbca04', 'description': 'กำลังดำเนินการ'},
-            'status-review': {'color': '1d76db', 'description': 'รอการ review'},
-            'status-testing': {'color': '5319e7', 'description': 'กำลังทดสอบ'},
-            'status-blocked': {'color': 'd73a4a', 'description': 'ถูกบล็อก'},
-            'status-done': {'color': '0e8a16', 'description': 'เสร็จสิ้น'},
+            'backlog': {'color': '0e8a16', 'description': 'งานรอการจัดการ'},
+            'open': {'color': '0e8a16', 'description': 'เปิดใหม่'},
+            'in-progress': {'color': 'fbca04', 'description': 'กำลังดำเนินการ'},
+            'review': {'color': '1d76db', 'description': 'รอการ review'},
+            'testing': {'color': '5319e7', 'description': 'กำลังทดสอบ'},
+            'blocked': {'color': 'd73a4a', 'description': 'ถูกบล็อก'},
+            'done': {'color': '0e8a16', 'description': 'เสร็จสิ้น'},
         }
     
     def get_existing_labels(self) -> List[str]:
