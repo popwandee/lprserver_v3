@@ -72,12 +72,32 @@ while [[ $# -gt 0 ]]; do
             ISSUES_FILE="$2"
             shift 2
             ;;
+        --manage)
+            MANAGE_MODE="true"
+            shift
+            ;;
+        --interactive)
+            INTERACTIVE_MODE="true"
+            shift
+            ;;
+        --hardware)
+            HARDWARE_NAME="$2"
+            shift 2
+            ;;
+        --component)
+            COMPONENT_NAME="$2"
+            shift 2
+            ;;
         --help)
             echo "Usage: $0 [OPTIONS]"
             echo ""
             echo "Options:"
             echo "  --dry-run    Run in dry-run mode (don't create issues)"
             echo "  --file FILE  Specify issues file path (default: .github/ISSUES_FROM_PLAN.md)"
+            echo "  --manage     Manage issues (add new ones, check duplicates)"
+            echo "  --interactive Interactive issue creation"
+            echo "  --hardware NAME Create hardware integration issue"
+            echo "  --component NAME Component for hardware integration"
             echo "  --help       Show this help message"
             echo ""
             echo "Environment variables (in .env file):"
@@ -85,6 +105,12 @@ while [[ $# -gt 0 ]]; do
             echo "  GITHUB_REPO     Repository name (owner/repo)"
             echo "  ISSUES_FILE     Issues file path (optional)"
             echo "  DRY_RUN         Set to 'true' for dry-run mode (optional)"
+            echo ""
+            echo "Examples:"
+            echo "  $0                                    # Import existing issues"
+            echo "  $0 --dry-run                         # Test import without creating"
+            echo "  $0 --manage --interactive            # Interactive issue creation"
+            echo "  $0 --manage --hardware 'New Camera' --component edge"
             exit 0
             ;;
         *)
@@ -94,17 +120,6 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
-
-# Check if issues file exists
-if [ ! -f "$ISSUES_FILE" ]; then
-    print_error "Issues file not found: $ISSUES_FILE"
-    exit 1
-fi
-
-print_status "Configuration:"
-echo "  Repository: $GITHUB_REPO"
-echo "  Issues file: $ISSUES_FILE"
-echo "  Dry run: $DRY_RUN"
 
 # Check if Python scripts exist
 if [ ! -f "scripts/import_github_issues.py" ]; then
@@ -117,9 +132,15 @@ if [ ! -f "scripts/setup_labels.py" ]; then
     exit 1
 fi
 
+if [ ! -f "scripts/manage_issues.py" ]; then
+    print_error "Manage script not found: scripts/manage_issues.py"
+    exit 1
+fi
+
 # Make scripts executable
 chmod +x scripts/import_github_issues.py
 chmod +x scripts/setup_labels.py
+chmod +x scripts/manage_issues.py
 
 # Install Python dependencies if needed
 print_status "Checking Python dependencies..."
@@ -127,6 +148,46 @@ if ! python3 -c "import requests, yaml" 2>/dev/null; then
     print_warning "Required Python packages not found. Installing..."
     pip3 install requests pyyaml python-dotenv
 fi
+
+# Check if we're in manage mode
+if [ "$MANAGE_MODE" = "true" ]; then
+    print_status "Managing GitHub issues..."
+    
+    if [ "$INTERACTIVE_MODE" = "true" ]; then
+        print_status "Starting interactive issue creation..."
+        python3 scripts/manage_issues.py --repo "$GITHUB_REPO" --interactive
+    elif [ -n "$HARDWARE_NAME" ]; then
+        if [ -z "$COMPONENT_NAME" ]; then
+            print_error "Component is required for hardware integration!"
+            echo "Example: $0 --manage --hardware 'New Camera' --component edge"
+            exit 1
+        fi
+        print_status "Creating hardware integration issue for $HARDWARE_NAME with $COMPONENT_NAME..."
+        python3 scripts/manage_issues.py --repo "$GITHUB_REPO" --hardware "$HARDWARE_NAME" --component "$COMPONENT_NAME"
+    else
+        print_status "Available management options:"
+        echo "  --interactive    Interactive issue creation"
+        echo "  --hardware NAME --component NAME    Hardware integration issue"
+        echo ""
+        echo "Examples:"
+        echo "  $0 --manage --interactive"
+        echo "  $0 --manage --hardware 'New Camera' --component edge"
+    fi
+    
+    print_success "Issue management completed!"
+    exit 0
+fi
+
+# Check if issues file exists
+if [ ! -f "$ISSUES_FILE" ]; then
+    print_error "Issues file not found: $ISSUES_FILE"
+    exit 1
+fi
+
+print_status "Configuration:"
+echo "  Repository: $GITHUB_REPO"
+echo "  Issues file: $ISSUES_FILE"
+echo "  Dry run: $DRY_RUN"
 
 # Setup labels first
 print_status "Setting up GitHub labels..."

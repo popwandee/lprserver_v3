@@ -7,7 +7,7 @@
 
 ## Overview
 
-ระบบอัตโนมัติสำหรับ import GitHub Issues จากไฟล์ `ISSUES_FROM_PLAN.md` ที่สร้างจาก development plan
+ระบบอัตโนมัติสำหรับ import GitHub Issues จากไฟล์ `ISSUES_FROM_PLAN.md` ที่สร้างจาก development plan และรองรับการเพิ่มเติม/อัปเดต issues ใหม่
 
 ## 🚀 Quick Start
 
@@ -53,6 +53,95 @@ chmod +x scripts/run_import.sh
 ./scripts/run_import.sh --file path/to/issues.md
 ```
 
+## 🔄 Managing and Updating Issues
+
+### Adding New Issues
+
+หลังจากรัน import ครั้งแรกแล้ว คุณสามารถเพิ่ม issues ใหม่ได้:
+
+#### 1. Hardware Integration Issues
+
+```bash
+# สร้าง issue สำหรับ hardware ใหม่
+./scripts/run_import.sh --manage --hardware "New Camera Model" --component edge
+
+# หรือระบุ priority และ milestone
+./scripts/run_import.sh --manage --hardware "Hailo-8 Accelerator" --component edge --priority high --milestone v1.3
+```
+
+#### 2. Interactive Issue Creation
+
+```bash
+# สร้าง issue แบบ interactive
+./scripts/run_import.sh --manage --interactive
+```
+
+#### 3. Manual Addition
+
+แก้ไขไฟล์ `.github/ISSUES_FROM_PLAN.md` โดยตรง และเพิ่ม issue ใหม่ในรูปแบบ:
+
+```markdown
+```markdown
+## TASK-EDGE-202408161200: Integrate New Hardware
+
+**Component:** edge
+**Priority:** high
+**Milestone:** v1.3
+
+### Problem Statement
+Integrate new hardware component with edge device...
+
+### Proposed Solution
+Implement driver and API integration...
+
+### Use Cases
+- Hardware detection and initialization
+- Performance optimization
+- Error handling
+
+### Acceptance Criteria
+- [ ] Hardware is properly detected
+- [ ] Integration tests pass
+- [ ] Documentation is updated
+- [ ] Performance benchmarks meet requirements
+
+### Technical Considerations
+- Driver compatibility
+- Power management
+- Error handling
+
+### Checklist
+- [x] I have searched existing issues
+- [x] I have provided clear use cases
+- [x] I have considered technical implications
+```
+```
+
+### Updating Existing Issues
+
+#### 1. Check for Duplicates
+
+ระบบจะตรวจสอบ duplicate issues อัตโนมัติเมื่อสร้าง issue ใหม่
+
+#### 2. Update Issue Content
+
+แก้ไขไฟล์ `.github/ISSUES_FROM_PLAN.md` โดยตรง และรัน import อีกครั้ง:
+
+```bash
+# อัปเดต issues ที่มีอยู่
+./scripts/run_import.sh
+```
+
+#### 3. Sync with GitHub
+
+```bash
+# ตรวจสอบ issues ที่มีอยู่ใน GitHub
+python scripts/manage_issues.py --repo your_username/repo --list
+
+# ตรวจสอบ duplicate ก่อนสร้าง issue ใหม่
+python scripts/manage_issues.py --repo your_username/repo --check-duplicate "Issue Title"
+```
+
 ## 📋 Prerequisites
 
 ### GitHub Token Setup
@@ -93,6 +182,26 @@ python scripts/setup_labels.py \
   --repo your_username/your_repository_name
 ```
 
+### Manage Issues
+
+```bash
+# Interactive issue creation
+python scripts/manage_issues.py \
+  --repo your_username/your_repository_name \
+  --interactive
+
+# Hardware integration issue
+python scripts/manage_issues.py \
+  --repo your_username/your_repository_name \
+  --hardware "New Camera" \
+  --component edge
+
+# Check for duplicates
+python scripts/manage_issues.py \
+  --repo your_username/your_repository_name \
+  --check-duplicate "Issue Title"
+```
+
 ### Dry Run Mode
 
 ```bash
@@ -107,42 +216,43 @@ python scripts/import_github_issues.py \
 ระบบจะสร้าง labels อัตโนมัติ:
 
 ### Priority Labels
-- `priority-critical` - ต้องแก้ไขทันที
-- `priority-high` - แก้ไขภายใน 1 สัปดาห์
-- `priority-medium` - แก้ไขภายใน 1 เดือน
-- `priority-low` - แก้ไขเมื่อมีเวลา
+- `critical` - ต้องแก้ไขทันที
+- `high` - แก้ไขภายใน 1 สัปดาห์
+- `medium` - แก้ไขภายใน 1 เดือน
+- `low` - แก้ไขเมื่อมีเวลา
 
 ### Component Labels
-- `component-edge` - Edge device related
-- `component-server` - Server related
-- `component-communication` - Communication protocols
-- `component-storage` - Storage management
-- `component-experiments` - Experiments platform
-- `component-ui` - User interface
-- `component-api` - API related
-- `component-database` - Database related
+- `edge` - Edge device related
+- `server` - Server related
+- `communication` - Communication protocols
+- `storage` - Storage management
+- `experiments` - Experiments platform
+- `ui` - User interface
+- `api` - API related
+- `database` - Database related
 
 ### Type Labels
-- `type-bug` - Bug reports
-- `type-feature` - Feature requests
-- `type-documentation` - Documentation updates
-- `type-task` - Development tasks
-- `type-enhancement` - Improvements
-- `type-question` - Questions and discussions
-- `type-epic` - Epic issues
+- `bug` - Bug reports
+- `feature` - Feature requests
+- `documentation` - Documentation updates
+- `task` - Development tasks
+- `enhancement` - Improvements
+- `question` - Questions and discussions
+- `epic` - Epic issues
 
 ### Milestone Labels
-- `milestone-v1.3` - v1.3 release
-- `milestone-v1.4` - v1.4 release
-- `milestone-backlog` - Future releases
+- `v1.3` - v1.3 release
+- `v1.4` - v1.4 release
+- `backlog` - Future releases
 
 ### Status Labels
-- `status-open` - เปิดใหม่
-- `status-in-progress` - กำลังดำเนินการ
-- `status-review` - รอการ review
-- `status-testing` - กำลังทดสอบ
-- `status-blocked` - ถูกบล็อก
-- `status-done` - เสร็จสิ้น
+- `backlog` - งานรอการจัดการ
+- `open` - เปิดใหม่
+- `in-progress` - กำลังดำเนินการ
+- `review` - รอการ review
+- `testing` - กำลังทดสอบ
+- `blocked` - ถูกบล็อก
+- `done` - เสร็จสิ้น
 
 ## 🔄 GitHub Actions
 
@@ -174,6 +284,7 @@ aicamera/
 ├── scripts/
 │   ├── import_github_issues.py      # Main import script
 │   ├── setup_labels.py              # Labels setup script
+│   ├── manage_issues.py             # Issue management script
 │   └── run_import.sh                # Easy runner script
 ├── .env                             # Environment variables (create from env.example)
 └── env.example                      # Environment template
@@ -206,6 +317,12 @@ Error: File .github/ISSUES_FROM_PLAN.md not found
 ModuleNotFoundError: No module named 'requests'
 ```
 **Solution:** Install dependencies: `pip install requests pyyaml python-dotenv`
+
+#### 5. Duplicate Issues
+```
+Found 3 potential duplicate(s)
+```
+**Solution:** Review existing issues before creating new ones
 
 ### Debug Mode
 
@@ -240,6 +357,11 @@ export DEBUG=1
 - Check epic-task relationships
 - Validate label assignments
 
+### Duplicate Detection
+- Automatic duplicate checking
+- Similarity analysis
+- Manual review prompts
+
 ## 🔄 Updates
 
 ### Adding New Labels
@@ -250,6 +372,9 @@ Edit `scripts/import_github_issues.py` to change parsing or creation logic.
 
 ### Updating Workflow
 Edit `.github/workflows/import-issues.yml` to modify CI/CD behavior.
+
+### Custom Issue Templates
+Edit `scripts/manage_issues.py` to add new issue templates or modify existing ones.
 
 ## 📞 Support
 
@@ -267,4 +392,4 @@ Edit `.github/workflows/import-issues.yml` to modify CI/CD behavior.
 
 ---
 
-**Note:** ระบบนี้ถูกออกแบบมาเพื่อทำงานกับ `ISSUES_FROM_PLAN.md` ที่สร้างจาก development plan เท่านั้น
+**Note:** ระบบนี้ถูกออกแบบมาเพื่อทำงานกับ `ISSUES_FROM_PLAN.md` ที่สร้างจาก development plan และรองรับการเพิ่มเติม/อัปเดต issues ใหม่ได้อย่างต่อเนื่อง
