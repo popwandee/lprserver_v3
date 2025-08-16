@@ -1,134 +1,115 @@
 {
-  "name": "LPR Server & Edge Development",
-  "description": "ALPR server on Ubuntu (Flask + Gunicorn + Nginx) and Edge on Raspberry Pi OS Bookworm, connected via Tailscale VPN.",
+  "name": "LPR Monorepo: Server + Edge SOP",
+  "description": "Monorepo for LPR Server (Flask + Socket.IO + PostgreSQL) and Edge AI Camera (Raspberry Pi + Hailo). This file guides Cursor AI coding style, architecture rules, and workflow.",
   "rules": [
-    "Use Flask application factory with Blueprints (modular monolith).",
-    "Expose REST APIs and WebSocket via Flask-SocketIO; keep endpoints backward-compatible.",
-    "Production: Run Gunicorn (unix socket) behind Nginx on Ubuntu; manage with systemd.",
-    "Edge: Raspberry Pi 5 on Bookworm with Camera Module 3 and Hailo-8 HAT+; keep SDK installs isolated.",
-    "Store configuration in .env (python-dotenv); avoid hard-coded secrets; rotate SECRET_KEY.",
-    "Database: SQLAlchemy; PostgreSQL for production.",
-    "Logging: standardize to logs/ (dev) and /var/log/lprserver (prod); use structured JSON logs where feasible.",
-    "Networking: use Tailscale MagicDNS hostnames; avoid hard-coded IPs; restrict inbound via ACL; open ports 80/443/8765 as needed.",
-    "Dev across Windows/macOS/Linux: use venv; pin Python version; prefer LF line endings; test on all OS; use WSL2 on Windows if needed.",
-    "Reverse proxy static files via Nginx; serve app via unix socket; avoid running Werkzeug in production.",
-    "Security: enforce RBAC; validate user input; sanitize uploads; enable HTTPS (Let's Encrypt) when internet-facing.",
-    "CI: run lint/tests before merge; keep requirements.txt pinned; document breaking changes in docs/."
+    "Monorepo boundaries: keep application code under server/ and edge/; put reusable scripts/docs under share/.",
+    "Avoid cross-imports between server/ and edge/. If sharing code, promote to share/libs/ with a clear API.",
+    "No Docker. Provide dev and deploy steps for Linux systemd and venv. Assume sparse-checkout on target machines.",
+    "Secrets and config come from .env. Never hardcode secrets or credentials.",
+    "Database: SQLAlchemy; prefer PostgreSQL for production. Keep schema changes in server/src/core/models/* and document in share/docs/.",
+    "Primary connectivity: WebSocket (Socket.IO). Secondary: REST API. Fallback: MQTT. Do not break payload compatibility.",
+    "MQTT topics must follow mqtt_config.py. Respect QoS settings: detection=1, health=0, config=2, control=2.",
+    "Keep logging structured and centralized: INFO in prod, DEBUG only in dev. Write to logs/ in dev and journal/syslog in prod.",
+    "Preserve file indentation and wrapping. Do not change tabs/spaces or reformat unrelated code.",
+    "Write high-verbosity, readable code. Use clear names, guard clauses, and meaningful error handling.",
+    "Comment why, not how. No inline commentary inside code to explain actions.",
+    "Tests before merge: ensure key scripts run (server tests and basic edge boot).",
+    "Use path-scoped commits and PR titles: server:, edge:, share:, docs:.",
+    "Favor small, focused edits; ensure green build/run after substantive changes.",
+    "Do not introduce new runtime dependencies without documenting installation and adding to requirements.txt (server) or setup_env.sh (edge).",
+    "Keep external network addresses configurable (Tailscale hostnames preferred). No hard-coded IPs.",
+    "Security: validate inputs, sanitize uploads, enforce SECRET_KEY length, and avoid leaking PII in logs.",
+    "Documentation changes belong in share/docs/; keep instruction.md as the single onboarding SOP.",
+    "When touching edge code, assume Raspberry Pi OS Bookworm with Hailo SDK; keep single-process gunicorn with threads for camera access.",
+    "When touching server code, assume Gunicorn behind Nginx or direct TCP bind in dev; manage via systemd in prod."
   ],
-  "technologies":  {
+  "technologies": {
     "edge_platform": {
       "hardware": "Raspberry Pi 5 (ARM64)",
-      "os": "Raspberry Pi OS (Brookwarm) (Debian-based)",
-      "ai_acceleration": "Hailo-8 AI accelerator",
-      "languages": ["Python 3.10+", "C++"],
-      "frameworks": [
-        "Hailo TAPPAS",
-        "OpenCV",
-        "NumPy",
-        "Picamera2",
-        "Flask/Gunicorn",
-        "WebSocket",
-        "REST API",
-        "MQTT"
-      ],
+      "os": "Raspberry Pi OS Bookworm (Debian-based)",
+      "ai_acceleration": "Hailo-8 / Hailo-8L",
+      "languages": ["Python 3.10+"],
+      "frameworks": ["Hailo TAPPAS", "OpenCV", "NumPy", "Picamera2", "Flask/Gunicorn", "WebSocket", "REST API", "MQTT"],
       "systemd": "Service management for auto-startup"
     },
     "server_platform": {
-        "hardware": "Ubuntu Server",
-        "os": "Ubuntu 22.04+/24.04 LTS",
-        "languages": ["Python 3.10+", "Bootstrap 5","Chart.js"],
-        "frameworks": [
-          "Flask",
-          "Flask-SocketIO",
-          "Gunicorn",
-          "Nginx",
-          "SQLAlchemy",
-          "PostgreSQL",
-          "Python 3.10+",
-            "Bootstrap 5",
-            "Chart.js",
-            "DataTables",
-            "systemd",
-            "python-dotenv",
-            "Tailscale",
-            "Raspberry Pi OS Bookworm",
-            "Hailo-8 SDK",
-            "Ubuntu 22.04+/24.04 LTS",
-            "WebSocket",
-            "REST API",
-            "MQTT"
-        ]
-      },
-      "networking": {
-        "vpn": "Tailscale (mesh VPN)",
-        "protocols": ["HTTP/HTTPS", "WebSocket", "MQTT"],
-        "security": "Tailscale ACLs and authentication"
-      },
-      "development": {
-        "ides": ["VS Code", "Cursor"],
-        "version_control": "Git with Git LFS for large files",
-        "ci_cd": "GitHub Actions",
-        "testing": ["pytest", "unittest"],
-        "monitoring": ["Prometheus", "Grafana", "systemd journal"]
-      }
+      "hardware": "x86_64 or ARM64 server",
+      "os": "Ubuntu 22.04+/24.04 LTS",
+      "languages": ["Python 3.10+"],
+      "frameworks": ["Flask", "Flask-SocketIO", "Gunicorn", "Nginx", "SQLAlchemy", "PostgreSQL", "python-dotenv", "systemd", "WebSocket", "REST API", "MQTT"]
     },
-    "project_structure": {
-      "edge": {
-        "main_app": "v1_3/src/",
-        "ai_models": "resources/",
-        "config": "config/",
-        "logs": "logs/",
-        "systemd": "systemd_service/",
-      "venv": "venv_hailo/"
-      },
-      "server": {
-        "api": "lpr_server/api/",
-        "database": "lpr_server/db/",
-        "nginx": "lpr_server/nginx/"
-      },
-      "shared": {
-        "common_libs": "shared/",
-        "protocols": "protocols/",
-        "database_schema": "database_schema/",
-        "testing": "tests/"
-      }
+    "networking": {
+      "vpn": "Tailscale (mesh VPN)",
+      "protocols": ["HTTP/HTTPS", "WebSocket", "MQTT"],
+      "security": "Tailscale ACLs and authentication; prefer MagicDNS hostnames"
     },
-    "development_guidelines": {
-      "code_style": {
-        "python": "PEP 8 with Black formatter",
-        "javascript": "ESLint with Prettier",
-        "documentation": "Google-style docstrings"
-      },
-      "testing": {
-        "unit_tests": "90%+ coverage",
-        "integration_tests": "End-to-end testing",
-        "performance_tests": "Load testing for Edge devices"
-      },
-      "deployment": {
-        "edge": "systemd service with auto-restart",
-        "server": "systemd service with health checks",
-        "rollback": "Version tagging and quick rollback capability"
-      },
-      "monitoring": {
-        "metrics": "System resources, AI inference latency",
-        "logging": "Structured logging with correlation IDs, less concurrency in loop",
-        "alerts": "Critical system failures and performance degradation"
-      }
-    },
-    "tailscale_config": {
-      "best_practices": [
-        "Use unique hostnames for each device (aicamera1, lpr-server1)",
-        "Configure proper ACLs for device-to-device communication",
-        "Enable subnet routes for local network access",
-        "Use exit nodes for internet access when needed",
-        "Implement proper DNS resolution",
-        "Monitor Tailscale status and connectivity"
-      ],
-      "troubleshooting": [
-        "Check Tailscale daemon status: sudo systemctl status tailscaled",
-        "Verify connectivity: tailscale ping <hostname>",
-        "Check logs: sudo journalctl -u tailscaled -f",
-        "Restart service if needed: sudo systemctl restart tailscaled"
-      ]
+    "development": {
+      "ides": ["Cursor"],
+      "version_control": "Git; subtree for edge upstream integration",
+      "ci_cd": "GitHub Actions (optional)",
+      "testing": ["pytest/unittest for server", "manual device validation for edge"],
+      "monitoring": ["systemd journal", "Prometheus/Grafana (optional)"]
     }
+  },
+  "project_structure": {
+    "edge": {
+      "app": "edge/v1_3/src/",
+      "resources": "edge/resources/",
+      "docs": "edge/docs/",
+      "systemd": "edge/systemd_service/",
+      "venv": "edge/venv_hailo/"
+    },
+    "server": {
+      "src": "server/src/",
+      "templates": "server/templates/",
+      "config": "server/config.py",
+      "services": "server/src/services/",
+      "models": "server/src/core/models/",
+      "nginx": "server/lprserver.conf",
+      "systemd": ["server/lprserver.service", "server/lprserver-websocket.service"],
+      "scripts": ["server/setup.sh", "server/manage_services.sh"]
+    },
+    "share": {
+      "docs": "share/docs/",
+      "tools": "share/tools/",
+      "libs": "share/libs/"
+    }
+  },
+  "development_guidelines": {
+    "code_style": {
+      "python": "PEP8; use Black style formatting (but do not reformat unrelated code); add type hints where valuable",
+      "documentation": "Google-style docstrings; keep READMEs current"
+    },
+    "testing": {
+      "server": "Run server/test_* scripts and simple client tests before merging",
+      "edge": "Boot the app with gunicorn, validate camera pipeline on device"
+    },
+    "deployment": {
+      "edge": "systemd service with single gunicorn worker and threads; managed by setup_env.sh",
+      "server": "systemd + gunicorn (tcp bind or unix socket behind Nginx)",
+      "rollback": "Tag releases; keep deploy scripts idempotent"
+    },
+    "monitoring": {
+      "metrics": "Track message throughput, latency; collect edge health",
+      "logging": "INFO in prod; include correlation IDs where helpful",
+      "alerts": "Critical failures, degraded connectivity"
+    }
+  },
+  "sop": {
+    "readme": "instruction.md",
+    "key_points": [
+      "Use sparse-checkout on machines that only need server/ or edge/.",
+      "Configure .env based on server/env.example; never commit secrets.",
+      "WebSocket is primary; REST secondary; MQTT fallback with strict topics.",
+      "PostgreSQL preferred; align schema via SQLAlchemy models in server/src/core/models/.",
+      "Keep edits scoped by path and verify run/test before merging."
+    ]
+  },
+  "assistant_expectations": {
+    "citations": "Cite code by filepath and line ranges when quoting. Keep code blocks minimal and focused.",
+    "path_focus": "Search and edit only under the relevant path (server/, edge/, share/).",
+    "non_docker": "Provide systemd/venv instructions; do not introduce Docker.",
+    "indentation": "Preserve existing indentation and wrapping in all edits.",
+    "post_change_validation": "Explain how to run or test after edits (commands)."
   }
+}
